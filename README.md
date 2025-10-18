@@ -180,6 +180,8 @@ For technical support or questions about this project:
 
 Built with ❤️ using Next.js 14, TypeScript, and Tailwind CSS
 
+<!-- Test edit: Repository successfully created and connected to GitHub! -->
+
 
 
 
