@@ -9,6 +9,7 @@ interface LanguageContextType {
   setLanguage: (lang: Language) => void
   t: (key: string) => string
   isRTL: boolean
+  formatCurrency: (amount: number) => string
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
@@ -27,11 +28,16 @@ const translations = {
     'nav.faq': 'FAQ',
     'nav.search': 'Search products...',
     'nav.cart': 'Shopping Cart',
+    'nav.enterprise.title': 'ENTERPRISE TECHNOLOGY SOLUTIONS',
+    'nav.viewAllProducts': 'View All Products',
+    'nav.professional': 'PROFESSIONAL',
     
     // Homepage
     'home.hero.title': 'Discover Premium Tech',
+    'home.hero.solutions': 'Solutions',
     'home.hero.subtitle': 'From cutting-edge laptops to professional monitors, find the perfect technology solutions for your needs.',
     'home.hero.shop': 'Shop Now',
+    'home.hero.help': 'Get Help',
     'home.hero.learn': 'Learn More',
     'hero.gamingLaptop': 'GAMING LAPTOP',
     'hero.productName': 'MSI PRESTIGE 16',
@@ -46,6 +52,11 @@ const translations = {
     'home.featured.title': 'Featured Products',
     'home.featured.subtitle': 'Discover our most popular and highly-rated products with exceptional discounts up to -50%',
     'home.featured.viewAll': 'View All Products',
+    'home.categories.badge': 'Product Categories',
+    'home.categories.title': 'Shop by Category',
+    'home.categories.subtitle': 'Explore our comprehensive range of premium technology products, carefully curated to meet all your digital needs',
+    'home.categories.products': 'products',
+    'home.categories.viewAll': 'View All',
     'home.newsletter.title': 'Stay Updated',
     'home.newsletter.subtitle': 'Get the latest tech news and exclusive offers delivered to your inbox.',
     'home.newsletter.email': 'Enter your email',
@@ -79,7 +90,7 @@ const translations = {
     'promo.qualitySuperior': 'Superior Quality',
     'promo.qualityDesc': 'Products rigorously selected for their performance and reliability. Tested and approved by our experts.',
     'promo.warrantyIncluded': '1 year warranty included',
-    'promo.fastDelivery': 'Fast Delivery',
+    'promo.fastDeliveryBenefit': 'Fast Delivery',
     'promo.fastDeliveryDesc': 'Receive your orders in record time, directly to your door. Fast delivery throughout Morocco.',
     'promo.delivery24h': '24h delivery in major cities',
     'promo.dedicatedSupport': 'Dedicated Customer Support',
@@ -104,7 +115,6 @@ const translations = {
     'promo.hours': 'HOURS',
     'promo.minutes': 'MINUTES',
     'promo.seconds': 'SECONDS',
-    'promo.fastDeliveryBenefit': 'Fast Delivery',
     'promo.warrantyBenefit': '1 Year Warranty',
     'promo.support24h': '24/7 Support',
     'promo.orderNow': 'ORDER NOW',
@@ -122,6 +132,8 @@ const translations = {
     'product.bestseller': 'BESTSELLER',
     'product.new': 'NEW',
     'product.hotDeal': 'HOT DEAL',
+    'products.title': 'All Products',
+    'products.subtitle': 'Discover our complete collection of technology products',
     
     // Footer
     'footer.description': 'Premium computers, laptops & tech accessories. Expert support included.',
@@ -189,6 +201,24 @@ const translations = {
     'about.team.emily.name': 'Emily Rodriguez',
     'about.team.emily.position': 'Customer Success Manager',
     'about.team.emily.description': 'Dedicated to providing exceptional customer support and building lasting relationships.',
+    'about.values.title': 'Our Values & Culture',
+    'about.values.subtitle': 'The principles that guide our work and define our commitment to excellence.',
+    'about.values.excellence.title': 'Excellence',
+    'about.values.excellence.desc': 'We strive for the highest standards in everything we do, from product quality to customer service.',
+    'about.values.integrity.title': 'Integrity',
+    'about.values.integrity.desc': 'We conduct business with honesty, transparency, and ethical practices in all our interactions.',
+    'about.values.innovation.title': 'Innovation',
+    'about.values.innovation.desc': 'We embrace new technologies and creative solutions to solve complex business challenges.',
+    'about.values.collaboration.title': 'Collaboration',
+    'about.values.collaboration.desc': 'We work together as a team and with our clients to achieve shared success and growth.',
+    'about.achievements.title': 'Recognition & Achievements',
+    'about.achievements.subtitle': 'Our commitment to excellence has been recognized by industry leaders and satisfied clients.',
+    'about.achievements.bestIT.title': 'Best IT Company 2023',
+    'about.achievements.bestIT.desc': 'Awarded by Morocco Technology Association for outstanding service delivery and innovation.',
+    'about.achievements.customerExcellence.title': 'Customer Excellence Award',
+    'about.achievements.customerExcellence.desc': 'Recognized for achieving 98% customer satisfaction rate across all service categories.',
+    'about.achievements.innovationLeader.title': 'Innovation Leader',
+    'about.achievements.innovationLeader.desc': 'Named as a leading innovator in digital transformation solutions for Moroccan businesses.',
     
     // Office Setup Page
     'office.hero.title': 'Office Setup Service',
@@ -302,10 +332,10 @@ const translations = {
     'warranty.extended.title': 'Extended Warranty Options',
     'warranty.extended.subtitle': 'Extend your protection beyond the standard warranty period',
     'warranty.extended.new': 'New Computer Extended Warranty',
-    'warranty.extended.new.desc': 'Extend your 1-year warranty to 2 or 3 years for additional peace of mind.',
+    'warranty.extended.new.desc': 'Extend your 1-year warranty to 2 years for additional peace of mind.',
     'warranty.extended.used': 'Used Computer Extended Warranty',
     'warranty.extended.used.desc': 'Extend your 2-month warranty to 6 months or 1 year.',
-    'warranty.extended.price': 'Starting from $49',
+    'warranty.extended.price': 'Starting from 49 DH',
     'warranty.extended.learn': 'Learn More',
     'warranty.conditions.title': 'Warranty Conditions',
     'warranty.conditions.subtitle': 'Important terms and conditions for warranty coverage',
@@ -495,7 +525,36 @@ const translations = {
     'contact.faq.support.answer': 'Yes! Our technical support team is available Monday-Friday 9 AM-6 PM EST to help with setup, troubleshooting, and technical questions.',
     'contact.faq.tracking.question': 'Can I track my order?',
     'contact.faq.tracking.answer': 'Absolutely! Once your order ships, you\'ll receive a tracking number via email to monitor your package\'s progress in real-time.',
-    'contact.faq.viewAll': 'View All FAQs'
+    'contact.faq.viewAll': 'View All FAQs',
+    'contact.info.title': 'Get in Touch',
+    'contact.info.subtitle': 'We\'re here to help with all your technology needs',
+    'contact.info.phone': 'Phone',
+    'contact.info.phoneNumber': '0779318061',
+    'contact.info.email': 'Email',
+    'contact.info.address': 'Address',
+    'contact.info.addressValue': 'Fes Champs de Course',
+    'contact.info.hours': 'Business Hours',
+    'contact.form.subtitle': 'Send us a message and we\'ll get back to you as soon as possible',
+    'contact.form.send': 'Send Message',
+    'contact.form.characters': 'characters',
+    'contact.testimonials.title': 'What Our Clients Say',
+    'contact.testimonials.subtitle': 'Don\'t just take our word for it - hear from our satisfied customers',
+    'contact.cta.title': 'Ready to Get Started?',
+    'contact.cta.subtitle': 'Contact us today and let\'s discuss how we can help your business with our IT solutions.',
+    'contact.cta.callNow': 'Call Now',
+    'contact.cta.sendEmail': 'Send Email',
+    'contact.faq.question1': 'How quickly do you respond to inquiries?',
+    'contact.faq.answer1': 'We typically respond to all inquiries within 24 hours during business days. For urgent matters, please call us directly at 0779318061.',
+    'contact.faq.question2': 'What products do you sell?',
+    'contact.faq.answer2': 'We specialize in premium technology products including laptops, monitors, gaming equipment, and professional IT hardware. Check our shop for the latest products.',
+    'contact.faq.question3': 'Do you provide delivery in Morocco?',
+    'contact.faq.answer3': 'Yes, we provide fast delivery throughout Morocco. Standard delivery takes 3-5 business days, while express delivery takes 1-2 business days.',
+    'contact.faq.question4': 'What payment methods do you accept?',
+    'contact.faq.answer4': 'We accept Cash on Delivery (COD) - you can pay with cash when your order is delivered to your doorstep.',
+    'contact.faq.question5': 'Do you offer warranty on your products?',
+    'contact.faq.answer5': 'Yes, all our products come with comprehensive warranty coverage. We also offer extended warranty options for additional protection.',
+    'contact.faq.question6': 'Can I return a product if I\'m not satisfied?',
+    'contact.faq.answer6': 'Absolutely! We offer a 30-day return policy with easy returns and exchanges. Contact us if you have any issues with your purchase.'
   },
   fr: {
     // Navigation
@@ -509,11 +568,16 @@ const translations = {
     'nav.faq': 'FAQ',
     'nav.search': 'Rechercher des produits...',
     'nav.cart': 'Panier',
+    'nav.enterprise.title': 'SOLUTIONS TECHNOLOGIQUES ENTREPRISE',
+    'nav.viewAllProducts': 'Voir Tous les Produits',
+    'nav.professional': 'PROFESSIONNEL',
     
     // Homepage
     'home.hero.title': 'Découvrez la Technologie Premium',
+    'home.hero.solutions': 'Solutions',
     'home.hero.subtitle': 'Des ordinateurs portables de pointe aux moniteurs professionnels, trouvez les solutions technologiques parfaites pour vos besoins.',
     'home.hero.shop': 'Acheter maintenant',
+    'home.hero.help': 'Obtenir de l\'aide',
     'home.hero.learn': 'En savoir plus',
     'hero.gamingLaptop': 'ORDINATEUR GAMING',
     'hero.productName': 'MSI PRESTIGE 16',
@@ -528,6 +592,11 @@ const translations = {
     'home.featured.title': 'Produits vedettes',
     'home.featured.subtitle': 'Découvrez nos meilleures offres avec des réductions exceptionnelles jusqu\'à -50%',
     'home.featured.viewAll': 'Voir tous les produits',
+    'home.categories.badge': 'Catégories de Produits',
+    'home.categories.title': 'Acheter par Catégorie',
+    'home.categories.subtitle': 'Explorez notre gamme complète de produits technologiques premium, soigneusement sélectionnés pour répondre à tous vos besoins numériques',
+    'home.categories.products': 'produits',
+    'home.categories.viewAll': 'Voir Tout',
     'home.newsletter.title': 'Restez informé',
     'home.newsletter.subtitle': 'Recevez les dernières nouvelles technologiques et offres exclusives dans votre boîte de réception.',
     'home.newsletter.email': 'Entrez votre email',
@@ -561,7 +630,7 @@ const translations = {
     'promo.qualitySuperior': 'Qualité Supérieure',
     'promo.qualityDesc': 'Des produits rigoureusement sélectionnés pour leur performance et leur fiabilité. Testés et approuvés par nos experts.',
     'promo.warrantyIncluded': '1 an de garantie incluse',
-    'promo.fastDelivery': 'Livraison Rapide',
+    'promo.fastDeliveryBenefit': 'Livraison Rapide',
     'promo.fastDeliveryDesc': 'Recevez vos commandes en un temps record, directement à votre porte. Livraison rapide partout au Maroc.',
     'promo.delivery24h': 'Livraison en 24h dans les grandes villes',
     'promo.dedicatedSupport': 'Support Client Dédié',
@@ -586,7 +655,6 @@ const translations = {
     'promo.hours': 'HEURES',
     'promo.minutes': 'MINUTES',
     'promo.seconds': 'SECONDES',
-    'promo.fastDeliveryBenefit': 'Livraison Rapide',
     'promo.warrantyBenefit': 'Garantie 1 An',
     'promo.support24h': 'Support 24/7',
     'promo.orderNow': 'COMMANDER MAINTENANT',
@@ -604,6 +672,8 @@ const translations = {
     'product.bestseller': 'BESTSELLER',
     'product.new': 'NOUVEAU',
     'product.hotDeal': 'OFFRE CHAUDE',
+    'products.title': 'Tous les Produits',
+    'products.subtitle': 'Découvrez notre collection complète de produits technologiques',
     
     // Footer
     'footer.description': 'Ordinateurs, portables & accessoires tech premium. Support expert inclus.',
@@ -671,6 +741,24 @@ const translations = {
     'about.team.emily.name': 'Emily Rodriguez',
     'about.team.emily.position': 'Responsable Succès Client',
     'about.team.emily.description': 'Dédiée à fournir un support client exceptionnel et à construire des relations durables.',
+    'about.values.title': 'Nos Valeurs et Culture',
+    'about.values.subtitle': 'Les principes qui guident notre travail et définissent notre engagement envers l\'excellence.',
+    'about.values.excellence.title': 'Excellence',
+    'about.values.excellence.desc': 'Nous visons les plus hauts standards dans tout ce que nous faisons, de la qualité des produits au service client.',
+    'about.values.integrity.title': 'Intégrité',
+    'about.values.integrity.desc': 'Nous menons nos affaires avec honnêteté, transparence et pratiques éthiques dans toutes nos interactions.',
+    'about.values.innovation.title': 'Innovation',
+    'about.values.innovation.desc': 'Nous adoptons les nouvelles technologies et solutions créatives pour résoudre des défis commerciaux complexes.',
+    'about.values.collaboration.title': 'Collaboration',
+    'about.values.collaboration.desc': 'Nous travaillons ensemble en équipe et avec nos clients pour atteindre un succès et une croissance partagés.',
+    'about.achievements.title': 'Reconnaissance et Réalisations',
+    'about.achievements.subtitle': 'Notre engagement envers l\'excellence a été reconnu par les leaders de l\'industrie et les clients satisfaits.',
+    'about.achievements.bestIT.title': 'Meilleure Entreprise IT 2023',
+    'about.achievements.bestIT.desc': 'Décerné par l\'Association Technologique du Maroc pour une livraison de service exceptionnelle et l\'innovation.',
+    'about.achievements.customerExcellence.title': 'Prix d\'Excellence Client',
+    'about.achievements.customerExcellence.desc': 'Reconnu pour avoir atteint un taux de satisfaction client de 98% dans toutes les catégories de service.',
+    'about.achievements.innovationLeader.title': 'Leader d\'Innovation',
+    'about.achievements.innovationLeader.desc': 'Nommé comme innovateur leader dans les solutions de transformation numérique pour les entreprises marocaines.',
     
     // Office Setup Page
     'office.hero.title': 'Service d\'Installation de Bureau',
@@ -784,10 +872,10 @@ const translations = {
     'warranty.extended.title': 'Options de Garantie Étendue',
     'warranty.extended.subtitle': 'Étendez votre protection au-delà de la période de garantie standard',
     'warranty.extended.new': 'Garantie Étendue Ordinateur Neuf',
-    'warranty.extended.new.desc': 'Étendez votre garantie d\'1 an à 2 ou 3 ans pour une tranquillité d\'esprit supplémentaire.',
+    'warranty.extended.new.desc': 'Étendez votre garantie d\'1 an à 2 ans pour une tranquillité d\'esprit supplémentaire.',
     'warranty.extended.used': 'Garantie Étendue Ordinateur d\'Occasion',
     'warranty.extended.used.desc': 'Étendez votre garantie de 2 mois à 6 mois ou 1 an.',
-    'warranty.extended.price': 'À partir de 49€',
+    'warranty.extended.price': 'À partir de 49 Dirham',
     'warranty.extended.learn': 'En Savoir Plus',
     'warranty.conditions.title': 'Conditions de Garantie',
     'warranty.conditions.subtitle': 'Termes et conditions importants pour la couverture de garantie',
@@ -977,7 +1065,36 @@ const translations = {
     'contact.faq.support.answer': 'Oui ! Notre équipe de support technique est disponible du lundi au vendredi de 9h à 18h EST pour vous aider avec l\'installation, le dépannage et les questions techniques.',
     'contact.faq.tracking.question': 'Puis-je suivre ma commande ?',
     'contact.faq.tracking.answer': 'Absolument ! Une fois votre commande expédiée, vous recevrez un numéro de suivi par email pour surveiller le progrès de votre colis en temps réel.',
-    'contact.faq.viewAll': 'Voir Toutes les FAQ'
+    'contact.faq.viewAll': 'Voir Toutes les FAQ',
+    'contact.info.title': 'Entrer en Contact',
+    'contact.info.subtitle': 'Nous sommes là pour vous aider avec tous vos besoins technologiques',
+    'contact.info.phone': 'Téléphone',
+    'contact.info.phoneNumber': '0779318061',
+    'contact.info.email': 'Email',
+    'contact.info.address': 'Adresse',
+    'contact.info.addressValue': 'Fes Champs de Course',
+    'contact.info.hours': 'Heures d\'Ouverture',
+    'contact.form.subtitle': 'Envoyez-nous un message et nous vous répondrons dès que possible',
+    'contact.form.send': 'Envoyer le Message',
+    'contact.form.characters': 'caractères',
+    'contact.testimonials.title': 'Ce Que Disent Nos Clients',
+    'contact.testimonials.subtitle': 'Ne vous fiez pas seulement à nos dires - écoutez nos clients satisfaits',
+    'contact.cta.title': 'Prêt à Commencer ?',
+    'contact.cta.subtitle': 'Contactez-nous aujourd\'hui et discutons de la façon dont nous pouvons aider votre entreprise avec nos solutions informatiques.',
+    'contact.cta.callNow': 'Appeler Maintenant',
+    'contact.cta.sendEmail': 'Envoyer un Email',
+    'contact.faq.question1': 'À quelle rapidité répondez-vous aux demandes ?',
+    'contact.faq.answer1': 'Nous répondons généralement à toutes les demandes dans les 24 heures en jours ouvrables. Pour les questions urgentes, veuillez nous appeler directement au 0779318061.',
+    'contact.faq.question2': 'Quels produits vendez-vous ?',
+    'contact.faq.answer2': 'Nous nous spécialisons dans les produits technologiques haut de gamme, notamment les ordinateurs portables, moniteurs, équipements de jeu et matériel informatique professionnel. Consultez notre boutique pour les derniers produits.',
+    'contact.faq.question3': 'Livrez-vous au Maroc ?',
+    'contact.faq.answer3': 'Oui, nous assurons une livraison rapide dans tout le Maroc. La livraison standard prend 3-5 jours ouvrables, tandis que la livraison express prend 1-2 jours ouvrables.',
+    'contact.faq.question4': 'Quels modes de paiement acceptez-vous ?',
+    'contact.faq.answer4': 'Nous acceptons le paiement à la livraison (COD) - vous pouvez payer en espèces lorsque votre commande est livrée à votre porte.',
+    'contact.faq.question5': 'Offrez-vous une garantie sur vos produits ?',
+    'contact.faq.answer5': 'Oui, tous nos produits sont couverts par une garantie complète. Nous proposons également des options de garantie étendue pour une protection supplémentaire.',
+    'contact.faq.question6': 'Puis-je retourner un produit si je ne suis pas satisfait ?',
+    'contact.faq.answer6': 'Absolument ! Nous offrons une politique de retour de 30 jours avec des retours et échanges faciles. Contactez-nous si vous avez des problèmes avec votre achat.'
   },
   ar: {
     // Navigation
@@ -991,11 +1108,16 @@ const translations = {
     'nav.faq': 'الأسئلة الشائعة',
     'nav.search': 'البحث عن المنتجات...',
     'nav.cart': 'سلة التسوق',
+    'nav.enterprise.title': 'حلول تكنولوجية للمؤسسات',
+    'nav.viewAllProducts': 'عرض جميع المنتجات',
+    'nav.professional': 'مهني',
     
     // Homepage
     'home.hero.title': 'اكتشف التكنولوجيا المتميزة',
+    'home.hero.solutions': 'الحلول',
     'home.hero.subtitle': 'من أجهزة الكمبيوتر المحمولة المتطورة إلى الشاشات المهنية، اعثر على الحلول التكنولوجية المثالية لاحتياجاتك.',
     'home.hero.shop': 'تسوق الآن',
+    'home.hero.help': 'احصل على المساعدة',
     'home.hero.learn': 'اعرف المزيد',
     'hero.gamingLaptop': 'كمبيوتر الألعاب',
     'hero.productName': 'MSI PRESTIGE 16',
@@ -1010,6 +1132,11 @@ const translations = {
     'home.featured.title': 'المنتجات المميزة',
     'home.featured.subtitle': 'اكتشف أفضل عروضنا مع خصومات استثنائية تصل إلى -50%',
     'home.featured.viewAll': 'عرض جميع المنتجات',
+    'home.categories.badge': 'فئات المنتجات',
+    'home.categories.title': 'تسوق حسب الفئة',
+    'home.categories.subtitle': 'استكشف مجموعتنا الشاملة من المنتجات التكنولوجية المتميزة، المختارة بعناية لتلبية جميع احتياجاتك الرقمية',
+    'home.categories.products': 'منتجات',
+    'home.categories.viewAll': 'عرض الكل',
     'home.newsletter.title': 'ابق محدثاً',
     'home.newsletter.subtitle': 'احصل على آخر أخبار التكنولوجيا والعروض الحصرية في صندوق الوارد الخاص بك.',
     'home.newsletter.email': 'أدخل بريدك الإلكتروني',
@@ -1043,7 +1170,7 @@ const translations = {
     'promo.qualitySuperior': 'جودة فائقة',
     'promo.qualityDesc': 'منتجات مختارة بعناية لأدائها وموثوقيتها. مختبرة ومعتمدة من قبل خبرائنا.',
     'promo.warrantyIncluded': 'ضمان لمدة سنة واحدة مشمول',
-    'promo.fastDelivery': 'توصيل سريع',
+    'promo.fastDeliveryBenefit': 'توصيل سريع',
     'promo.fastDeliveryDesc': 'احصل على طلباتك في وقت قياسي، مباشرة إلى باب منزلك. شحن مجاني في جميع أنحاء المغرب.',
     'promo.delivery24h': 'توصيل خلال 24 ساعة في المدن الكبرى',
     'promo.dedicatedSupport': 'دعم عملاء مخصص',
@@ -1068,7 +1195,6 @@ const translations = {
     'promo.hours': 'ساعات',
     'promo.minutes': 'دقائق',
     'promo.seconds': 'ثواني',
-    'promo.fastDeliveryBenefit': 'توصيل سريع',
     'promo.warrantyBenefit': 'ضمان سنة واحدة',
     'promo.support24h': 'دعم 24/7',
     'promo.orderNow': 'اطلب الآن',
@@ -1086,6 +1212,8 @@ const translations = {
     'product.bestseller': 'الأكثر مبيعاً',
     'product.new': 'جديد',
     'product.hotDeal': 'عرض ساخن',
+    'products.title': 'جميع المنتجات',
+    'products.subtitle': 'اكتشف مجموعتنا الكاملة من المنتجات التكنولوجية',
     
     // Footer
     'footer.description': 'أجهزة كمبيوتر ومحمولة وإكسسوارات تقنية متميزة. دعم خبير مشمول.',
@@ -1153,6 +1281,24 @@ const translations = {
     'about.team.emily.name': 'إيميلي رودريغيز',
     'about.team.emily.position': 'مدير نجاح العملاء',
     'about.team.emily.description': 'مكرسة لتقديم دعم عملاء استثنائي وبناء علاقات دائمة.',
+    'about.values.title': 'قيمنا وثقافتنا',
+    'about.values.subtitle': 'المبادئ التي توجه عملنا وتحدد التزامنا بالتميز.',
+    'about.values.excellence.title': 'التميز',
+    'about.values.excellence.desc': 'نسعى لأعلى المعايير في كل ما نقوم به، من جودة المنتجات إلى خدمة العملاء.',
+    'about.values.integrity.title': 'النزاهة',
+    'about.values.integrity.desc': 'نمارس أعمالنا بالأمانة والشفافية والممارسات الأخلاقية في جميع تفاعلاتنا.',
+    'about.values.innovation.title': 'الابتكار',
+    'about.values.innovation.desc': 'نتبنى التقنيات الجديدة والحلول الإبداعية لحل التحديات التجارية المعقدة.',
+    'about.values.collaboration.title': 'التعاون',
+    'about.values.collaboration.desc': 'نعمل معًا كفريق ومع عملائنا لتحقيق النجاح والنمو المشترك.',
+    'about.achievements.title': 'التقدير والإنجازات',
+    'about.achievements.subtitle': 'تم الاعتراف بالتزامنا بالتميز من قبل قادة الصناعة والعملاء الراضين.',
+    'about.achievements.bestIT.title': 'أفضل شركة تقنية 2023',
+    'about.achievements.bestIT.desc': 'منحت من قبل الجمعية التكنولوجية المغربية لتقديم خدمة استثنائية والابتكار.',
+    'about.achievements.customerExcellence.title': 'جائزة التميز للعملاء',
+    'about.achievements.customerExcellence.desc': 'تم الاعتراف بتحقيق معدل رضا العملاء 98% عبر جميع فئات الخدمة.',
+    'about.achievements.innovationLeader.title': 'قائد الابتكار',
+    'about.achievements.innovationLeader.desc': 'تم تسميته كمبتكر رائد في حلول التحول الرقمي للشركات المغربية.',
     
     // Office Setup Page
     'office.hero.title': 'خدمة إعداد المكتب',
@@ -1269,7 +1415,7 @@ const translations = {
     'warranty.extended.new.desc': 'امدد ضمانك لمدة سنة واحدة إلى سنتين أو ثلاث سنوات لراحة إضافية.',
     'warranty.extended.used': 'ضمان ممتد لأجهزة الكمبيوتر المستعملة',
     'warranty.extended.used.desc': 'امدد ضمانك لمدة شهرين إلى 6 أشهر أو سنة واحدة.',
-    'warranty.extended.price': 'بدءاً من 49$',
+    'warranty.extended.price': 'بدءاً من 49 درهم',
     'warranty.extended.learn': 'اعرف المزيد',
     'warranty.conditions.title': 'شروط الضمان',
     'warranty.conditions.subtitle': 'شروط وأحكام مهمة لتغطية الضمان',
@@ -1459,7 +1605,50 @@ const translations = {
     'contact.faq.support.answer': 'نعم! فريق الدعم التقني لدينا متاح من الاثنين إلى الجمعة من 9 صباحاً إلى 6 مساءً EST لمساعدتك في الإعداد واستكشاف الأخطاء والأسئلة التقنية.',
     'contact.faq.tracking.question': 'هل يمكنني تتبع طلبي؟',
     'contact.faq.tracking.answer': 'بالطبع! بمجرد شحن طلبك، ستحصل على رقم تتبع عبر البريد الإلكتروني لمراقبة تقدم طردك في الوقت الفعلي.',
-    'contact.faq.viewAll': 'عرض جميع الأسئلة الشائعة'
+    'contact.faq.viewAll': 'عرض جميع الأسئلة الشائعة',
+    'contact.info.title': 'تواصل معنا',
+    'contact.info.subtitle': 'نحن هنا لمساعدتك في جميع احتياجاتك التقنية',
+    'contact.info.phone': 'الهاتف',
+    'contact.info.phoneNumber': '0779318061',
+    'contact.info.email': 'البريد الإلكتروني',
+    'contact.info.address': 'العنوان',
+    'contact.info.addressValue': 'Fes Champs de Course',
+    'contact.info.hours': 'ساعات العمل',
+    'contact.form.subtitle': 'أرسل لنا رسالة وسنرد عليك في أقرب وقت ممكن',
+    'contact.form.send': 'إرسال الرسالة',
+    'contact.form.characters': 'حرف',
+    'contact.testimonials.title': 'ماذا يقول عملاؤنا',
+    'contact.testimonials.subtitle': 'لا تأخذ كلامنا فقط - استمع إلى عملائنا الراضين',
+    'contact.cta.title': 'مستعد للبدء؟',
+    'contact.cta.subtitle': 'تواصل معنا اليوم ودعنا نناقش كيف يمكننا مساعدة عملك بحلولنا التقنية.',
+    'contact.cta.callNow': 'اتصل الآن',
+    'contact.cta.sendEmail': 'إرسال بريد إلكتروني',
+    'contact.faq.question1': 'ما مدى سرعة استجابتكم للاستفسارات؟',
+    'contact.faq.answer1': 'نحن نرد عادة على جميع الاستفسارات خلال 24 ساعة في أيام العمل. للأمور العاجلة، يرجى الاتصال بنا مباشرة على 0779318061.',
+    'contact.faq.question2': 'ما هي المنتجات التي تبيعونها؟',
+    'contact.faq.answer2': 'نحن متخصصون في المنتجات التقنية المتميزة بما في ذلك أجهزة الكمبيوتر المحمولة والشاشات ومعدات الألعاب والأجهزة التقنية المهنية. تحقق من متجرنا للحصول على أحدث المنتجات.',
+    'contact.faq.question3': 'هل تقدمون التوصيل في المغرب؟',
+    'contact.faq.answer3': 'نعم، نقدم توصيل سريع في جميع أنحاء المغرب. التوصيل العادي يستغرق 3-5 أيام عمل، بينما التوصيل السريع يستغرق 1-2 أيام عمل.',
+    'contact.faq.question4': 'ما هي طرق الدفع التي تقبلونها؟',
+    'contact.faq.answer4': 'نحن نقبل الدفع عند الاستلام (COD) - يمكنك الدفع نقداً عند تسليم طلبك إلى باب منزلك.',
+    'contact.faq.question5': 'هل تقدمون ضمان على منتجاتكم؟',
+    'contact.faq.answer5': 'نعم، جميع منتجاتنا تأتي مع تغطية ضمان شاملة. نحن نقدم أيضاً خيارات ضمان ممتدة للحماية الإضافية.',
+    'contact.faq.question6': 'هل يمكنني إرجاع منتج إذا لم أكن راضياً؟',
+    'contact.faq.answer6': 'بالطبع! نحن نقدم سياسة إرجاع لمدة 30 يوماً مع إرجاع وتبديل سهل. اتصل بنا إذا كان لديك أي مشاكل مع مشترياتك.'
+  }
+}
+
+// Currency formatting function
+const formatCurrency = (amount: number, language: Language): string => {
+  switch (language) {
+    case 'en':
+      return `${amount} DH`
+    case 'fr':
+      return `${amount} Dirham`
+    case 'ar':
+      return `${amount} درهم`
+    default:
+      return `${amount} DH`
   }
 }
 
@@ -1494,7 +1683,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const isRTL = language === 'ar'
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage: handleSetLanguage, t, isRTL }}>
+    <LanguageContext.Provider value={{ language, setLanguage: handleSetLanguage, t, isRTL, formatCurrency: (amount: number) => formatCurrency(amount, language) }}>
       {children}
     </LanguageContext.Provider>
   )
