@@ -30,10 +30,10 @@ export default function ContactInfoComponent({ contact }: ContactInfoProps) {
           <div>
             <p className="text-gray-300 text-sm">
               <a 
-                href={`https://wa.me/212${contact.phone.replace(/^0/, '')}`}
+                href={`https://wa.me/212${contact.phone.replace(/^\+?212?/, '').replace(/^0/, '')}`}
                 className="hover:text-white transition-colors duration-200"
               >
-                {contact.phone}
+                <span dir="ltr">{contact.phone}</span>
               </a>
             </p>
             <p className="text-gray-400 text-xs">

@@ -16,6 +16,20 @@ module.exports = {
           700: '#1d4ed8',
         },
       },
+      keyframes: {
+        fadeInScale: {
+          '0%': { opacity: '0', transform: 'scale(0.9)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        slideInFade: {
+          '0%': { opacity: '0', transform: 'translateY(-10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        fadeInScale: 'fadeInScale 0.6s ease-out',
+        slideInFade: 'slideInFade 0.6s ease-out',
+      },
     },
   },
   plugins: [],

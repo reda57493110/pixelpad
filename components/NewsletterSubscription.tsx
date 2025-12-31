@@ -19,12 +19,12 @@ export default function NewsletterSubscription() {
     e.preventDefault()
     
     if (!email) {
-      setError('Please enter your email address')
+      setError(t('footer.newsletter.emailRequired'))
       return
     }
 
     if (!validateEmail(email)) {
-      setError('Please enter a valid email address')
+      setError(t('footer.newsletter.emailInvalid'))
       return
     }
 
@@ -37,7 +37,7 @@ export default function NewsletterSubscription() {
       setIsSubscribed(true)
       setEmail('')
     } catch (err) {
-      setError('Something went wrong. Please try again.')
+      setError(t('footer.newsletter.error'))
     } finally {
       setIsSubmitting(false)
     }

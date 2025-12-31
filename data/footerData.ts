@@ -2,7 +2,7 @@ import { CompanyInfo, FooterSection, SocialMediaLink } from '@/types'
 
 export const companyInfo: CompanyInfo = {
   name: 'PIXEL PAD',
-  description: 'Your trusted partner for premium computers, laptops, and tech accessories.',
+  description: 'Your trusted partner for computers, laptops, and tech accessories.',
   socialMedia: [
     {
       name: 'Facebook',
@@ -18,7 +18,7 @@ export const companyInfo: CompanyInfo = {
     }
   ],
   contact: {
-    phone: '+212 779 318 061',
+    phone: '+212779318061',
     email: 'pixelpad77@gmail.com',
     address: 'Morocco',
     workingHours: 'Mon-Fri: 9AM-6PM'
@@ -29,8 +29,8 @@ export const footerSections: FooterSection[] = [
   {
     title: 'Quick Links',
     links: [
-      { label: 'Shop', href: '/shop' },
-      { label: 'About', href: '/about' },
+      { label: 'Products', href: '/products' },
+      { label: 'About', href: '/more/about' },
       { label: 'Contact', href: '/contacts' }
     ]
   },

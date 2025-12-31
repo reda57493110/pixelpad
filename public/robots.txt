@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /image-picker/
+Disallow: /_next/
+Disallow: /account/
+
+# Sitemap location
+# Note: Update this with your actual domain when deploying
+# The sitemap URL will be: https://yourdomain.com/sitemap.xml
+# Or set NEXT_PUBLIC_SITE_URL environment variable for automatic generation

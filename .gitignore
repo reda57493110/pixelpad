@@ -31,3 +31,13 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Environment variables (IMPORTANT - Never commit these!)
+.env
+.env.local
+.env*.local
+
+# Security fixes documentation (optional - you can remove if you don't want to commit)
+# SECURITY_FIXES_APPLIED.md
+# ACTUAL_ISSUES_AFFECTING_WEBSITE.md
+# COMPLETE_WEBSITE_ANALYSIS.md

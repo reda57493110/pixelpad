@@ -1,14 +1,39 @@
 'use client'
 
 import { useLanguage } from '@/contexts/LanguageContext'
+import FAQSchema from '@/components/FAQSchema'
+import { useEffect, useState } from 'react'
 
 export default function FAQPage() {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
+  const [faqs, setFaqs] = useState<Array<{ question: string; answer: string }>>([])
+
+  useEffect(() => {
+    // Extract FAQ data for schema
+    const faqData = [
+      { question: t('faq.basic.what.question'), answer: t('faq.basic.what.answer') },
+      { question: t('faq.basic.location.question'), answer: t('faq.basic.location.answer') },
+      { question: t('faq.basic.contact.question'), answer: t('faq.basic.contact.answer') },
+      { question: t('faq.products.types.question'), answer: t('faq.products.types.answer') },
+      { question: t('faq.products.brands.question'), answer: t('faq.products.brands.answer') },
+      { question: t('faq.products.pricing.question'), answer: t('faq.products.pricing.answer') },
+      { question: t('faq.services.office.question'), answer: t('faq.services.office.answer') },
+      { question: t('faq.services.time.question'), answer: t('faq.services.time.answer') },
+      { question: t('faq.services.remote.question'), answer: t('faq.services.remote.answer') },
+      { question: t('faq.warranty.new.question'), answer: t('faq.warranty.new.answer') },
+      { question: t('faq.warranty.used.question'), answer: t('faq.warranty.used.answer') },
+      { question: t('faq.warranty.repair.question'), answer: t('faq.warranty.repair.answer') },
+      { question: t('faq.security.protection.question'), answer: t('faq.security.protection.answer') },
+      { question: t('faq.security.sharing.question'), answer: t('faq.security.sharing.answer') },
+    ]
+    setFaqs(faqData)
+  }, [t, language])
   
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
+      {faqs.length > 0 && <FAQSchema faqs={faqs} />}
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-primary-600 to-primary-800 dark:from-primary-700 dark:to-primary-900 text-white py-20">
+      <section className="bg-primary-600 dark:bg-primary-700 text-white py-20 pt-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-6">{t('faq.hero.title')}</h1>
           <p className="text-xl md:text-2xl">
@@ -188,10 +213,10 @@ export default function FAQPage() {
               {t('faq.contact.subtitle')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="mailto:pixelpad77@gmail.com" className="btn-primary text-lg px-8 py-3">
+              <a href="mailto:pixelpad77@gmail.com" className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-300 shadow-lg hover:shadow-xl">
                 {t('faq.contact.email')}
               </a>
-              <a href="tel:0779318061" className="btn-secondary text-lg px-8 py-3">
+              <a href="tel:0779318061" className="bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-primary-500 dark:hover:border-primary-500 px-8 py-3 rounded-lg font-semibold text-lg transition-all duration-300 shadow-lg hover:shadow-xl">
                 {t('faq.contact.phone')}
               </a>
             </div>

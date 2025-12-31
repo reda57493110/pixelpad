@@ -10,113 +10,100 @@ export default function Footer() {
   const { t } = useLanguage()
   
   return (
-    <footer className="bg-gray-900 dark:bg-gray-950 text-white relative overflow-hidden">
-      {/* Background Marketing Elements */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-10 left-10 w-32 h-32 bg-red-500 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-10 right-10 w-40 h-40 bg-orange-500 rounded-full blur-3xl animate-pulse delay-1000"></div>
-      </div>
+    <footer className="bg-gradient-to-br from-gray-900 via-gray-900 to-gray-950 dark:from-gray-950 dark:via-gray-950 dark:to-black text-white relative overflow-hidden border-t border-gray-800/50">
+      {/* Background Marketing Elements - Removed for cleaner look */}
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative">
-        {/* Marketing Banner */}
-        <div className="bg-gradient-to-r from-red-500 to-orange-500 text-white p-4 rounded-lg mb-8 text-center">
-          <div className="flex items-center justify-center space-x-4">
-            <span className="text-2xl animate-bounce">🎁</span>
-            <div>
-              <h3 className="text-lg font-bold">JOIN 10,000+ HAPPY CUSTOMERS!</h3>
-              <p className="text-sm opacity-90">Get exclusive deals and tech tips delivered to your inbox</p>
-            </div>
-            <span className="text-2xl animate-bounce">⚡</span>
-          </div>
-        </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5 relative z-10">
         {/* Main Footer Content */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-4">
           {/* Company Info */}
-          <div>
-            <div className="flex items-center mb-4">
-              <Image 
-                src="/images/pixel-pad-logo-new.png" 
-                alt="Pixel Pad Logo" 
-                width={120} 
-                height={120} 
-                className="mr-6 brightness-110 contrast-125 dark:brightness-100 dark:contrast-100"
-              />
-              <h3 className="text-2xl font-bold text-white">
+          <div className="md:col-span-1 space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-shrink-0">
+                <Image 
+                  src="/images/pixel-pad-logo-new.png" 
+                  alt="Pixel Pad Logo" 
+                  width={50} 
+                  height={50} 
+                  className="relative brightness-110 contrast-125 dark:brightness-100 dark:contrast-100 hover:scale-105 transition-all duration-300 cursor-pointer animate-float-gentle"
+                />
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
                 {companyInfo.name}
               </h3>
             </div>
-            <p className="text-gray-300 mb-6 max-w-md leading-relaxed">
+            <p className="text-gray-300 text-xs leading-relaxed max-w-md">
               {t('footer.description')}
             </p>
-            <SocialIcons socialMedia={companyInfo.socialMedia} />
-          </div>
-
-          {/* Footer Links */}
-          {footerSections.map((section) => (
-            <div key={section.title}>
-              <h4 className="text-lg font-semibold mb-4 text-white">
-                {t(`footer.sections.${section.title.toLowerCase().replace(' ', '')}`)}
-              </h4>
-              <ul className="space-y-3">
-                {section.links.map((link) => (
-                  <li key={link.label}>
-                    {link.external ? (
-                      <a
-                        href={link.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-gray-300 hover:text-white transition-colors duration-200 text-sm"
-                      >
-                        {t(`footer.links.${link.label.toLowerCase().replace(' ', '')}`)}
-                      </a>
-                    ) : (
-                      <Link
-                        href={link.href}
-                        className="text-gray-300 hover:text-white transition-colors duration-200 text-sm"
-                      >
-                        {t(`footer.links.${link.label.toLowerCase().replace(' ', '')}`)}
-                      </Link>
-                    )}
-                  </li>
-                ))}
-              </ul>
+            <div className="pt-1">
+              <SocialIcons socialMedia={companyInfo.socialMedia} />
             </div>
-          ))}
+          </div>
+
+          {/* Quick Links and Support Side by Side */}
+          <div className="grid grid-cols-2 gap-4 md:gap-6 md:col-span-2">
+            {/* Footer Links */}
+            {footerSections.map((section, index) => (
+              <div key={section.title} className={index === 0 ? 'md:pl-2' : ''}>
+                <h4 className="text-[10px] font-semibold mb-2 text-white tracking-wider uppercase">
+                  {t(`footer.sections.${section.title.toLowerCase().replace(' ', '')}`)}
+                </h4>
+                <ul className="space-y-1.5">
+                  {section.links.map((link) => (
+                    <li key={link.label}>
+                      {link.external ? (
+                        <a
+                          href={link.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-400 hover:text-white transition-all duration-200 text-xs inline-block hover:translate-x-1 group"
+                        >
+                          <span className="relative">
+                            {t(`footer.links.${link.label.toLowerCase().replace(' ', '')}`)}
+                            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white transition-all duration-200 group-hover:w-full"></span>
+                          </span>
+                        </a>
+                      ) : (
+                        <Link
+                          href={link.href}
+                          className="text-gray-400 hover:text-white transition-all duration-200 text-xs inline-block hover:translate-x-1 group"
+                        >
+                          <span className="relative">
+                            {t(`footer.links.${link.label.toLowerCase().replace(' ', '')}`)}
+                            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white transition-all duration-200 group-hover:w-full"></span>
+                          </span>
+                        </Link>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Trust Indicators */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-          <div className="text-center bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10">
-            <div className="text-2xl font-bold text-green-400">10,000+</div>
-            <div className="text-sm text-gray-300">Happy Customers</div>
-          </div>
-          <div className="text-center bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10">
-            <div className="text-2xl font-bold text-yellow-400">4.9/5</div>
-            <div className="text-sm text-gray-300">Average Rating</div>
-          </div>
-          <div className="text-center bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10">
-            <div className="text-2xl font-bold text-blue-400">24/7</div>
-            <div className="text-sm text-gray-300">Support</div>
-          </div>
-          <div className="text-center bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10">
-            <div className="text-2xl font-bold text-purple-400">2 Years</div>
-            <div className="text-sm text-gray-300">Warranty</div>
-          </div>
-        </div>
-
-        {/* Bottom Footer */}
-        <div className="border-t border-gray-800 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <p className="text-gray-400 text-sm">
-              {t('footer.copyright')}
-            </p>
-            
-            <div className="flex items-center space-x-2 text-gray-400 text-sm">
-              <span>Made with</span>
-              <svg className="h-4 w-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-              </svg>
-              <span>in Morocco</span>
+        {/* Copyright */}
+        <div className="border-t border-gray-800/60 pt-3">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div className="text-[10px] sm:text-xs text-gray-400 font-medium">
+              © {new Date().getFullYear()} {companyInfo.name}. {t('footer.copyright') || 'All rights reserved.'}
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-gray-400">
+              <Link 
+                href="/privacy" 
+                className="hover:text-white transition-all duration-200 relative group"
+              >
+                {t('footer.privacy') || 'Privacy Policy'}
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-200 group-hover:w-full"></span>
+              </Link>
+              <span className="text-gray-600">|</span>
+              <Link 
+                href="/terms" 
+                className="hover:text-white transition-all duration-200 relative group"
+              >
+                {t('footer.terms') || 'Terms of Service'}
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-white transition-all duration-200 group-hover:w-full"></span>
+              </Link>
             </div>
           </div>
         </div>
@@ -124,5 +111,3 @@ export default function Footer() {
     </footer>
   )
 }
-
-

@@ -1,6 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { useAuth } from '@/contexts/AuthContext'
+import { addMessage, migrateGuestMessages, ContactMessage } from '@/lib/messages'
 import { 
   EnvelopeIcon, 
   PhoneIcon, 
@@ -13,25 +18,71 @@ import {
   UserIcon,
   BuildingOfficeIcon,
   GlobeAltIcon,
-  HeartIcon
+  HeartIcon,
+  XMarkIcon,
+  InformationCircleIcon,
+  AcademicCapIcon,
+  ShieldCheckIcon,
+  SparklesIcon,
+  ArrowRightIcon
 } from '@heroicons/react/24/outline'
-import { useLanguage } from '@/contexts/LanguageContext'
-import Image from 'next/image'
 
 export default function ContactsPage() {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
+  const { user } = useAuth()
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    name: '',
     email: '',
     phone: '',
-    company: '',
+    inquiryType: '',
     subject: '',
-    message: '',
-    priority: 'normal'
+    message: ''
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [formErrors, setFormErrors] = useState<{[key: string]: string}>({})
+  const [showFAQ, setShowFAQ] = useState(false)
+  const [activeFAQ, setActiveFAQ] = useState<number | null>(null)
+  const [showForm, setShowForm] = useState(false)
+
+  // Pre-fill form when user is logged in
+  useEffect(() => {
+    if (user && !showForm) {
+      setFormData(prev => ({
+        ...prev,
+        name: user.name || prev.name,
+        email: user.email || prev.email
+      }))
+    }
+  }, [user])
+
+  // Form validation
+  const validateForm = () => {
+    const errors: {[key: string]: string} = {}
+    
+    if (!formData.name.trim()) {
+      errors.name = 'Name is required'
+    }
+    if (!formData.email.trim()) {
+      errors.email = 'Email is required'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Please enter a valid email address'
+    }
+    if (!formData.inquiryType) {
+      errors.inquiryType = 'Please select an inquiry type'
+    }
+    if (!formData.subject.trim()) {
+      errors.subject = 'Subject is required'
+    }
+    if (!formData.message.trim()) {
+      errors.message = 'Message is required'
+    } else if (formData.message.trim().length < 10) {
+      errors.message = 'Message must be at least 10 characters long'
+    }
+    
+    setFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -39,532 +90,951 @@ export default function ContactsPage() {
       ...prev,
       [name]: value
     }))
+    
+    // Clear error when user starts typing
+    if (formErrors[name]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }))
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!validateForm()) {
+      return
+    }
+    
     setIsSubmitting(true)
     
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    setIsSubmitting(false)
-    setSubmitStatus('success')
-    
-    // Reset form after 3 seconds
-    setTimeout(() => {
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        company: '',
-        subject: '',
-        message: '',
-        priority: 'normal'
-      })
-      setSubmitStatus('idle')
-    }, 3000)
+    try {
+      // Create message object
+      const message: ContactMessage = {
+        id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+        date: new Date().toISOString(),
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || undefined,
+        inquiryType: formData.inquiryType,
+        subject: formData.subject,
+        message: formData.message,
+        status: 'new'
+      }
+      
+      // Save message - use logged in user's email if available, otherwise use form email
+      const userEmail = user?.email || formData.email || null
+      await addMessage(userEmail, message)
+      
+      // If user is logged in, migrate any guest messages with their email to their account
+      if (user?.email) {
+        try {
+          await migrateGuestMessages(user.email)
+        } catch (error) {
+          // Non-critical: migration failure doesn't affect form submission
+          console.warn('Failed to migrate guest messages:', error)
+        }
+      }
+      
+      // Dispatch event to notify other components (like admin page)
+      window.dispatchEvent(new Event('pixelpad_messages_changed'))
+      
+      // Simulate form submission delay
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      setIsSubmitting(false)
+      setSubmitStatus('success')
+      
+      // Reset form after 3 seconds
+      setTimeout(() => {
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          inquiryType: '',
+          subject: '',
+          message: ''
+        })
+        setSubmitStatus('idle')
+        setFormErrors({})
+      }, 3000)
+    } catch (error) {
+      console.error('Error saving message:', error)
+      setIsSubmitting(false)
+      setSubmitStatus('error')
+    }
   }
 
-  // Custom WhatsApp Icon Component using your image
-  const WhatsAppIcon = ({ className }: { className?: string }) => (
-    <Image 
-      src="/images/whatsapp-icon.jpg" 
-      alt="WhatsApp" 
-      width={24} 
-      height={24} 
-      className={className}
-    />
-  )
-
-
-  const contactMethods = [
+  // FAQ data
+  const faqData = [
     {
-      icon: EnvelopeIcon,
-      title: t('contact.methods.email.title'),
-      description: t('contact.methods.email.description'),
-      contact: 'pixelpad77@gmail.com',
-      href: 'mailto:pixelpad77@gmail.com',
-      color: 'bg-blue-500',
-      hoverColor: 'hover:bg-blue-600'
+      question: t('contact.faq.question1'),
+      answer: t('contact.faq.answer1')
     },
     {
-      icon: WhatsAppIcon,
-      title: t('contact.methods.phone.title'),
-      description: t('contact.methods.phone.description'),
-      contact: '0779318061',
-      href: 'https://wa.me/212779318061',
-      color: 'bg-green-500',
-      hoverColor: 'hover:bg-green-600'
+      question: t('contact.faq.question2'),
+      answer: t('contact.faq.answer2')
     },
     {
-      icon: ChatBubbleLeftRightIcon,
-      title: t('contact.methods.chat.title'),
-      description: t('contact.methods.chat.description'),
-      contact: t('contact.methods.chat.available'),
-      href: '#',
-      color: 'bg-purple-500',
-      hoverColor: 'hover:bg-purple-600'
+      question: t('contact.faq.question3'),
+      answer: t('contact.faq.answer3')
     },
     {
-      icon: MapPinIcon,
-      title: t('contact.methods.visit.title'),
-      description: t('contact.methods.visit.description'),
-      contact: 'Fes Champs de Course',
-      href: 'https://maps.google.com/?q=Fes+Champs+de+Course+Morocco',
-      color: 'bg-orange-500',
-      hoverColor: 'hover:bg-orange-600'
-    }
-  ]
-
-  const businessHours = [
-    { day: t('contact.businessHours.monday'), hours: t('contact.businessHours.mondayHours') },
-    { day: t('contact.businessHours.saturday'), hours: t('contact.businessHours.saturdayHours') },
-    { day: t('contact.businessHours.sunday'), hours: t('contact.businessHours.sundayHours') }
-  ]
-
-  // Custom Facebook Icon Component
-  const FacebookIcon = ({ className }: { className?: string }) => (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-    </svg>
-  )
-
-  // Custom Instagram Icon Component
-  const InstagramIcon = ({ className }: { className?: string }) => (
-    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-    </svg>
-  )
-
-  const socialLinks = [
-    { 
-      name: 'Facebook', 
-      href: 'https://www.facebook.com/profile.php?id=61558615438246', 
-      icon: 'facebook',
-      color: 'hover:bg-blue-600'
+      question: t('contact.faq.question4'),
+      answer: t('contact.faq.answer4')
     },
-    { 
-      name: 'Instagram', 
-      href: 'https://www.instagram.com/pixel.pad77?igsh=NWlubzJhMmszOTY4', 
-      icon: 'instagram',
-      color: 'hover:bg-pink-500'
+    {
+      question: t('contact.faq.question5'),
+      answer: t('contact.faq.answer5')
+    },
+    {
+      question: t('contact.faq.question6'),
+      answer: t('contact.faq.answer6')
     }
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-r from-primary-600 via-primary-700 to-primary-800 text-white py-20 overflow-hidden">
-        <div className="absolute inset-0 bg-black/10"></div>
-        <div className="absolute inset-0">
-          <div className="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full animate-pulse"></div>
-          <div className="absolute top-32 right-20 w-16 h-16 bg-white/10 rounded-full animate-pulse delay-1000"></div>
-          <div className="absolute bottom-20 left-1/4 w-12 h-12 bg-white/10 rounded-full animate-pulse delay-2000"></div>
+    <div className="min-h-screen bg-white dark:bg-gray-900">
+      {/* Enhanced Professional Hero Section */}
+      <section className="relative bg-primary-600 dark:bg-primary-700 text-white py-6 pt-24 overflow-hidden">
+        {/* Professional Background Elements */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-20 left-20 w-32 h-32 bg-primary-500 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-20 w-40 h-40 bg-primary-500 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute top-1/2 left-1/2 w-24 h-24 bg-primary-500 rounded-full blur-2xl animate-pulse delay-500"></div>
         </div>
         
-        {/* Marketing Badge */}
-        <div className="absolute top-8 left-1/2 transform -translate-x-1/2">
-          <div className="inline-flex items-center bg-gradient-to-r from-red-500 to-orange-500 text-white px-6 py-3 rounded-full text-sm font-bold shadow-lg animate-bounce">
-            <span className="animate-spin">🔥</span>
-            <span className="mx-2">GET EXPERT ADVICE - PROFESSIONAL CONSULTATION!</span>
-            <span className="animate-spin">🔥</span>
-          </div>
+        {/* Professional Grid Pattern */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle at 25px 25px, rgba(255,255,255,0.1) 2px, transparent 0)`,
+            backgroundSize: '50px 50px'
+          }}></div>
         </div>
         
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 animate-fade-in">
-            {t('contact.hero.title')}
-          </h1>
-          <p className="text-xl md:text-2xl mb-8 animate-fade-in delay-200">
-            {t('contact.hero.subtitle')}
-          </p>
-          <div className="flex flex-wrap justify-center gap-4 animate-fade-in delay-400">
-            <div className="flex items-center bg-white/20 backdrop-blur-sm rounded-full px-6 py-3">
-              <HeartIcon className="h-5 w-5 mr-2" />
-              <span className="text-sm font-medium">{t('contact.hero.support24')}</span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="text-center">
+            <div className="inline-flex items-center bg-white/10 backdrop-blur-sm text-white px-3 py-1.5 rounded-lg text-[10px] font-semibold mb-3 border border-white/20 hover:bg-white/20 transition-colors duration-200">
+              <span className="mr-1 text-[10px]">💬</span>
+              {t('contact.hero.badge')}
             </div>
-            <div className="flex items-center bg-white/20 backdrop-blur-sm rounded-full px-6 py-3">
-              <CheckCircleIcon className="h-5 w-5 mr-2" />
-              <span className="text-sm font-medium">{t('contact.hero.expertTeam')}</span>
-            </div>
-            <div className="flex items-center bg-white/20 backdrop-blur-sm rounded-full px-6 py-3">
-              <GlobeAltIcon className="h-5 w-5 mr-2" />
-              <span className="text-sm font-medium">{t('contact.hero.globalReach')}</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Contact Methods */}
-      <section className="py-16 -mt-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {contactMethods.map((method, index) => {
-              const IconComponent = method.icon
-              return (
-                <div 
-                  key={index}
-                  className="group bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2"
-                >
-                  <div className={`w-14 h-14 ${method.color} ${method.hoverColor} rounded-xl flex items-center justify-center mb-4 transition-colors duration-300`}>
-                    <IconComponent className="h-7 w-7 text-white" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    {method.title}
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-3">
-                    {method.description}
-                  </p>
-                  <a 
-                    href={method.href}
-                    className="text-primary-600 dark:text-primary-400 font-medium hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
-                  >
-                    {method.contact}
-                  </a>
+            <h1 className="text-2xl md:text-3xl font-bold mb-3 text-primary-100 dark:text-primary-200">
+              {t('contact.hero.title')}
+            </h1>
+            <p className="text-sm md:text-base max-w-2xl mx-auto mb-4 text-white/90">
+              {t('contact.hero.subtitle')}
+            </p>
+            
+            {/* Professional Trust Indicators */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 max-w-3xl mx-auto">
+              <div className="bg-white/10 backdrop-blur-sm text-white px-2 py-1.5 rounded-lg border border-white/20 hover:bg-white/20 transition-all duration-300 text-center">
+                <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-1">
+                  <span className="text-[10px]">⚡</span>
                 </div>
-              )
-            })}
+                <div className="text-xs font-semibold leading-tight">24h Response Time</div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm text-white px-2 py-1.5 rounded-lg border border-white/20 hover:bg-white/20 transition-all duration-300 text-center">
+                <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-1">
+                  <span className="text-[10px]">🛠️</span>
+                </div>
+                <div className="text-xs font-semibold leading-tight">Expert Support</div>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm text-white px-2 py-1.5 rounded-lg border border-white/20 hover:bg-white/20 transition-all duration-300 text-center">
+                <div className="w-5 h-5 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-1">
+                  <PhoneIcon className="w-3 h-3 text-white" />
+                </div>
+                <div className="text-xs font-semibold leading-tight">Call Support</div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Main Content */}
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Contact Information */}
-            <div className="space-y-8">
-            <div>
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
-                  {t('contact.getInTouch.title')}
+      {/* Enhanced Contact Form Section */}
+      <section className="py-8 bg-white dark:bg-gray-900 relative overflow-hidden">
+        {/* Optimized Background Elements */}
+        <div className="absolute inset-0 overflow-hidden" style={{ willChange: 'transform', transform: 'translateZ(0)' }}>
+          <div className="absolute top-20 left-20 w-72 h-72 bg-primary-400/5 rounded-full blur-2xl opacity-15 dark:opacity-20" style={{ willChange: 'opacity' }}></div>
+          <div className="absolute bottom-20 right-20 w-96 h-96 bg-primary-400/5 rounded-full blur-2xl opacity-15 dark:opacity-20" style={{ willChange: 'opacity' }}></div>
+        </div>
+
+        {/* Enhanced Grid Pattern */}
+        <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle at 25px 25px, rgba(0,0,0,0.08) 2px, transparent 0)`,
+            backgroundSize: '50px 50px'
+          }}></div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
+            {/* Enhanced Contact Form */}
+            <div id="contact-form-container" className="animate-in slide-in-from-left duration-1000">
+              <div className="bg-white/90 dark:bg-gray-800 dark:bg-opacity-95 backdrop-blur-md rounded-2xl shadow-xl p-6 lg:p-8 border-2 border-white/50 dark:border-gray-700/50 hover:shadow-primary-500/20 transition-shadow duration-200" style={{ willChange: 'transform', transform: 'translateZ(0)' }}>
+                <h2 className="text-3xl lg:text-4xl font-extrabold text-primary-600 dark:text-primary-400 mb-3">
+                  {t('contact.hero.title')}
                 </h2>
-                <p className="text-lg text-gray-600 dark:text-gray-400">
-                  {t('contact.getInTouch.description')}
+                <p className="text-base lg:text-lg text-primary-700 dark:text-primary-300 mb-6 font-medium">
+                  {t('contact.form.subtitle24')}
                 </p>
-              </div>
-
-              {/* Business Hours */}
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-xl flex items-center justify-center mr-4">
-                    <ClockIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    {t('contact.businessHours.title')}
-                  </h3>
-                </div>
-                <div className="space-y-3">
-                  {businessHours.map((schedule, index) => (
-                    <div key={index} className="flex justify-between items-center py-2 border-b border-gray-200 dark:border-gray-700 last:border-b-0">
-                      <span className="font-medium text-gray-900 dark:text-white">
-                        {schedule.day}
-                      </span>
-                      <span className="text-gray-600 dark:text-gray-400">
-                        {schedule.hours}
-                      </span>
-                  </div>
-                  ))}
-                  </div>
-                </div>
-
-              {/* Office Location */}
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-                <div className="flex items-center mb-4">
-                  <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-xl flex items-center justify-center mr-4">
-                    <MapPinIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    {t('contact.location.title')}
-                  </h3>
-                  </div>
-                <div className="text-gray-600 dark:text-gray-400">
-                  <p className="font-medium mb-2">{t('contact.location.headquarters')}</p>
-                  <a 
-                    href="https://maps.google.com/?q=Fes+Champs+de+Course+Morocco"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                  >
-                    Fes Champs de Course<br />
-                    Morocco
-                    </a>
-                  </div>
-                </div>
-
-              {/* Social Media */}
-              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                  {t('contact.social.title')}
-                </h3>
-                <div className="flex flex-wrap gap-3">
-                  {socialLinks.map((social, index) => (
-                    <a
-                      key={index}
-                      href={social.href}
-                      className={`flex items-center space-x-2 bg-gray-100 dark:bg-gray-700 ${social.color} rounded-lg px-4 py-2 transition-all duration-300 transform hover:scale-105`}
+                
+                {/* Hide Form Button - Only visible when form is shown */}
+                {showForm && (
+                  <div className="mb-6 flex justify-end">
+                    <button
+                      onClick={() => {
+                        setShowForm(false)
+                        // Smooth scroll to top of form container
+                        setTimeout(() => {
+                          const formElement = document.getElementById('contact-form-container')
+                          if (formElement) {
+                            formElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                          }
+                        }, 100)
+                      }}
+                      className="group inline-flex items-center justify-center bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-xl font-semibold text-sm transition-colors transition-shadow duration-200 shadow-md hover:shadow-lg" style={{ willChange: 'transform', transform: 'translateZ(0)' }}
                     >
-                      {social.icon === 'facebook' ? (
-                        <FacebookIcon className="h-5 w-5 text-blue-600" />
-                      ) : social.icon === 'instagram' ? (
-                        <InstagramIcon className="h-5 w-5 text-pink-600" />
-                      ) : (
-                        <span className="text-lg">{social.icon}</span>
-                      )}
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {social.name}
+                      <XMarkIcon className="w-5 h-5 mr-2 group-hover:rotate-90 transition-transform duration-300" />
+                      {t('contact.form.hideForm')}
+                    </button>
+                  </div>
+                )}
+
+                {/* Enhanced Show Form Button - Only visible when form is hidden */}
+                {!showForm && (
+                  <div className="text-center py-12">
+                    <div className="mb-6 relative">
+                      <div className="w-16 h-16 bg-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl hover:shadow-primary-500/50 transition-shadow duration-200 group" style={{ willChange: 'transform', transform: 'translateZ(0)' }}>
+                        <PaperAirplaneIcon className="w-8 h-8 text-white group-hover:scale-110 transition-transform duration-300" />
+                      </div>
+                      {/* Floating decorative elements */}
+                      <div className="absolute top-0 left-1/4 w-4 h-4 bg-primary-400 rounded-full blur-sm opacity-50 animate-bounce" style={{ animationDuration: '2s' }}></div>
+                      <div className="absolute top-0 right-1/4 w-3 h-3 bg-primary-400 rounded-full blur-sm opacity-50 animate-bounce" style={{ animationDuration: '2.5s', animationDelay: '0.5s' }}></div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowForm(true)
+                        // Smooth scroll to form after a short delay
+                        setTimeout(() => {
+                          const formElement = document.getElementById('contact-form-container')
+                          if (formElement) {
+                            formElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                          }
+                        }, 100)
+                      }}
+                      className="group relative inline-flex items-center justify-center bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 rounded-xl font-bold text-base transition-shadow duration-200 shadow-xl hover:shadow-primary-500/50 overflow-hidden" style={{ willChange: 'transform', transform: 'translateZ(0)' }}
+                    >
+                      <span className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" style={{ willChange: 'transform' }}></span>
+                      <span className="relative z-10 flex items-center gap-2">
+                        {t('contact.form.fillOut')}
+                        <PaperAirplaneIcon className="w-5 h-5 group-hover:translate-x-2 group-hover:rotate-12 transition-transform duration-200" style={{ willChange: 'transform' }} />
                       </span>
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Contact Form */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-xl">
-              <div className="flex items-center mb-6">
-                <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-xl flex items-center justify-center mr-4">
-                  <PaperAirplaneIcon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  {t('contact.form.title')}
-                </h3>
-              </div>
-
-              {submitStatus === 'success' && (
-                <div className="mb-6 p-4 bg-green-100 dark:bg-green-900 border border-green-300 dark:border-green-700 rounded-lg flex items-center">
-                  <CheckCircleIcon className="h-5 w-5 text-green-600 dark:text-green-400 mr-3" />
-                  <span className="text-green-800 dark:text-green-200 font-medium">
-                    {t('contact.form.success')}
-                  </span>
-                </div>
-              )}
-
-              {submitStatus === 'error' && (
-                <div className="mb-6 p-4 bg-red-100 dark:bg-red-900 border border-red-300 dark:border-red-700 rounded-lg flex items-center">
-                  <ExclamationTriangleIcon className="h-5 w-5 text-red-600 dark:text-red-400 mr-3" />
-                  <span className="text-red-800 dark:text-red-200 font-medium">
-                    {t('contact.form.error')}
-                  </span>
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      {t('contact.form.firstName')} *
-                    </label>
-                    <div className="relative">
-                      <UserIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input
-                      type="text"
-                      id="firstName"
-                      name="firstName"
-                        value={formData.firstName}
-                        onChange={handleInputChange}
-                        required
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
-                      placeholder={t('contact.form.firstNamePlaceholder')}
-                    />
-                    </div>
+                    </button>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-4 font-medium">
+                      {t('contact.form.fillOutHelper')}
+                    </p>
                   </div>
-                  <div>
-                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      {t('contact.form.lastName')} *
-                    </label>
-                    <div className="relative">
-                      <UserIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <input
-                      type="text"
-                      id="lastName"
-                      name="lastName"
-                        value={formData.lastName}
-                        onChange={handleInputChange}
-                        required
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
-                      placeholder={t('contact.form.lastNamePlaceholder')}
-                    />
-                    </div>
-                  </div>
-                </div>
+                )}
 
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('contact.form.email')} *
-                  </label>
-                  <div className="relative">
-                    <EnvelopeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
-                    placeholder={t('contact.form.emailPlaceholder')}
-                  />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('contact.form.phone')}
-                  </label>
-                    <div className="relative">
-                      <WhatsAppIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5" />
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
-                    placeholder={t('contact.form.phonePlaceholder')}
-                  />
-                    </div>
-                  </div>
-                  <div>
-                    <label htmlFor="company" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      {t('contact.form.company')}
-                    </label>
-                    <div className="relative">
-                      <BuildingOfficeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                {/* Enhanced Contact Form - Hidden by default, shown with animation */}
+                {showForm && (
+                  <form 
+                    onSubmit={handleSubmit} 
+                    className="space-y-4 animate-in slide-in-from-top fade-in duration-500"
+                  >
+                    {/* Enhanced Name Field */}
+                    <div className="group">
+                      <label htmlFor="name" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center">
+                        <UserIcon className="h-3.5 w-3.5 mr-1.5 text-primary-600 dark:text-primary-400" />
+                        {t('contact.form.name')} *
+                      </label>
                       <input
                         type="text"
-                        id="company"
-                        name="company"
-                        value={formData.company}
+                        id="name"
+                        name="name"
+                        value={formData.name}
                         onChange={handleInputChange}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
-                        placeholder={t('contact.form.companyPlaceholder')}
+                        required
+                        placeholder={t('contact.form.namePlaceholder')}
+                        className={`w-full px-4 py-3 text-sm border-2 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:bg-opacity-90 dark:text-white transition-all duration-300 hover:border-primary-400 dark:hover:border-primary-500 shadow-sm hover:shadow-md focus:shadow-lg ${
+                          formErrors.name 
+                            ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                            : 'border-gray-300 dark:border-gray-600'
+                        }`}
                       />
+                      {formErrors.name && (
+                        <p className="mt-1.5 text-xs text-red-600 dark:text-red-400 flex items-center animate-in slide-in-from-top duration-300">
+                          <ExclamationTriangleIcon className="h-3.5 w-3.5 mr-1" />
+                          {formErrors.name}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Enhanced Email Field */}
+                    <div className="group">
+                      <label htmlFor="email" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center">
+                        <EnvelopeIcon className="h-3.5 w-3.5 mr-1.5 text-primary-600 dark:text-primary-400" />
+                        {t('contact.form.email')} *
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="email"
+                          id="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          required
+                          placeholder={t('contact.form.emailPlaceholder')}
+                          className={`w-full px-4 py-3 pl-10 text-sm border-2 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:bg-opacity-90 dark:text-white transition-all duration-300 hover:border-primary-400 dark:hover:border-primary-500 shadow-sm hover:shadow-md focus:shadow-lg ${
+                            formErrors.email 
+                              ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                              : 'border-gray-300 dark:border-gray-600'
+                          }`}
+                        />
+                        <EnvelopeIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 group-hover:text-primary-500 transition-colors duration-300" />
+                      </div>
+                      {formErrors.email && (
+                        <p className="mt-1.5 text-xs text-red-600 dark:text-red-400 flex items-center animate-in slide-in-from-top duration-300">
+                          <ExclamationTriangleIcon className="h-3.5 w-3.5 mr-1" />
+                          {formErrors.email}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Enhanced Phone Field */}
+                    <div className="group">
+                      <label htmlFor="phone" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center">
+                        <PhoneIcon className="h-3.5 w-3.5 mr-1.5 text-primary-600 dark:text-primary-400" />
+                        {t('contact.form.phone')}
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="tel"
+                          id="phone"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          placeholder={t('contact.form.phonePlaceholder')}
+                          className="w-full px-4 py-3 pl-10 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:bg-opacity-90 dark:text-white transition-all duration-300 hover:border-primary-400 dark:hover:border-primary-500 shadow-sm hover:shadow-md focus:shadow-lg"
+                        />
+                        <PhoneIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 group-hover:text-primary-500 transition-colors duration-300" />
+                      </div>
+                    </div>
+
+                    {/* Enhanced Inquiry Type */}
+                    <div className="group">
+                      <label htmlFor="inquiryType" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center">
+                        <ChatBubbleLeftRightIcon className="h-3.5 w-3.5 mr-1.5 text-primary-600 dark:text-primary-400" />
+                        {t('contact.form.inquiryType')} *
+                      </label>
+                      <select
+                        id="inquiryType"
+                        name="inquiryType"
+                        value={formData.inquiryType}
+                        onChange={handleInputChange}
+                        required
+                        className={`w-full px-4 py-3 text-sm border-2 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:bg-opacity-90 dark:text-white transition-all duration-300 hover:border-primary-400 dark:hover:border-primary-500 shadow-sm hover:shadow-md focus:shadow-lg cursor-pointer ${
+                          formErrors.inquiryType 
+                            ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                            : 'border-gray-300 dark:border-gray-600'
+                        }`}
+                      >
+                        <option value="">{t('contact.form.inquiryTypePlaceholder')}</option>
+                        <option value="general">{t('contact.form.inquiryTypeGeneral')}</option>
+                        <option value="product">{t('contact.form.inquiryTypeProduct')}</option>
+                        <option value="returns">{t('contact.form.inquiryTypeReturns')}</option>
+                        <option value="warranty">{t('contact.form.inquiryTypeWarranty')}</option>
+                        <option value="other">{t('contact.form.inquiryTypeOther')}</option>
+                      </select>
+                      {formErrors.inquiryType && (
+                        <p className="mt-1.5 text-xs text-red-600 dark:text-red-400 flex items-center animate-in slide-in-from-top duration-300">
+                          <ExclamationTriangleIcon className="h-3.5 w-3.5 mr-1" />
+                          {formErrors.inquiryType}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Enhanced Subject */}
+                    <div className="group">
+                      <label htmlFor="subject" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center">
+                        <SparklesIcon className="h-3.5 w-3.5 mr-1.5 text-primary-600 dark:text-primary-400" />
+                        {t('contact.form.subject')} *
+                      </label>
+                      <input
+                        type="text"
+                        id="subject"
+                        name="subject"
+                        value={formData.subject}
+                        onChange={handleInputChange}
+                        required
+                        placeholder={t('contact.form.subjectPlaceholder')}
+                        className={`w-full px-4 py-3 text-sm border-2 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:bg-opacity-90 dark:text-white transition-all duration-300 hover:border-primary-400 dark:hover:border-primary-500 shadow-sm hover:shadow-md focus:shadow-lg ${
+                          formErrors.subject 
+                            ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                            : 'border-gray-300 dark:border-gray-600'
+                        }`}
+                      />
+                      {formErrors.subject && (
+                        <p className="mt-1.5 text-xs text-red-600 dark:text-red-400 flex items-center animate-in slide-in-from-top duration-300">
+                          <ExclamationTriangleIcon className="h-3.5 w-3.5 mr-1" />
+                          {formErrors.subject}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Enhanced Message */}
+                    <div className="group">
+                      <label htmlFor="message" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center">
+                        <InformationCircleIcon className="h-3.5 w-3.5 mr-1.5 text-primary-600 dark:text-primary-400" />
+                        {t('contact.form.message')} *
+                      </label>
+                      <textarea
+                        id="message"
+                        name="message"
+                        value={formData.message}
+                        onChange={handleInputChange}
+                        required
+                        rows={5}
+                        placeholder={t('contact.form.messagePlaceholder')}
+                        className={`w-full px-4 py-3 text-sm border-2 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:bg-opacity-90 dark:text-white transition-all duration-300 resize-none hover:border-primary-400 dark:hover:border-primary-500 shadow-sm hover:shadow-md focus:shadow-lg ${
+                          formErrors.message 
+                            ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                            : 'border-gray-300 dark:border-gray-600'
+                        }`}
+                      />
+                      {formErrors.message && (
+                        <p className="mt-1.5 text-xs text-red-600 dark:text-red-400 flex items-center animate-in slide-in-from-top duration-300">
+                          <ExclamationTriangleIcon className="h-3.5 w-3.5 mr-1" />
+                          {formErrors.message}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Enhanced Submit Button */}
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="group relative w-full bg-primary-600 hover:bg-primary-700 text-white font-bold py-3.5 px-6 rounded-xl text-sm transition-shadow duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-xl hover:shadow-primary-500/50 overflow-hidden" style={{ willChange: 'transform', transform: 'translateZ(0)' }}
+                    >
+                      <span className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left disabled:scale-x-0" style={{ willChange: 'transform' }}></span>
+                      <span className="relative z-10 flex items-center gap-2">
+                        {isSubmitting ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                            <span>{t('contact.form.sending')}</span>
+                          </>
+                        ) : (
+                          <>
+                            <PaperAirplaneIcon className="h-4 w-4 group-hover:translate-x-1 group-hover:rotate-12 transition-all duration-300" />
+                            <span>{t('contact.form.sendMessage')}</span>
+                          </>
+                        )}
+                      </span>
+                    </button>
+
+                  {submitStatus === 'success' && (
+                    <div className="animate-in slide-in-from-bottom duration-500 bg-green-50 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-xl p-4 flex items-center shadow-md">
+                      <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center mr-3 shadow-md">
+                        <CheckCircleIcon className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <span className="text-green-800 dark:text-green-200 font-bold text-base block">{t('contact.form.success')}</span>
+                        <span className="text-green-700 dark:text-green-300 text-xs">{t('contact.form.successDetail')}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {submitStatus === 'error' && (
+                    <div className="animate-in slide-in-from-bottom duration-500 bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-xl p-4 flex items-center shadow-md">
+                      <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center mr-3 shadow-md">
+                        <ExclamationTriangleIcon className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <span className="text-red-800 dark:text-red-200 font-bold text-base block">{t('contact.form.error')}</span>
+                        <span className="text-red-700 dark:text-red-300 text-xs">{t('contact.form.errorDetail')}</span>
+                      </div>
+                    </div>
+                  )}
+                </form>
+                )}
+              </div>
+            </div>
+
+            {/* Enhanced Contact Information */}
+            <div className="animate-in slide-in-from-right duration-1000">
+              <div className="bg-white/90 dark:bg-gray-800 dark:bg-opacity-95 backdrop-blur-md rounded-2xl shadow-xl p-6 lg:p-8 border-2 border-white/50 dark:border-gray-700/50 hover:shadow-green-500/20 transition-shadow duration-200" style={{ willChange: 'transform', transform: 'translateZ(0)' }}>
+                <div className="inline-flex items-center bg-primary-600 text-white px-4 py-2.5 rounded-full text-xs font-bold mb-5 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 group">
+                  <span>{t('contact.info.title')}</span>
+                  <div className="w-5 h-5 bg-white/25 rounded-full flex items-center justify-center ml-2 group-hover:-rotate-12 transition-transform duration-300">
+                    <PhoneIcon className="w-3 h-3" />
+                  </div>
+                </div>
+                <h2 className="text-3xl lg:text-4xl font-extrabold text-primary-600 dark:text-primary-400 mb-3">
+                  {t('contact.info.title')}
+                </h2>
+                <p className="text-base lg:text-lg text-primary-700 dark:text-primary-300 mb-6 font-medium">
+                  {t('contact.info.subtitle')}
+                </p>
+
+                <div className="space-y-4">
+                  <div className="flex items-start group p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-colors transition-shadow duration-200 cursor-pointer" style={{ willChange: 'transform', transform: 'translateZ(0)' }}>
+                    <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center mr-3 group-hover:rotate-6 transition-transform duration-200 shadow-md" style={{ willChange: 'transform' }}>
+                      <PhoneIcon className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-base font-bold text-primary-600 dark:text-primary-400 mb-1.5 transition-colors duration-300">
+                        {t('contact.info.phone')}
+                      </h3>
+                      <a href="tel:+212779318061" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors font-semibold text-sm">
+                        <span dir="ltr">{t('contact.phoneNumber')}</span>
+                      </a>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start group p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer">
+                    <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center mr-3 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300 shadow-md">
+                      <EnvelopeIcon className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-base font-bold text-primary-600 dark:text-primary-400 mb-1.5 transition-colors duration-300">
+                        {t('contact.info.email')}
+                      </h3>
+                      <a href="mailto:pixelpad77@gmail.com" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors font-semibold text-sm break-all">
+                        pixelpad77@gmail.com
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start group p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer">
+                    <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center mr-3 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300 shadow-md">
+                      <MapPinIcon className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-base font-bold text-primary-600 dark:text-primary-400 mb-1.5 transition-colors duration-300">
+                        {t('contact.info.address')}
+                      </h3>
+                      <a 
+                        href="https://maps.google.com/maps?q=Fes+Champs+de+Course" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors font-semibold text-sm"
+                      >
+                        {t('contact.info.addressValue')}
+                      </a>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start group p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-500 hover:shadow-lg hover:shadow-primary-500/20 transition-all duration-300 hover:scale-[1.02]">
+                    <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center mr-3 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300 shadow-md">
+                      <ClockIcon className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-base font-bold text-primary-600 dark:text-primary-400 mb-1.5 transition-colors duration-300">
+                        {t('contact.info.hours')}
+                      </h3>
+                      <p className="text-gray-700 dark:text-gray-300 font-semibold text-sm">{t('contact.businessHours.monFri')}: {t('contact.businessHours.mondayHoursShort')}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start group p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer">
+                    <div className="w-10 h-10 bg-primary-600 rounded-lg flex items-center justify-center mr-3 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300 shadow-md">
+                      <svg className="h-5 w-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-base font-bold text-primary-600 dark:text-primary-400 mb-1.5 transition-colors duration-300">
+                        {t('contact.businessHours.whatsapp')}
+                      </h3>
+                      <a href="https://wa.me/212779318061" target="_blank" rel="noopener noreferrer" className="text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors font-semibold text-sm">
+                        <span dir="ltr">{t('contact.whatsappNumber')}</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Enhanced Social Media Links */}
+                  <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <div className="text-center">
+                      <h3 className="text-base font-semibold text-primary-600 dark:text-primary-400 mb-3">
+                        {t('contact.social.title')}
+                      </h3>
+                      <div className="flex justify-center space-x-3">
+                        <a href="https://www.facebook.com/profile.php?id=61558615438246" target="_blank" rel="noopener noreferrer" className="p-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all duration-300 transform hover:scale-110 shadow-md hover:shadow-lg">
+                          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                          </svg>
+                        </a>
+                        <a href="https://www.instagram.com/pixel.pad77?igsh=NWlubzJhMmszOTY4" target="_blank" rel="noopener noreferrer" className="p-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-all duration-300 transform hover:scale-110 shadow-md hover:shadow-lg">
+                          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                          </svg>
+                        </a>
+                        <a href="https://wa.me/212779318061" target="_blank" rel="noopener noreferrer" className="p-2.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-all duration-300 transform hover:scale-110 shadow-md hover:shadow-lg">
+                          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
+                          </svg>
+                        </a>
+                      </div>
                     </div>
                   </div>
                 </div>
-
-                <div>
-                  <label htmlFor="subject" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('contact.form.subject')} *
-                  </label>
-                  <select
-                    id="subject"
-                    name="subject"
-                    value={formData.subject}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors"
-                  >
-                    <option value="">{t('contact.form.subjectPlaceholder')}</option>
-                    <option value="general">{t('contact.form.subjectGeneral')}</option>
-                    <option value="support">{t('contact.form.subjectSupport')}</option>
-                    <option value="order">{t('contact.form.subjectOrder')}</option>
-                    <option value="warranty">{t('contact.form.subjectWarranty')}</option>
-                    <option value="return">{t('contact.form.subjectReturn')}</option>
-                    <option value="partnership">{t('contact.form.subjectPartnership')}</option>
-                    <option value="other">{t('contact.form.subjectOther')}</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {t('contact.form.message')} *
-                  </label>
-                  <textarea
-                    id="message"
-                    name="message"
-                    value={formData.message}
-                    onChange={handleInputChange}
-                    required
-                    rows={5}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors resize-none"
-                    placeholder={t('contact.form.messagePlaceholder')}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white py-3 px-6 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed flex items-center justify-center"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                      {t('contact.form.sending')}
-                    </>
-                  ) : (
-                    <>
-                      <PaperAirplaneIcon className="h-5 w-5 mr-2" />
-                  {t('contact.form.sendMessage')}
-                    </>
-                  )}
-                </button>
-              </form>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* FAQ Section */}
-      <section className="py-16 bg-white dark:bg-gray-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+      {/* Enhanced Support Hours Section */}
+      <section className="py-8 bg-white dark:bg-gray-900 relative overflow-hidden">
+        {/* Optimized Background Elements */}
+        <div className="absolute inset-0 overflow-hidden" style={{ willChange: 'transform', transform: 'translateZ(0)' }}>
+          <div className="absolute top-20 left-20 w-72 h-72 bg-primary-400/5 rounded-full blur-2xl opacity-15 dark:opacity-20" style={{ willChange: 'opacity' }}></div>
+          <div className="absolute bottom-20 right-20 w-96 h-96 bg-primary-400/5 rounded-full blur-2xl opacity-15 dark:opacity-20" style={{ willChange: 'opacity' }}></div>
+        </div>
+
+        {/* Enhanced Grid Pattern */}
+        <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle at 25px 25px, rgba(0,0,0,0.08) 2px, transparent 0)`,
+            backgroundSize: '50px 50px'
+          }}></div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center bg-primary-600 text-white px-4 py-2.5 rounded-full text-xs font-bold mb-4 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 group">
+              <div className="w-5 h-5 bg-white/25 rounded-full flex items-center justify-center mr-2 group-hover:rotate-12 transition-transform duration-300">
+                <ClockIcon className="w-3 h-3" />
+              </div>
+              <span>{t('contact.businessHours.badge')}</span>
+              <div className="w-5 h-5 bg-white/25 rounded-full flex items-center justify-center ml-2 group-hover:-rotate-12 transition-transform duration-300">
+                <span className="text-xs">🕒</span>
+              </div>
+            </div>
+            <h2 className="text-3xl lg:text-4xl font-extrabold text-primary-600 dark:text-primary-400 mb-4">
+              {t('contact.businessHours.heading')}
+            </h2>
+            <p className="text-lg lg:text-xl text-gray-700 dark:text-gray-200 max-w-3xl mx-auto font-medium">
+              {t('contact.businessHours.subtitle')}
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 max-w-5xl mx-auto">
+            {/* Enhanced Phone Support Card */}
+            <div className="group relative animate-in slide-in-from-bottom duration-1000">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 lg:p-8 border border-gray-200 dark:border-gray-700 shadow-xl hover:shadow-xl transition-shadow duration-200 h-full" style={{ willChange: 'transform', transform: 'translateZ(0)' }}>
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:rotate-6 transition-transform duration-200 shadow-lg" style={{ willChange: 'transform' }}>
+                    <PhoneIcon className="h-8 w-8 text-white" />
+                  </div>
+                  <h3 className="text-xl lg:text-2xl font-extrabold mb-4 text-primary-600 dark:text-primary-400 transition-colors duration-300">
+                    {t('contact.businessHours.phoneSupport')}
+                  </h3>
+                  <div className="space-y-2.5 mb-4">
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                      <p className="text-sm font-bold text-gray-900 dark:text-white mb-1">{t('contact.businessHours.monday')}</p>
+                      <p className="text-base text-primary-600 dark:text-primary-400 font-semibold">{t('contact.businessHours.mondayHours')}</p>
+                    </div>
+                    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                      <p className="text-sm font-bold text-gray-900 dark:text-white mb-1">{t('contact.businessHours.saturday')}</p>
+                      <p className="text-base text-primary-600 dark:text-primary-400 font-semibold">{t('contact.businessHours.saturdayHours')}</p>
+                    </div>
+                  </div>
+                  <a 
+                    href="tel:+212779318061"
+                    className="inline-flex items-center justify-center bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
+                  >
+                    <PhoneIcon className="h-4 w-4 mr-1.5" />
+                    {t('contact.businessHours.callNow')}
+                  </a>
+                </div>
+              </div>
+            </div>
+            
+            {/* Enhanced Email Support Card */}
+            <div className="group relative animate-in slide-in-from-bottom duration-1000 delay-200">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 lg:p-8 border border-gray-200 dark:border-gray-700 shadow-xl hover:shadow-xl transition-shadow duration-200 h-full" style={{ willChange: 'transform', transform: 'translateZ(0)' }}>
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:rotate-6 transition-transform duration-200 shadow-lg" style={{ willChange: 'transform' }}>
+                    <EnvelopeIcon className="h-8 w-8 text-white" />
+                  </div>
+                      <h3 className="text-xl lg:text-2xl font-extrabold mb-4 text-primary-600 dark:text-primary-400 transition-colors duration-300">
+                        {t('contact.businessHours.emailSupport')}
+                      </h3>
+                      <div className="space-y-2.5 mb-4">
+                        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                          <p className="text-sm font-bold text-gray-900 dark:text-white mb-1">{t('contact.businessHours.available')}</p>
+                          <p className="text-base text-primary-600 dark:text-primary-400 font-semibold">{t('contact.businessHours.available24')}</p>
+                        </div>
+                        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                          <p className="text-sm font-bold text-gray-900 dark:text-white mb-1">{t('contact.businessHours.responseTime')}</p>
+                          <p className="text-base text-primary-600 dark:text-primary-400 font-semibold">{t('contact.businessHours.responseTimeValue')}</p>
+                        </div>
+                      </div>
+                      <a 
+                        href="mailto:pixelpad77@gmail.com"
+                        className="inline-flex items-center justify-center bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-lg text-sm font-bold transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
+                      >
+                    <EnvelopeIcon className="h-4 w-4 mr-1.5" />
+                    {t('contact.businessHours.sendEmail')}
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Support Methods */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <div className="text-center group p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-500 hover:shadow-xl hover:shadow-primary-500/20 transition-colors transition-shadow duration-200" style={{ willChange: 'transform', transform: 'translateZ(0)' }}>
+              <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:rotate-6 transition-transform duration-200 shadow-lg" style={{ willChange: 'transform' }}>
+                <svg className="h-8 w-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
+                </svg>
+              </div>
+              <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2 transition-colors duration-300">
+                {t('contact.businessHours.whatsapp')}
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{t('contact.businessHours.whatsappDesc')}</p>
+              <a href="https://wa.me/212779318061" target="_blank" rel="noopener noreferrer" className="text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-semibold text-sm transition-colors duration-300">
+                {t('contact.businessHours.chatNow')} →
+              </a>
+            </div>
+
+            <div className="text-center group p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-500 hover:shadow-xl hover:shadow-primary-500/20 transition-all duration-300 hover:scale-105">
+              <div className="w-16 h-16 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300 shadow-lg">
+                <ClockIcon className="h-8 w-8 text-white" />
+              </div>
+              <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-2 transition-colors duration-300">
+                {t('contact.businessHours.businessHours')}
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{t('contact.businessHours.monFri')}: {t('contact.businessHours.mondayHoursShort')}</p>
+              <p className="text-primary-600 dark:text-primary-400 font-semibold text-sm">{t('contact.businessHours.saturdayShort')}: {t('contact.businessHours.saturdayHoursShort')}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Enhanced FAQ Section */}
+      <section className="py-8 bg-white dark:bg-gray-900 relative overflow-hidden">
+        {/* Optimized Background Elements */}
+        <div className="absolute inset-0 overflow-hidden" style={{ willChange: 'transform', transform: 'translateZ(0)' }}>
+          <div className="absolute top-20 left-20 w-72 h-72 bg-primary-400/5 rounded-full blur-2xl opacity-15 dark:opacity-20" style={{ willChange: 'opacity' }}></div>
+          <div className="absolute bottom-20 right-20 w-96 h-96 bg-primary-400/5 rounded-full blur-2xl opacity-15 dark:opacity-20" style={{ willChange: 'opacity' }}></div>
+        </div>
+
+        {/* Enhanced Grid Pattern */}
+        <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle at 25px 25px, rgba(0,0,0,0.08) 2px, transparent 0)`,
+            backgroundSize: '50px 50px'
+          }}></div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center bg-primary-600 text-white px-4 py-2.5 rounded-full text-xs font-bold mb-4 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 group">
+              <div className="w-5 h-5 bg-white/25 rounded-full flex items-center justify-center mr-2 group-hover:rotate-12 transition-transform duration-300">
+                <span className="text-xs">❓</span>
+              </div>
+              <span>FAQ</span>
+              <div className="w-5 h-5 bg-white/25 rounded-full flex items-center justify-center ml-2 group-hover:-rotate-12 transition-transform duration-300">
+                <InformationCircleIcon className="w-3 h-3" />
+              </div>
+            </div>
+            <h2 className="text-3xl lg:text-4xl font-extrabold text-primary-600 dark:text-primary-400 mb-4">
               {t('contact.faq.title')}
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400">
+            <p className="text-lg lg:text-xl text-gray-700 dark:text-gray-200 max-w-3xl mx-auto font-medium">
               {t('contact.faq.subtitle')}
             </p>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-                {t('contact.faq.shipping.question')}
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                {t('contact.faq.shipping.answer')}
-              </p>
-            </div>
-
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-                {t('contact.faq.payment.question')}
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                {t('contact.faq.payment.answer')}
-              </p>
-            </div>
-
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-                {t('contact.faq.support.question')}
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                {t('contact.faq.support.answer')}
-              </p>
-            </div>
-
-            <div className="bg-gray-50 dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-                {t('contact.faq.tracking.question')}
-              </h3>
-              <p className="text-gray-600 dark:text-gray-400">
-                {t('contact.faq.tracking.answer')}
-              </p>
+          
+          <div className="max-w-4xl mx-auto">
+            <div className="space-y-4">
+              {faqData.map((faq, index) => (
+                <div 
+                  key={index} 
+                  className={`group bg-white/90 dark:bg-gray-800 dark:bg-opacity-95 backdrop-blur-md rounded-xl border-2 transition-shadow duration-200 ${
+                    activeFAQ === index 
+                      ? 'border-primary-400 dark:border-primary-500 shadow-xl shadow-primary-500/30' 
+                      : 'border-gray-200/50 dark:border-gray-700/30 hover:border-primary-300 dark:hover:border-primary-600 shadow-md hover:shadow-lg hover:shadow-primary-500/20'
+                  }`}
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <button
+                    onClick={() => setActiveFAQ(activeFAQ === index ? null : index)}
+                    className="w-full px-5 py-4 lg:px-6 lg:py-5 text-left flex justify-between items-center gap-3 rounded-xl transition-all duration-300"
+                  >
+                    <div className="flex items-start gap-3 flex-1">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
+                        activeFAQ === index
+                          ? 'bg-primary-600 shadow-md'
+                          : 'bg-primary-100 dark:bg-primary-900/30 group-hover:bg-primary-200 dark:group-hover:bg-primary-800/40'
+                      }`}>
+                        <span className={`text-sm font-bold transition-colors duration-300 ${
+                          activeFAQ === index ? 'text-white' : 'text-primary-600 dark:text-primary-400'
+                        }`}>
+                          {index + 1}
+                        </span>
+                      </div>
+                      <span className={`font-bold text-gray-900 dark:text-white text-base lg:text-lg transition-colors duration-300 flex-1 ${
+                        activeFAQ === index 
+                          ? 'text-primary-700 dark:text-primary-300' 
+                          : ''
+                      }`}>
+                        {faq.question}
+                      </span>
+                    </div>
+                    <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 ${
+                      activeFAQ === index
+                        ? 'bg-gradient-to-br from-primary-500 to-primary-700 rotate-180 shadow-md'
+                        : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-primary-100 dark:group-hover:bg-primary-900/30'
+                    }`}>
+                      <svg 
+                        className={`h-5 w-5 transition-all duration-300 ${
+                          activeFAQ === index 
+                            ? 'text-white' 
+                            : 'text-gray-500'
+                        }`} 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </button>
+                  {activeFAQ === index && (
+                    <div className="px-5 lg:px-6 pb-4 lg:pb-5 animate-in slide-in-from-top fade-in duration-300">
+                      <div className="border-t-2 border-primary-200 dark:border-primary-700 pt-4">
+                        <div className="flex items-start gap-3">
+                          <div className="w-1 h-full bg-gradient-to-b from-primary-500 to-primary-700 rounded-full"></div>
+                          <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm lg:text-base font-medium flex-1">
+                            {faq.answer}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
+        </div>
+      </section>
 
-          <div className="text-center mt-12">
+      {/* Enhanced Call to Action Section */}
+      <section className="py-8 bg-primary-600 dark:bg-primary-700 text-white relative overflow-hidden">
+        {/* Optimized Background Elements */}
+        <div className="absolute inset-0 overflow-hidden" style={{ willChange: 'transform', transform: 'translateZ(0)' }}>
+          <div className="absolute top-20 left-20 w-96 h-96 bg-white/10 rounded-full blur-2xl opacity-20 dark:opacity-15" style={{ willChange: 'opacity' }}></div>
+          <div className="absolute bottom-20 right-20 w-[32rem] h-[32rem] bg-primary-400/10 rounded-full blur-2xl opacity-20 dark:opacity-15" style={{ willChange: 'opacity' }}></div>
+        </div>
+
+        {/* Enhanced Grid Pattern */}
+        <div className="absolute inset-0 opacity-[0.05] dark:opacity-[0.08]">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `radial-gradient(circle at 25px 25px, rgba(255,255,255,0.3) 2px, transparent 0)`,
+            backgroundSize: '50px 50px'
+          }}></div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          {/* Enhanced Badge */}
+          <div className="inline-flex items-center bg-white/20 backdrop-blur-xl text-white px-5 py-2.5 rounded-full text-xs font-bold mb-5 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 group border border-white/20">
+            <div className="w-5 h-5 bg-white/30 rounded-full flex items-center justify-center mr-2 group-hover:rotate-12 transition-transform duration-300">
+              <span className="text-xs">🚀</span>
+            </div>
+            <span>{t('contact.cta.title')}</span>
+            <div className="w-5 h-5 bg-white/30 rounded-full flex items-center justify-center ml-2 group-hover:-rotate-12 transition-transform duration-300">
+              <span className="text-xs">✨</span>
+            </div>
+          </div>
+          
+          {/* Enhanced Headline */}
+          <h2 className="text-4xl lg:text-5xl font-extrabold mb-5 animate-in slide-in-from-top duration-1000 text-white">
+            {t('contact.cta.title')}
+          </h2>
+          
+          {/* Enhanced Description */}
+          <p className="text-lg lg:text-xl mb-8 opacity-95 max-w-4xl mx-auto animate-in slide-in-from-bottom duration-1000 delay-300 leading-relaxed font-medium">
+            {t('contact.cta.subtitle')}
+          </p>
+          
+          {/* Enhanced CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-in slide-in-from-bottom duration-1000 delay-500 mb-8">
             <a 
-              href="/more/faq" 
-              className="inline-flex items-center bg-primary-600 hover:bg-primary-700 text-white text-lg px-8 py-3 rounded-lg font-medium transition-all duration-300 transform hover:scale-105"
+              href="tel:+212779318061" 
+              className="group relative inline-flex items-center justify-center bg-white text-primary-600 px-8 py-4 rounded-xl font-bold text-base hover:bg-gray-50 transition-shadow duration-200 shadow-xl hover:shadow-2xl overflow-hidden" style={{ willChange: 'transform', transform: 'translateZ(0)' }}
             >
-              {t('contact.faq.viewAll')}
+              <span className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" style={{ willChange: 'transform' }}></span>
+              <span className="relative z-10 flex items-center gap-2">
+                <PhoneIcon className="h-5 w-5 group-hover:rotate-12 transition-transform duration-300" />
+                <span>{t('contact.cta.callNow')}</span>
+                <ArrowRightIcon className={`h-5 w-5 group-hover:translate-x-2 transition-transform duration-300 ${language === 'ar' ? 'rotate-180' : ''}`} />
+              </span>
             </a>
+            
+            <a 
+              href="https://wa.me/212779318061" 
+              className="group relative inline-flex items-center justify-center bg-primary-600 hover:bg-primary-700 text-white px-8 py-4 rounded-xl font-bold text-base transition-shadow duration-200 shadow-xl hover:shadow-2xl overflow-hidden" style={{ willChange: 'transform', transform: 'translateZ(0)' }}
+            >
+              <span className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" style={{ willChange: 'transform' }}></span>
+              <span className="relative z-10 flex items-center gap-2">
+                <svg className="h-5 w-5 group-hover:rotate-12 transition-transform duration-300" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
+                </svg>
+                <span>WhatsApp</span>
+                <ArrowRightIcon className={`h-5 w-5 group-hover:translate-x-2 transition-transform duration-300 ${language === 'ar' ? 'rotate-180' : ''}`} />
+              </span>
+            </a>
+            
+            <a 
+              href="mailto:pixelpad77@gmail.com" 
+              className="group relative inline-flex items-center justify-center border-2 border-white/80 text-white px-8 py-4 rounded-xl font-bold text-base hover:bg-white/20 transition-shadow duration-200 backdrop-blur-md overflow-hidden shadow-xl hover:shadow-white/20" style={{ willChange: 'transform', transform: 'translateZ(0)' }}
+            >
+              <span className="absolute inset-0 bg-white/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left" style={{ willChange: 'transform' }}></span>
+              <span className="relative z-10 flex items-center gap-2">
+                <EnvelopeIcon className="h-5 w-5 group-hover:rotate-12 transition-transform duration-300" />
+                <span>{t('contact.cta.sendEmail')}</span>
+                <ArrowRightIcon className={`h-5 w-5 group-hover:translate-x-2 transition-transform duration-300 ${language === 'ar' ? 'rotate-180' : ''}`} />
+              </span>
+            </a>
+          </div>
+          
+          {/* Enhanced Trust Indicators */}
+          <div className="mt-8 bg-white/15 dark:bg-white/10 backdrop-blur-md rounded-2xl p-6 lg:p-7 max-w-5xl mx-auto border-2 border-white/20 shadow-xl" style={{ willChange: 'transform', transform: 'translateZ(0)' }}>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+              <div className="text-center group hover:scale-105 transition-transform duration-300">
+                <div className="relative w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-md group-hover:shadow-lg group-hover:rotate-6 group-hover:scale-110 transition-all duration-300 ring-2 ring-white/20" style={{ willChange: 'transform' }}>
+                  <ClockIcon className="w-6 h-6 text-white relative z-10" />
+                </div>
+                <div className="text-2xl lg:text-3xl font-bold text-white mb-1.5">24h</div>
+                <div className="text-xs lg:text-sm text-white/80 font-semibold">{t('contact.stats.responseTime')}</div>
+              </div>
+              <div className="text-center group hover:scale-105 transition-transform duration-300">
+                <div className="relative w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-md group-hover:shadow-lg group-hover:rotate-6 group-hover:scale-110 transition-all duration-300 ring-2 ring-white/20">
+                  <Image src="/icons/group.svg" alt="Happy customers icon" width={24} height={24} className="w-6 h-6 filter brightness-0 invert relative z-10" />
+                </div>
+                <div className="text-2xl lg:text-3xl font-bold text-white mb-1.5">500+</div>
+                <div className="text-xs lg:text-sm text-white/80 font-semibold">{t('contact.stats.happyCustomers')}</div>
+              </div>
+              <div className="text-center group hover:scale-105 transition-transform duration-300">
+                <div className="relative w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-md group-hover:shadow-lg group-hover:rotate-6 group-hover:scale-110 transition-all duration-300 ring-2 ring-white/20">
+                  <Image src="/icons/star-gold-orange.svg" alt="Customer rating icon" width={24} height={24} className="w-6 h-6 relative z-10" />
+                </div>
+                <div className="text-2xl lg:text-3xl font-bold text-white mb-1.5">4.7/5</div>
+                <div className="text-xs lg:text-sm text-white/80 font-semibold">{t('contact.stats.customerRating')}</div>
+              </div>
+              <div className="text-center group hover:scale-105 transition-transform duration-300">
+                <div className="relative w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center mx-auto mb-3 shadow-md group-hover:shadow-lg group-hover:rotate-6 group-hover:scale-110 transition-all duration-300 ring-2 ring-white/20">
+                  <CheckCircleIcon className="w-6 h-6 text-white relative z-10" />
+                </div>
+                <div className="text-2xl lg:text-3xl font-bold text-white mb-1.5">100%</div>
+                <div className="text-xs lg:text-sm text-white/80 font-semibold">{t('contact.stats.satisfaction')}</div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

@@ -1,4 +1,4 @@
-# Pixel Pad - Premium Computer & Accessories Store
+# Pixel Pad - Computer & Accessories Store
 
 A modern, professional e-commerce website built with Next.js 14, TypeScript, and Tailwind CSS for selling computers and tech accessories.
 

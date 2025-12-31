@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OG Image Generator - PIXEL PAD</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #1a1a1a;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #1a1a1a;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .canvas-container {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        
+        #ogCanvas {
+            background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 50%, #6366F1 100%);
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        label {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        input, select {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        input[type="file"] {
+            padding: 8px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .info {
+            background: #EFF6FF;
+            border-left: 4px solid #3B82F6;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+        
+        .info h3 {
+            color: #1E40AF;
+            margin-bottom: 10px;
+        }
+        
+        .info p {
+            color: #1E3A8A;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .preview-text {
+            color: #666;
+            font-size: 12px;
+            margin-top: 10px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 PIXEL PAD - OG Image Generator</h1>
+        
+        <div class="canvas-container">
+            <canvas id="ogCanvas" width="1200" height="630"></canvas>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="logoFile">Upload Your Logo (PNG with transparent background recommended)</label>
+                <input type="file" id="logoFile" accept="image/*">
+            </div>
+            
+            <div class="control-group">
+                <label for="brandName">Brand Name</label>
+                <input type="text" id="brandName" value="PIXEL PAD" placeholder="PIXEL PAD">
+            </div>
+            
+            <div class="control-group">
+                <label for="tagline">Tagline</label>
+                <input type="text" id="tagline" value="Computer & Accessories Store" placeholder="Computer & Accessories Store">
+            </div>
+            
+            <div class="control-group">
+                <label for="bgGradient">Background Gradient</label>
+                <select id="bgGradient">
+                    <option value="blue-purple">Blue to Purple (Default)</option>
+                    <option value="blue-indigo">Blue to Indigo</option>
+                    <option value="purple-pink">Purple to Pink</option>
+                    <option value="dark-blue">Dark Blue</option>
+                    <option value="custom">Custom Color</option>
+                </select>
+            </div>
+            
+            <div class="control-group" id="customColorGroup" style="display: none;">
+                <label for="customColor">Custom Background Color</label>
+                <input type="color" id="customColor" value="#3B82F6">
+            </div>
+            
+            <button onclick="generateImage()">🎨 Generate OG Image</button>
+            <button onclick="downloadImage()">💾 Download Image</button>
+        </div>
+        
+        <div class="info">
+            <h3>📋 Instructions:</h3>
+            <p>
+                1. Upload your logo (PNG with transparent background works best)<br>
+                2. Customize the text if needed<br>
+                3. Choose your background gradient<br>
+                4. Click "Generate OG Image" to preview<br>
+                5. Click "Download Image" to save as og-image.jpg<br>
+                6. Place the file in your <code>/public/</code> folder
+            </p>
+        </div>
+        
+        <p class="preview-text">Preview: 1200 x 630 pixels (OG Image Standard Size)</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('ogCanvas');
+        const ctx = canvas.getContext('2d');
+        let logoImage = null;
+        
+        // Gradient presets
+        const gradients = {
+            'blue-purple': ['#3B82F6', '#8B5CF6', '#6366F1'],
+            'blue-indigo': ['#2563EB', '#4F46E5', '#6366F1'],
+            'purple-pink': ['#8B5CF6', '#EC4899', '#F472B6'],
+            'dark-blue': ['#1E3A8A', '#1E40AF', '#3B82F6'],
+            'custom': null
+        };
+        
+        // Load logo when file is selected
+        document.getElementById('logoFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        logoImage = img;
+                        generateImage();
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Show custom color picker when custom is selected
+        document.getElementById('bgGradient').addEventListener('change', function(e) {
+            const customGroup = document.getElementById('customColorGroup');
+            if (e.target.value === 'custom') {
+                customGroup.style.display = 'flex';
+            } else {
+                customGroup.style.display = 'none';
+            }
+            generateImage();
+        });
+        
+        // Generate the image
+        function generateImage() {
+            // Clear canvas
+            ctx.clearRect(0, 0, 1200, 630);
+            
+            // Draw background gradient
+            const gradientType = document.getElementById('bgGradient').value;
+            let gradient;
+            
+            if (gradientType === 'custom') {
+                const color = document.getElementById('customColor').value;
+                gradient = ctx.createLinearGradient(0, 0, 1200, 630);
+                gradient.addColorStop(0, color);
+                gradient.addColorStop(1, adjustBrightness(color, -20));
+            } else {
+                const colors = gradients[gradientType];
+                gradient = ctx.createLinearGradient(0, 0, 1200, 630);
+                gradient.addColorStop(0, colors[0]);
+                gradient.addColorStop(0.5, colors[1]);
+                gradient.addColorStop(1, colors[2]);
+            }
+            
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 1200, 630);
+            
+            // Add subtle pattern overlay
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+            for (let i = 0; i < 1200; i += 50) {
+                for (let j = 0; j < 630; j += 50) {
+                    if ((i + j) % 100 === 0) {
+                        ctx.fillRect(i, j, 2, 2);
+                    }
+                }
+            }
+            
+            // Draw logo if available
+            if (logoImage) {
+                const logoSize = 200;
+                const logoX = 100;
+                const logoY = (630 - logoSize) / 2;
+                
+                // Add white background circle for logo
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                ctx.beginPath();
+                ctx.arc(logoX + logoSize/2, logoY + logoSize/2, logoSize/2 + 20, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw logo
+                ctx.drawImage(logoImage, logoX, logoY, logoSize, logoSize);
+            }
+            
+            // Draw brand name
+            const brandName = document.getElementById('brandName').value || 'PIXEL PAD';
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = 'bold 72px Arial, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            
+            // Add text shadow
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 2;
+            
+            const textX = logoImage ? 350 : 100;
+            const textY = 280;
+            ctx.fillText(brandName, textX, textY);
+            
+            // Draw tagline
+            const tagline = document.getElementById('tagline').value || 'Computer & Accessories Store';
+            ctx.font = '36px Arial, sans-serif';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+            ctx.shadowBlur = 8;
+            ctx.fillText(tagline, textX, textY + 80);
+            
+            // Reset shadow
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+            
+            // Add decorative elements
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(textX, textY + 100);
+            ctx.lineTo(textX + 400, textY + 100);
+            ctx.stroke();
+        }
+        
+        // Helper function to adjust color brightness
+        function adjustBrightness(hex, percent) {
+            const num = parseInt(hex.replace('#', ''), 16);
+            const r = Math.min(255, Math.max(0, (num >> 16) + percent));
+            const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + percent));
+            const b = Math.min(255, Math.max(0, (num & 0x0000FF) + percent));
+            return '#' + (0x1000000 + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        }
+        
+        // Download the image
+        function downloadImage() {
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'og-image.jpg';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 'image/jpeg', 0.95);
+        }
+        
+        // Generate initial image
+        generateImage();
+        
+        // Auto-regenerate on text changes
+        document.getElementById('brandName').addEventListener('input', generateImage);
+        document.getElementById('tagline').addEventListener('input', generateImage);
+        document.getElementById('customColor').addEventListener('input', generateImage);
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
