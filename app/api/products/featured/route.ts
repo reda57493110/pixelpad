@@ -10,16 +10,19 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const limit = parseInt(searchParams.get('limit') || '4')
     
-    // Get products with showOnHomeCarousel flag
+    // Get products with showOnHomeCarousel flag - uses compound index
     let products = await Product.find({ showOnHomeCarousel: true })
       .sort({ order: 1, createdAt: -1 })
       .limit(limit)
+      .lean() // Use lean() for faster queries
+      .hint({ showOnHomeCarousel: 1, order: 1, createdAt: -1 }) // Force use of compound index
     
     // Fallback to highest rated if no carousel products
     if (products.length === 0) {
       products = await Product.find({})
         .sort({ order: 1, rating: -1, createdAt: -1 })
         .limit(limit)
+        .lean()
     }
     
     // Final fallback: return any products available, sorted by creation date
@@ -27,6 +30,7 @@ export async function GET(request: NextRequest) {
       products = await Product.find({})
         .sort({ createdAt: -1 })
         .limit(limit)
+        .lean()
     }
     
     return NextResponse.json(products)

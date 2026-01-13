@@ -55,7 +55,7 @@ function ProductCard({ product, variant = 'default', hideIds = false }: ProductC
                 src={product.image} 
                 alt={product.name}
                 fill
-                className="object-cover"
+                className={isHero ? "object-contain sm:object-cover" : "object-cover"}
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                 priority={isHero}
                 loading={isHero ? "eager" : "lazy"}
@@ -85,37 +85,38 @@ function ProductCard({ product, variant = 'default', hideIds = false }: ProductC
             <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/25 via-black/8 to-transparent dark:from-black/40 dark:via-black/15 to-transparent opacity-0 group-hover:opacity-90 dark:group-hover:opacity-100 transition-opacity duration-400 ease-out" />
           </div>
         </Link>
-        {!product.inStock && (
-          <div className={`absolute top-2 ${isRTL ? 'left-2' : 'right-2'} bg-red-500 dark:bg-red-600 text-white px-2 py-1 rounded text-sm shadow-lg dark:shadow-red-900/50`}>
-            {t('product.outOfStock')}
-          </div>
-        )}
-        {product.originalPrice && product.originalPrice > product.price && (
-          <div 
-            className={`absolute top-2 sm:top-2.5 lg:top-2 ${isRTL ? 'right-2 sm:right-2.5 lg:right-2' : 'left-2 sm:left-2.5 lg:left-2'} ${isHero ? 'bg-gradient-to-r from-primary-600 via-blue-500 to-primary-500 text-white px-2.5 sm:px-3 lg:px-4 py-1 sm:py-1.5 lg:py-2 rounded-full text-[10px] sm:text-xs lg:text-sm font-black shadow-2xl z-10' : 'bg-gradient-to-r from-primary-600 to-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg'} cursor-pointer hover:scale-110 transition-all duration-300`}
-            onClick={() => router.push(`/products/${product.id}`)}
-          >
-            {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
-          </div>
-        )}
-        {isHero && (
-          <>
+        {/* Badge Container - Organized positioning for mobile */}
+        <div className="absolute inset-0 pointer-events-none">
+          {/* Top Left: Discount Badge */}
+          {product.originalPrice && product.originalPrice > product.price && (
             <div 
-              className={`absolute bottom-2 sm:bottom-2.5 lg:bottom-2 ${isRTL ? 'right-2 sm:right-2.5 lg:right-2' : 'left-2 sm:left-2.5 lg:left-2'} bg-gradient-to-r from-primary-600 via-blue-500 to-primary-500 text-white px-2.5 sm:px-3 lg:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-[10px] lg:text-xs font-black shadow-xl cursor-pointer hover:scale-110 transition-all duration-300 z-10`}
+              className={`absolute top-1.5 sm:top-2 md:top-2.5 lg:top-2 ${isRTL ? 'right-1.5 sm:right-2 md:right-2.5 lg:right-2' : 'left-1.5 sm:left-2 md:left-2.5 lg:left-2'} ${isHero ? 'bg-gradient-to-r from-primary-600 via-blue-500 to-primary-500 text-white px-1.5 sm:px-2.5 md:px-3 lg:px-4 py-0.5 sm:py-1 md:py-1.5 lg:py-2 rounded-full text-[9px] sm:text-[10px] md:text-xs lg:text-sm font-black shadow-2xl z-20' : 'bg-gradient-to-r from-primary-600 to-blue-600 text-white px-2 sm:px-2.5 md:px-3 py-0.5 sm:py-1 md:py-1 rounded-full text-[9px] sm:text-[10px] md:text-xs font-bold shadow-lg'} cursor-pointer hover:scale-110 transition-all duration-300 pointer-events-auto`}
               onClick={() => router.push(`/products/${product.id}`)}
             >
-              LIMITED TIME
+              {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
             </div>
-            
-            {/* Trending Badge */}
-            <div 
-              className={`absolute top-2 sm:top-2.5 lg:top-2 ${isRTL ? 'left-2 sm:left-2.5 lg:left-2' : 'right-2 sm:right-2.5 lg:right-2'} bg-gradient-to-r from-primary-600 via-blue-500 to-primary-500 text-white px-2.5 sm:px-3 lg:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-[10px] lg:text-xs font-black shadow-xl cursor-pointer hover:scale-110 transition-all duration-300 z-10`}
-              onClick={() => router.push(`/products/${product.id}`)}
-            >
-              TRENDING
-            </div>
-          </>
-        )}
+          )}
+          
+          {isHero && (
+            <>
+              {/* Trending Badge - Top Right for Hero */}
+              <div 
+                className={`absolute top-1.5 sm:top-2 md:top-2.5 lg:top-2 ${isRTL ? 'left-1.5 sm:left-2 md:left-2.5 lg:left-2' : 'right-1.5 sm:right-2 md:right-2.5 lg:right-2'} bg-gradient-to-r from-primary-600 via-blue-500 to-primary-500 text-white px-1.5 sm:px-2.5 md:px-3 lg:px-3 py-0.5 sm:py-1 md:py-1.5 lg:py-1.5 rounded-full text-[9px] sm:text-[10px] md:text-[10px] lg:text-xs font-black shadow-xl cursor-pointer hover:scale-110 transition-all duration-300 z-20 pointer-events-auto`}
+                onClick={() => router.push(`/products/${product.id}`)}
+              >
+                TRENDING
+              </div>
+              
+              {/* Limited Time - Bottom Left */}
+              <div 
+                className={`absolute bottom-1.5 sm:bottom-2 md:bottom-2.5 lg:bottom-2 ${isRTL ? 'right-1.5 sm:right-2 md:right-2.5 lg:right-2' : 'left-1.5 sm:left-2 md:left-2.5 lg:left-2'} bg-gradient-to-r from-primary-600 via-blue-500 to-primary-500 text-white px-1.5 sm:px-2.5 md:px-3 lg:px-3 py-0.5 sm:py-1 md:py-1.5 lg:py-1.5 rounded-full text-[9px] sm:text-[10px] md:text-[10px] lg:text-xs font-black shadow-xl cursor-pointer hover:scale-110 transition-all duration-300 z-20 pointer-events-auto`}
+                onClick={() => router.push(`/products/${product.id}`)}
+              >
+                LIMITED TIME
+              </div>
+            </>
+          )}
+        </div>
       </div>
       
       <div className={`${isHero ? 'p-3 sm:p-3.5 md:p-3.5 lg:p-4' : 'p-3 sm:p-4'}`}>
@@ -189,28 +190,34 @@ function ProductCard({ product, variant = 'default', hideIds = false }: ProductC
             )}
           </div>
           
-          <button 
-            className={`${isHero ? 'px-3.5 sm:px-5 md:px-4 lg:px-7 py-2 sm:py-3 md:py-2.5 lg:py-2.5 text-[10px] sm:text-sm md:text-[11px] lg:text-xs' : 'px-4 sm:px-5 py-2 sm:py-2.5 text-[10px] sm:text-[11px]'} rounded-xl font-bold transition-all duration-200 transform hover:scale-[1.02] active:scale-95 shadow-md dark:shadow-lg dark:shadow-primary-900/50 whitespace-nowrap flex-shrink-0 touch-manipulation ${
-              product.inStock 
-                ? isHero 
+          <div className="flex gap-2 sm:gap-2 flex-shrink-0">
+            <button 
+              className={`${isHero ? 'px-3 sm:px-4 md:px-3 lg:px-4 py-2 sm:py-2.5 md:py-2 lg:py-2.5 text-[10px] sm:text-xs md:text-[10px] lg:text-[11px]' : 'px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-[11px]'} rounded-xl font-bold transition-all duration-200 transform hover:scale-[1.02] active:scale-95 shadow-md dark:shadow-lg whitespace-nowrap touch-manipulation bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white`}
+              onClick={() => {
+                router.push(`/products/${product.id}`)
+              }}
+            >
+              {t('product.viewDetails') || 'View Details'}
+            </button>
+            <button 
+              className={`${isHero ? 'px-3.5 sm:px-5 md:px-4 lg:px-7 py-2 sm:py-3 md:py-2.5 lg:py-2.5 text-[10px] sm:text-sm md:text-[11px] lg:text-xs' : 'px-4 sm:px-5 py-2 sm:py-2.5 text-[10px] sm:text-[11px]'} rounded-xl font-bold transition-all duration-200 transform hover:scale-[1.02] active:scale-95 shadow-md dark:shadow-lg dark:shadow-primary-900/50 whitespace-nowrap flex-shrink-0 touch-manipulation ${
+                isHero 
                   ? 'bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-400 text-white'
                   : 'bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-400 text-white'
-                : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-            }`}
-            disabled={!product.inStock}
-            onClick={() => {
-              if (!product.inStock) return
-              addItem({
-                productId: product.id,
-                variantId: undefined,
-                name: displayName || product.name,
-                price: product.price,
-                image: product.image
-              }, 1)
-            }}
-          >
-            {product.inStock ? t('product.addToCart') || 'Add to Cart' : t('product.outOfStock') || 'OUT OF STOCK'}
-          </button>
+              }`}
+              onClick={() => {
+                addItem({
+                  productId: product.id,
+                  variantId: undefined,
+                  name: displayName || product.name,
+                  price: product.price,
+                  image: product.image
+                }, 1)
+              }}
+            >
+              {t('product.addToCart') || 'Add to Cart'}
+            </button>
+          </div>
         </div>
       </div>
       {showQuickOrder && (

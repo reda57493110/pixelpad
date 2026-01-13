@@ -64,12 +64,18 @@ const OrderSchema = new Schema<IOrder>(
   }
 )
 
-OrderSchema.index({ email: 1 })
+// Compound indexes for common query patterns (most selective field first)
+OrderSchema.index({ userId: 1, date: -1 }) // Most common: get user's orders sorted by date
+OrderSchema.index({ email: 1, date: -1 }) // Common: get orders by email sorted by date (covers email queries too)
+OrderSchema.index({ status: 1, date: -1 }) // Admin: filter by status and sort by date
+OrderSchema.index({ paymentSessionId: 1 }) // For payment lookup
+// Single field indexes
+// Note: { email: 1 } index removed - compound index { email: 1, date: -1 } covers email queries
 OrderSchema.index({ userId: 1 })
-// Note: id field already has unique: true which creates an index automatically
 OrderSchema.index({ customerPhone: 1 })
-OrderSchema.index({ date: -1 }) // Index for sorting by date
-OrderSchema.index({ status: 1 }) // Index for filtering by status
+OrderSchema.index({ date: -1 }) // For general date sorting
+OrderSchema.index({ status: 1 }) // For status filtering
+// Note: id field already has unique: true which creates an index automatically
 
 // Delete cached model if it exists to force refresh with new enum values
 if (mongoose.models.Order) {

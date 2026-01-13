@@ -82,14 +82,32 @@ export default function ProductsListPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (typeof window !== 'undefined' && window.confirm(t('admin.deleteConfirm'))) {
+    if (typeof window !== 'undefined' && window.confirm(t('admin.deleteConfirm') || 'Are you sure you want to delete this product?')) {
       try {
-        await deleteProduct(id)
-        await loadProducts()
-        window.dispatchEvent(new Event('pixelpad_products_changed'))
-      } catch (error) {
+        const success = await deleteProduct(id)
+        if (success) {
+          // Clear client-side cache and reload products to reflect the deletion
+          // Force bypass cache to get fresh data
+          await loadProducts()
+          // Dispatch event to notify other components
+          window.dispatchEvent(new Event('pixelpad_products_changed'))
+          // Force a hard refresh of the page cache by adding timestamp
+          if ('caches' in window) {
+            caches.keys().then(names => {
+              names.forEach(name => {
+                if (name.includes('products') || name.includes('next')) {
+                  caches.delete(name)
+                }
+              })
+            })
+          }
+        } else {
+          alert(t('admin.errorDeleting') || 'Failed to delete product')
+        }
+      } catch (error: any) {
         console.error('Error deleting product:', error)
-        alert(t('admin.errorDeleting'))
+        const errorMessage = error?.message || error?.errorData?.error || t('admin.errorDeleting') || 'Failed to delete product'
+        alert(errorMessage)
       }
     }
   }

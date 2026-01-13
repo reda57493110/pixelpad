@@ -197,8 +197,9 @@ export async function PUT(
         console.error('Status update mismatch:', {
           requested: updateData.status,
           actual: updatedOrder.status,
-        orderId: params.id
-      })
+          orderId: params.id
+        })
+      }
     }
     
     // Clean up response - return only needed fields
@@ -455,7 +456,7 @@ export async function PUT(
           console.error('Error in async stock updates:', asyncError instanceof Error ? asyncError.message : 'An error occurred')
         }
       }
-    }).catch(err => {
+    }).catch((err: any) => {
       if (process.env.NODE_ENV === 'development') {
         console.error('Unhandled error in stock update promise:', err)
       } else {

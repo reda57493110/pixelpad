@@ -33,10 +33,12 @@ const CategorySchema = new Schema<ICategory>(
   }
 )
 
-// Index for faster queries
-// Note: slug already has an index from unique: true, so we don't need to add it again
+// Compound indexes for common query patterns
+CategorySchema.index({ isActive: 1, order: 1 }) // Most common: active categories sorted by order
+// Single field indexes
 CategorySchema.index({ isActive: 1 })
 CategorySchema.index({ order: 1 })
+// Note: slug already has an index from unique: true, so we don't need to add it again
 
 export default mongoose.models.Category || mongoose.model<ICategory>('Category', CategorySchema)
 

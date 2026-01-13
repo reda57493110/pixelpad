@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState, useEffect, useRef } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import ProductCard from '@/components/ProductCard'
 import { Product } from '@/types'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useCart } from '@/contexts/CartContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { getAllProducts, clearProductsCache } from '@/lib/products'
 import {
   ShieldCheckIcon,
@@ -49,9 +50,274 @@ const useScrollAnimation = () => {
   return [ref, isVisible] as const
 }
 
+// User Review Section Component
+function UserReviewSection({ user, token, t, isRTL }: { user: any, token: string | null, t: any, isRTL: boolean }) {
+  const [userReview, setUserReview] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isEditing, setIsEditing] = useState(false)
+  const [rating, setRating] = useState(5)
+  const [comment, setComment] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
+  // Fetch user's review
+  useEffect(() => {
+    const fetchReview = async () => {
+      // Get token from localStorage if not provided
+      const authToken = token || localStorage.getItem('pixelpad_token')
+      
+      if (!authToken) {
+        setIsLoading(false)
+        return
+      }
+
+      try {
+        const authToken = token || localStorage.getItem('pixelpad_token')
+        const response = await fetch('/api/reviews', {
+          headers: {
+            'Authorization': `Bearer ${authToken}`
+          }
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.review) {
+            setUserReview(data.review)
+            setRating(data.review.rating)
+            setComment(data.review.comment)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching review:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchReview()
+  }, [token, user])
+
+  const handleSave = async () => {
+    const authToken = token || localStorage.getItem('pixelpad_token')
+    if (!authToken || !rating || !comment.trim()) {
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const response = await fetch('/api/reviews', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        },
+        body: JSON.stringify({ rating, comment: comment.trim() })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setUserReview(data.review)
+        setIsEditing(false)
+      }
+    } catch (error) {
+      console.error('Error saving review:', error)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    const authToken = token || localStorage.getItem('pixelpad_token')
+    if (!authToken) return
+
+    try {
+      const response = await fetch('/api/reviews', {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      })
+
+      if (response.ok) {
+        setUserReview(null)
+        setComment('')
+        setRating(5)
+        setShowDeleteConfirm(false)
+      }
+    } catch (error) {
+      console.error('Error deleting review:', error)
+    }
+  }
+
+  return (
+    <div className="border-t border-primary-200 dark:border-primary-800 pt-2 sm:pt-4 md:pt-6 w-full relative z-20 bg-transparent block overflow-visible">
+      <div className="text-center mb-2 sm:mb-4 md:mb-5 px-2">
+        <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-gray-900 dark:text-white">
+          {t('testimonials.shareExperience') || 'Share your experience'}
+        </h3>
+      </div>
+
+      {isLoading ? (
+        // Loading state
+        <div className="bg-white dark:bg-gray-800 rounded-md sm:rounded-lg md:rounded-xl p-2 sm:p-3 md:p-4 lg:p-5 shadow-md border border-gray-100/50 dark:border-gray-700/50 w-full sm:max-w-xl sm:mx-auto">
+          <div className="animate-pulse space-y-2 sm:space-y-3">
+            <div className="h-3 sm:h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4"></div>
+            <div className="h-16 sm:h-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
+            <div className="h-6 sm:h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
+          </div>
+        </div>
+      ) : userReview && !isEditing ? (
+        // Display existing review
+        <div className="group relative bg-white dark:bg-gray-800 rounded-md sm:rounded-lg md:rounded-xl p-1.5 sm:p-2.5 md:p-4 lg:p-5 shadow-md border border-gray-100/50 dark:border-gray-700/50 overflow-hidden w-full sm:max-w-xl sm:mx-auto">
+          <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-500"></div>
+          
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-1 sm:mb-1.5 md:mb-2 lg:mb-3">
+              <div className="flex items-center gap-0.5">
+                {[...Array(5)].map((_, i) => (
+                  <StarIcon
+                    key={i}
+                    className={`w-2.5 h-2.5 sm:w-3 sm:h-3 md:w-4 md:h-4 ${
+                      i < rating ? 'text-yellow-400 fill-current' : 'text-gray-300 dark:text-gray-600'
+                    }`}
+                  />
+                ))}
+              </div>
+              <div className="flex items-center gap-1 sm:gap-1.5">
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="text-[9px] sm:text-[10px] md:text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium"
+                >
+                  {t('common.edit') || 'Edit'}
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="text-[9px] sm:text-[10px] md:text-xs text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium"
+                >
+                  {t('common.delete') || 'Delete'}
+                </button>
+              </div>
+            </div>
+            
+            <p className="text-[10px] sm:text-xs md:text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-1 sm:mb-2 md:mb-3 lg:mb-4 font-medium">
+              "{userReview.comment}"
+            </p>
+            
+            <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 pt-1 sm:pt-1.5 md:pt-2 lg:pt-3 border-t border-gray-100 dark:border-gray-700">
+              <div className="flex-1 min-w-0">
+                <h4 className="text-[10px] sm:text-xs md:text-sm font-bold text-gray-900 dark:text-white mb-0.5">
+                  {user.name || 'You'}
+                </h4>
+                <p className="text-[9px] sm:text-[10px] md:text-xs text-gray-500 dark:text-gray-400">
+                  Your Review
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        // Review form - Always show when no review exists or when editing
+        <div className="bg-white dark:bg-gray-800 rounded-md sm:rounded-lg md:rounded-xl p-1.5 sm:p-2.5 md:p-4 lg:p-5 shadow-lg border border-primary-200 dark:border-primary-800 w-full sm:max-w-xl sm:mx-auto relative z-10">
+          <div className="space-y-1.5 sm:space-y-2 md:space-y-3 lg:space-y-4">
+            <div>
+              <label className="block text-[10px] sm:text-xs md:text-sm font-semibold text-gray-900 dark:text-white mb-0.5 sm:mb-1 md:mb-1.5">
+                {t('testimonials.ratingRequired') || 'Rating'} <span className="text-red-500">*</span>
+              </label>
+              <div className="flex items-center gap-0.5 sm:gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setRating(i + 1)}
+                    className="focus:outline-none touch-manipulation"
+                    aria-label={`Rate ${i + 1} stars`}
+                  >
+                    <StarIcon
+                      className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 transition-colors ${
+                        i < rating
+                          ? 'text-yellow-400 fill-current'
+                          : 'text-gray-300 dark:text-gray-600'
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-[10px] sm:text-xs md:text-sm font-semibold text-gray-900 dark:text-white mb-0.5 sm:mb-1 md:mb-1.5">
+                {t('testimonials.shareExperience') || 'Your Review'} <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder={t('testimonials.shareExperience') || 'Share your experience...'}
+                className="w-full px-2 sm:px-3 md:px-4 py-1 sm:py-1.5 md:py-2 lg:py-2.5 border border-gray-300 dark:border-gray-600 rounded-md sm:rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-[11px] sm:text-xs md:text-sm lg:text-base focus:ring-1 sm:focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
+                rows={2}
+              />
+            </div>
+            
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1 sm:gap-1.5 md:gap-2 lg:gap-3">
+              <button
+                onClick={handleSave}
+                disabled={isSaving || !rating || !comment.trim()}
+                className="flex-1 bg-gradient-to-r from-primary-600 via-primary-700 to-primary-600 hover:from-primary-700 hover:via-primary-800 hover:to-primary-700 text-white px-2.5 sm:px-3 md:px-4 lg:px-6 py-1 sm:py-1.5 md:py-2 lg:py-2.5 rounded-md sm:rounded-lg font-bold text-[11px] sm:text-xs md:text-sm lg:text-base transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+              >
+                {isSaving ? (t('common.saving') || 'Saving...') : (t('common.save') || 'Save Review')}
+              </button>
+              {userReview && (
+                <button
+                  onClick={() => {
+                    setIsEditing(false)
+                    setComment(userReview.comment)
+                    setRating(userReview.rating)
+                  }}
+                  className="px-2.5 sm:px-3 md:px-4 lg:px-6 py-1 sm:py-1.5 md:py-2 lg:py-2.5 border border-gray-300 dark:border-gray-600 rounded-md sm:rounded-lg text-gray-700 dark:text-gray-300 text-[11px] sm:text-xs md:text-sm lg:text-base font-semibold hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors touch-manipulation"
+                >
+                  {t('common.cancel') || 'Cancel'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-4">
+              {t('testimonials.deleteConfirm') || 'Delete Review?'}
+            </h3>
+            <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-6">
+              {t('testimonials.deleteConfirm') || 'Are you sure you want to delete your review? This action cannot be undone.'}
+            </p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleDelete}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-lg font-semibold text-sm sm:text-base transition-colors"
+              >
+                {t('common.delete') || 'Delete'}
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-lg font-semibold text-sm sm:text-base hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                {t('common.cancel') || 'Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function HomePage() {
   const { t, isRTL } = useLanguage()
   const { addItem } = useCart()
+  const { user, isLoggedIn, token } = useAuth()
+  const router = useRouter()
   const searchParams = useSearchParams()
   const [showOrderSuccess, setShowOrderSuccess] = useState(false)
   const [orderId, setOrderId] = useState<string | null>(null)
@@ -135,167 +401,91 @@ export default function HomePage() {
     }
   }, [heroFlagged])
 
-  // Load products from database - Optimized
+  // Load products from database - Optimized with caching
   useEffect(() => {
     let isMounted = true
-    let loadingTimeout: NodeJS.Timeout
     
-    // Background image is preloaded in layout.tsx for fast loading
+    // Show page immediately - don't block rendering
+    setIsLoaded(true)
     
     const loadProducts = async () => {
       try {
-        // Set loading state immediately
-        setIsLoaded(false)
+        // Use cached data first for instant display, then refresh in background
+        const cachedProducts = await getAllProducts(false) // Use cache first
         
-        // Use cache for faster loading - only bypass on product changes
-        // Load products with cache for faster initial load
-        // But if cache is empty or stale, bypass to get fresh data
-        let products = await getAllProducts(false)
-        
-        // If cache returned empty or we got no products, try bypassing cache
-        if (!products || products.length === 0) {
-          console.log('Cache returned empty, fetching fresh products...')
-          clearProductsCache()
-          products = await getAllProducts(true)
+        if (cachedProducts && cachedProducts.length > 0 && isMounted) {
+          // Process cached data immediately for fast initial render
+          processProducts(cachedProducts)
         }
         
-        // Auto-setup homepage flags if no products have flags set
-        const hasAnyFlags = products.some(p => 
+        // Refresh data in background (non-blocking)
+        const freshProducts = await getAllProducts(true).catch(() => cachedProducts || [])
+        
+        if (!isMounted) return
+        
+        if (!freshProducts || freshProducts.length === 0) {
+          if (!cachedProducts || cachedProducts.length === 0) {
+            console.warn('No products found')
+          }
+          return
+        }
+        
+        // Auto-setup homepage flags in background (non-blocking)
+        const hasAnyFlags = freshProducts.some(p => 
           p.showInHero || p.showOnHomeCarousel || p.showInNewArrivals || 
           p.showInBestSellers || p.showInSpecialOffers || p.showInTrending
         )
         
-        if (products.length > 0 && !hasAnyFlags) {
-          console.log('No products have homepage flags set. Auto-setting flags...')
-          try {
-            await fetch('/api/products/setup-homepage', { method: 'POST' })
-            // Reload products after setting flags (bypass cache for fresh data)
-            clearProductsCache()
-            const updatedProducts = await getAllProducts(true)
-            if (isMounted) {
-              setAllProducts(updatedProducts)
-              // Apply the same logic with updated products
-              const carouselProducts = updatedProducts.filter(p => p.showOnHomeCarousel === true)
-              setFeaturedProducts(carouselProducts.length > 0 ? carouselProducts : updatedProducts.slice(0, 5))
-              const heroProducts = updatedProducts.filter(p => p.showInHero === true)
-              setHeroFlagged(heroProducts.length > 0 ? heroProducts : updatedProducts.slice(0, 1))
-              setFlaggedNewArrivals(updatedProducts.filter(p => p.showInNewArrivals === true))
-              setFlaggedBestSellers(updatedProducts.filter(p => p.showInBestSellers === true))
-              setFlaggedSpecialOffers(updatedProducts.filter(p => p.showInSpecialOffers === true))
-              setFlaggedTrending(updatedProducts.filter(p => p.showInTrending === true))
-              // Clear the fallback timeout since we loaded successfully
-              if (loadingTimeout) clearTimeout(loadingTimeout)
-              setIsLoaded(true)
-              return
-            }
-          } catch (setupError) {
-            console.error('Error auto-setting homepage flags:', setupError)
-            // Continue with fallback logic
-          }
+        if (freshProducts.length > 0 && !hasAnyFlags) {
+          fetch('/api/products/setup-homepage', { method: 'POST' }).catch(() => {})
         }
         
-        if (!isMounted) return
+        // Update with fresh data
+        processProducts(freshProducts)
         
-        if (!products || products.length === 0) {
-          console.warn('No products found in database')
-          setIsLoaded(true)
-          return
-        }
-        
-        // Preload product images immediately for faster display
-        if (products && products.length > 0 && typeof window !== 'undefined') {
-          // Preload first 10 product images (hero + carousel) for instant display
-          products.slice(0, 10).forEach((product) => {
-            if (product.image) {
-              const img = document.createElement('img')
-              img.src = product.image
-              img.loading = 'eager'
-              // @ts-ignore - fetchPriority is supported in modern browsers
-              img.fetchPriority = 'high'
-              // Start loading the image
-              document.body.appendChild(img)
-              // Remove it immediately after it starts loading
-              setTimeout(() => {
-                if (img.parentNode) {
-                  img.parentNode.removeChild(img)
-                }
-              }, 0)
-            }
-          })
-          
-          // Prefetch products API immediately in background for faster navigation
-          fetch('/api/products/page', { method: 'HEAD' }).catch(() => {})
-          fetch('/api/products', { method: 'HEAD' }).catch(() => {})
-        }
-        
-        setAllProducts(products)
-        
-        // Use flagged products, but fallback to all products if no flags are set
-        // Carousel: only products with showOnHomeCarousel === true, or fallback to first 5 products
-        const carouselProducts = products.filter(p => p.showOnHomeCarousel === true)
-        setFeaturedProducts(carouselProducts.length > 0 ? carouselProducts : products.slice(0, 5))
-        
-        // Flagged sections - Use flagged products or fallback to first product
-        const heroProducts = products.filter(p => p.showInHero === true)
-        setHeroFlagged(heroProducts.length > 0 ? heroProducts : products.slice(0, 1))
-        setFlaggedNewArrivals(products.filter(p => p.showInNewArrivals === true))
-        setFlaggedBestSellers(products.filter(p => p.showInBestSellers === true))
-        setFlaggedSpecialOffers(products.filter(p => p.showInSpecialOffers === true))
-        setFlaggedTrending(products.filter(p => p.showInTrending === true))
-        
-        // Clear old fallback arrays
-            setNewArrivals([])
-            setBestSellers([])
-        setTrendingProducts([])
-        setDiscountProducts([])
-        
-        // Mark as loaded after products are set
-        // Clear the fallback timeout since we loaded successfully
-        if (isMounted) {
-          if (loadingTimeout) {
-            clearTimeout(loadingTimeout)
-          }
-          setIsLoaded(true)
-        }
       } catch (error) {
         console.error('Error loading products:', error)
         if (!isMounted) return
-        setFeaturedProducts([])
-        setAllProducts([])
-        setNewArrivals([])
-        setBestSellers([])
-        setTrendingProducts([])
-        setDiscountProducts([])
-        setHeroFlagged([])
-        setFlaggedNewArrivals([])
-        setFlaggedBestSellers([])
-        setFlaggedSpecialOffers([])
-        setFlaggedTrending([])
-        setIsLoaded(true) // Still mark as loaded to show the page even if there's an error
+        // Keep existing state on error, don't clear everything
       }
+    }
+    
+    // Helper function to process products (reduces code duplication)
+    const processProducts = (products: Product[]) => {
+      if (!isMounted) return
+      
+      setAllProducts(products)
+      
+      // Use flagged products, but fallback to all products if no flags are set
+      const carouselProducts = products.filter(p => p.showOnHomeCarousel === true)
+      setFeaturedProducts(carouselProducts.length > 0 ? carouselProducts : products.slice(0, 5))
+      
+      const heroProducts = products.filter(p => p.showInHero === true)
+      setHeroFlagged(heroProducts.length > 0 ? heroProducts : products.slice(0, 1))
+      setFlaggedNewArrivals(products.filter(p => p.showInNewArrivals === true))
+      setFlaggedBestSellers(products.filter(p => p.showInBestSellers === true))
+      setFlaggedSpecialOffers(products.filter(p => p.showInSpecialOffers === true))
+      setFlaggedTrending(products.filter(p => p.showInTrending === true))
+      
+      // Clear old fallback arrays
+      setNewArrivals([])
+      setBestSellers([])
+      setTrendingProducts([])
+      setDiscountProducts([])
     }
     
     loadProducts()
     
     const handleChange = () => {
       if (isMounted) {
-        // Clear cache when products change to get fresh data
         clearProductsCache()
         loadProducts()
       }
     }
     window.addEventListener('pixelpad_products_changed', handleChange)
     
-    // Fallback: mark as loaded after 500ms if products haven't loaded yet (ultra-fast display)
-    loadingTimeout = setTimeout(() => {
-      if (isMounted) {
-        setIsLoaded(true)
-      }
-    }, 500)
-    
     return () => {
       isMounted = false
-      if (loadingTimeout) clearTimeout(loadingTimeout)
       window.removeEventListener('pixelpad_products_changed', handleChange)
     }
   }, [])
@@ -618,21 +808,13 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Loading Animation */}
-      {!isLoaded && (
-        <div className="fixed inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-black z-[9999] flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-20 h-20 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <div className="text-white text-xl font-bold animate-pulse">PIXEL PAD</div>
-          </div>
-        </div>
-      )}
+      {/* Loading Animation - Removed to show page immediately */}
 
       {/* Hero Section with Carousel - Single Background */}
       <div
-        className="relative overflow-x-hidden scroll-snap-align-start bg-cover bg-center bg-no-repeat w-full hero-background"
+        className="relative overflow-x-hidden scroll-snap-align-start w-full hero-background bg-white dark:bg-cover dark:bg-center dark:bg-no-repeat"
         style={{
-          backgroundImage: `url('/images/hero-background.jpg')`,
+          backgroundImage: 'none',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
@@ -642,20 +824,27 @@ export default function HomePage() {
           WebkitTransform: 'translateZ(0)',
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-primary-500/8 to-primary-600/12 pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-transparent to-white/25 dark:to-gray-900/25 pointer-events-none" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.15),transparent_60%),radial-gradient(circle_at_70%_70%,rgba(34,197,94,0.12),transparent_60%)] pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-t from-primary-500/5 via-transparent to-transparent pointer-events-none" />
+        {/* Background image only in dark mode */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat dark:opacity-100 opacity-0 pointer-events-none"
+          style={{
+            backgroundImage: `url('/images/hero-background.jpg')`,
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-primary-500/8 to-primary-600/12 dark:pointer-events-none pointer-events-none opacity-0 dark:opacity-100" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-transparent to-white/25 dark:to-gray-900/25 pointer-events-none opacity-0 dark:opacity-100" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.15),transparent_60%),radial-gradient(circle_at_70%_70%,rgba(34,197,94,0.12),transparent_60%)] pointer-events-none opacity-0 dark:opacity-100" />
+        <div className="absolute inset-0 bg-gradient-to-t from-primary-500/5 via-transparent to-transparent pointer-events-none opacity-0 dark:opacity-100" />
         
         {/* Hero Section - Featured Product */}
         {heroProduct && (
           <section
             ref={heroRef}
-            className="relative pt-20 sm:pt-12 md:pt-16 lg:pt-20 pb-4 sm:pb-0 min-h-[40vh] sm:min-h-[50vh] md:min-h-[60vh] lg:min-h-[75vh]"
+            className="relative pt-20 sm:pt-20 md:pt-24 lg:pt-16 pb-4 sm:pb-0 min-h-[40vh] sm:min-h-[50vh] md:min-h-[60vh] lg:min-h-[75vh]"
           >
             <div className="relative max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-6 lg:py-8">
               <div className={`flex ${isRTL ? 'justify-center lg:justify-start' : 'justify-center sm:justify-center lg:justify-end'}`}>
-                <div className="w-full max-w-[320px] sm:max-w-sm md:max-w-md lg:max-w-md bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl md:rounded-3xl border-2 border-gray-200/80 dark:border-gray-700/80 shadow-2xl p-2 sm:p-2.5 md:p-2.5 lg:p-3 transform hover:scale-[1.02] transition-transform duration-300">
+                <div className="w-full max-w-[320px] sm:max-w-sm md:max-w-md lg:max-w-md bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl md:rounded-3xl border-2 border-gray-200/80 dark:border-gray-700/80 shadow-2xl p-2.5 sm:p-2.5 md:p-2.5 lg:p-3 transform hover:scale-[1.02] transition-transform duration-300">
                   <ProductCard product={heroProduct} variant="hero" hideIds />
                 </div>
               </div>
@@ -775,10 +964,18 @@ export default function HomePage() {
                                 )}
                               </div>
                               
-                              {/* Enhanced CTA Button */}
-                              <button
-                                onClick={() => {
-                                  if (product.inStock) {
+                              {/* Enhanced CTA Buttons */}
+                              <div className="flex gap-2 sm:gap-2.5">
+                                <button
+                                  onClick={() => {
+                                    router.push(`/products/${product.id}`)
+                                  }}
+                                  className="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white px-4 sm:px-5 md:px-4 lg:px-5 py-2.5 sm:py-3 md:py-3.5 lg:py-4 rounded-lg sm:rounded-lg lg:rounded-xl font-bold text-sm sm:text-base md:text-base lg:text-base text-center transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-100"
+                                >
+                                  {t('product.viewDetails') || 'View Details'}
+                                </button>
+                                <button
+                                  onClick={() => {
                                     addItem({
                                       productId: String(product.id),
                                       variantId: undefined,
@@ -786,19 +983,18 @@ export default function HomePage() {
                                       price: product.price,
                                       image: product.image
                                     }, 1)
-                                  }
-                                }}
-                                disabled={!product.inStock}
-                                className="group block w-full bg-gradient-to-r from-primary-600 via-primary-700 to-primary-600 hover:from-primary-700 hover:via-primary-800 hover:to-primary-700 text-white px-4 sm:px-5 md:px-6 lg:px-6 py-2.5 sm:py-3 md:py-3.5 lg:py-4 rounded-lg sm:rounded-lg lg:rounded-xl font-bold text-sm sm:text-base md:text-base lg:text-base text-center transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-[1.02] active:scale-100 relative overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
-                              >
-                                <span className="relative z-10 flex items-center justify-center gap-1 sm:gap-1.5 lg:gap-2">
-                                  <span>{t('product.addToCart') || 'Add to Cart'}</span>
-                                  <svg className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                  </svg>
-                                </span>
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary-400/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-                              </button>
+                                  }}
+                                  className="flex-1 group bg-gradient-to-r from-primary-600 via-primary-700 to-primary-600 hover:from-primary-700 hover:via-primary-800 hover:to-primary-700 text-white px-4 sm:px-5 md:px-6 lg:px-6 py-2.5 sm:py-3 md:py-3.5 lg:py-4 rounded-lg sm:rounded-lg lg:rounded-xl font-bold text-sm sm:text-base md:text-base lg:text-base text-center transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-[1.02] active:scale-100 relative overflow-hidden"
+                                >
+                                  <span className="relative z-10 flex items-center justify-center gap-1 sm:gap-1.5 lg:gap-2">
+                                    <span>{t('product.addToCart') || 'Add to Cart'}</span>
+                                    <svg className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                    </svg>
+                                  </span>
+                                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary-400/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+                                </button>
+                              </div>
                               
                               {/* Trust Badges */}
                               <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-4 pt-1 sm:pt-1.5 lg:pt-2">
@@ -872,6 +1068,166 @@ export default function HomePage() {
         </div>
       </section>
       </div>
+
+      {/* Reviews Section */}
+      <section className="py-6 sm:py-12 md:py-16 lg:py-20 bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 scroll-snap-align-start overflow-x-hidden overflow-y-visible relative">
+        {/* Background decorative elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary-200/10 dark:bg-primary-800/10 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-primary-300/10 dark:bg-primary-700/10 rounded-full blur-3xl"></div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-5 md:px-6 lg:px-8 w-full relative z-10">
+          {/* Header Section */}
+          <div className="flex flex-col items-center gap-2 sm:gap-3 md:gap-4 lg:gap-5 mb-6 sm:mb-10 md:mb-12 lg:mb-16 text-center">
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 bg-primary-100 dark:bg-primary-900/30 rounded-full mb-1 sm:mb-2">
+              <StarIcon className="w-3 h-3 sm:w-4 sm:h-4 text-primary-600 dark:text-primary-400" />
+              <span className="text-[10px] sm:text-xs md:text-sm font-bold text-primary-700 dark:text-primary-300">
+                {t('testimonials.verifiedBuyer') || 'Verified Reviews'}
+              </span>
+            </div>
+            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-black text-gray-900 dark:text-white leading-tight">
+              {t('testimonials.title') || 'What our clients say'}
+            </h2>
+          </div>
+          
+          {/* Reviews Grid */}
+          <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 md:gap-7 lg:gap-8 ${isRTL ? 'rtl' : 'ltr'}`}>
+            {/* Review 1 */}
+            <div className="group relative bg-white dark:bg-gray-800 rounded-lg sm:rounded-2xl md:rounded-3xl p-3 sm:p-6 md:p-7 lg:p-8 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-100/50 dark:border-gray-700/50 overflow-hidden">
+              {/* Decorative quote icon */}
+              <div className="absolute top-1.5 sm:top-4 right-1.5 sm:right-4 opacity-5 group-hover:opacity-10 transition-opacity duration-300">
+                <svg className="w-12 h-12 sm:w-20 sm:h-20 md:w-24 md:h-24 text-primary-600 dark:text-primary-400" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.996 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+                </svg>
+              </div>
+              
+              {/* Gradient accent */}
+              <div className="absolute top-0 left-0 right-0 h-0.5 sm:h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-500"></div>
+              
+              <div className="relative z-10">
+                {/* Rating Stars */}
+                <div className="flex items-center gap-0.5 sm:gap-1 mb-2 sm:mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <StarIcon
+                      key={i}
+                      className="w-3 h-3 sm:w-5 sm:h-5 text-yellow-400 fill-current drop-shadow-sm"
+                    />
+                  ))}
+                </div>
+                
+                {/* Review Text */}
+                <p className="text-xs sm:text-base md:text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-3 sm:mb-6 font-medium">
+                  "{t('testimonials.comment1.text') || 'Fast delivery and great support. Highly recommend!'}"
+                </p>
+                
+                {/* Customer Info */}
+                <div className="flex items-center gap-2 sm:gap-4 pt-2 sm:pt-4 border-t border-gray-100 dark:border-gray-700">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-xs sm:text-base md:text-lg font-bold text-gray-900 dark:text-white mb-0 sm:mb-1">
+                      {t('testimonials.comment1.name') || 'Youssef'}
+                    </h3>
+                    <p className="text-[10px] sm:text-sm text-gray-500 dark:text-gray-400">
+                      Customer
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Review 2 */}
+            <div className="group relative bg-white dark:bg-gray-800 rounded-lg sm:rounded-2xl md:rounded-3xl p-3 sm:p-6 md:p-7 lg:p-8 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-100/50 dark:border-gray-700/50 overflow-hidden">
+              {/* Decorative quote icon */}
+              <div className="absolute top-1.5 sm:top-4 right-1.5 sm:right-4 opacity-5 group-hover:opacity-10 transition-opacity duration-300">
+                <svg className="w-12 h-12 sm:w-20 sm:h-20 md:w-24 md:h-24 text-primary-600 dark:text-primary-400" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.996 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+                </svg>
+              </div>
+              
+              {/* Gradient accent */}
+              <div className="absolute top-0 left-0 right-0 h-0.5 sm:h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-500"></div>
+              
+              <div className="relative z-10">
+                {/* Rating Stars */}
+                <div className="flex items-center gap-0.5 sm:gap-1 mb-2 sm:mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <StarIcon
+                      key={i}
+                      className="w-3 h-3 sm:w-5 sm:h-5 text-yellow-400 fill-current drop-shadow-sm"
+                    />
+                  ))}
+                </div>
+                
+                {/* Review Text */}
+                <p className="text-xs sm:text-base md:text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-3 sm:mb-6 font-medium">
+                  "{t('testimonials.comment2.text') || 'They installed our office network flawlessly.'}"
+                </p>
+                
+                {/* Customer Info */}
+                <div className="flex items-center gap-2 sm:gap-4 pt-2 sm:pt-4 border-t border-gray-100 dark:border-gray-700">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-xs sm:text-base md:text-lg font-bold text-gray-900 dark:text-white mb-0 sm:mb-1">
+                      {t('testimonials.comment2.name') || 'Sara'}
+                    </h3>
+                    <p className="text-[10px] sm:text-sm text-gray-500 dark:text-gray-400">
+                      Customer
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Review 3 */}
+            <div className="group relative bg-white dark:bg-gray-800 rounded-lg sm:rounded-2xl md:rounded-3xl p-3 sm:p-6 md:p-7 lg:p-8 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-100/50 dark:border-gray-700/50 overflow-hidden md:col-span-1 lg:col-span-1">
+              {/* Decorative quote icon */}
+              <div className="absolute top-1.5 sm:top-4 right-1.5 sm:right-4 opacity-5 group-hover:opacity-10 transition-opacity duration-300">
+                <svg className="w-12 h-12 sm:w-20 sm:h-20 md:w-24 md:h-24 text-primary-600 dark:text-primary-400" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.996 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+                </svg>
+              </div>
+              
+              {/* Gradient accent */}
+              <div className="absolute top-0 left-0 right-0 h-0.5 sm:h-1 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-500"></div>
+              
+              <div className="relative z-10">
+                {/* Rating Stars */}
+                <div className="flex items-center gap-0.5 sm:gap-1 mb-2 sm:mb-4">
+                  {[...Array(5)].map((_, i) => (
+                    <StarIcon
+                      key={i}
+                      className="w-3 h-3 sm:w-5 sm:h-5 text-yellow-400 fill-current drop-shadow-sm"
+                    />
+                  ))}
+                </div>
+                
+                {/* Review Text */}
+                <p className="text-xs sm:text-base md:text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-3 sm:mb-6 font-medium">
+                  "{t('testimonials.comment3.text') || 'Good prices and professional service.'}"
+                </p>
+                
+                {/* Customer Info */}
+                <div className="flex items-center gap-2 sm:gap-4 pt-2 sm:pt-4 border-t border-gray-100 dark:border-gray-700">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-xs sm:text-base md:text-lg font-bold text-gray-900 dark:text-white mb-0 sm:mb-1">
+                      {t('testimonials.comment3.name') || 'Anas'}
+                    </h3>
+                    <p className="text-[10px] sm:text-sm text-gray-500 dark:text-gray-400">
+                      Customer
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* User's Own Review Section - Only visible to logged in users */}
+          {isLoggedIn && user && (
+            <div className="mt-4 sm:mt-6 md:mt-8 w-full relative z-20 overflow-visible">
+              <UserReviewSection user={user} token={token || ''} t={t} isRTL={isRTL} />
+            </div>
+          )}
+        </div>
+      </section>
 
       {/* New Arrivals Section - Enhanced Colors */}
       <section className="py-8 sm:py-10 md:py-12 bg-white dark:bg-gray-900 scroll-snap-align-start overflow-x-hidden relative sm:relative">
@@ -1188,35 +1544,191 @@ export default function HomePage() {
             </h2>
           </div>
           
-          <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-5 md:gap-5 lg:gap-5 ${isRTL ? 'rtl' : 'ltr'}`}>
+          <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-5 md:gap-5 lg:gap-5 ${isRTL ? 'rtl' : 'ltr'}`}>
             {/* Quality Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 lg:p-4 shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-[1.01] border border-gray-100 dark:border-gray-700 group text-center">
-              <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center mx-auto mb-2 shadow-md transform group-hover:scale-105 group-hover:rotate-1 transition-all duration-300">
-                <ShieldCheckIcon className="w-7 h-7 text-white" />
+            <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-4 shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-[1.01] border border-gray-100 dark:border-gray-700 group text-center">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-600 rounded-lg flex items-center justify-center mx-auto mb-1.5 sm:mb-2 shadow-md transform group-hover:scale-105 group-hover:rotate-1 transition-all duration-300">
+                <ShieldCheckIcon className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
               </div>
-              <h3 className="text-base lg:text-lg font-black text-primary-700 dark:text-primary-300">
+              <h3 className="text-sm sm:text-base lg:text-lg font-black text-primary-700 dark:text-primary-300">
                 {t('home.trust.quality') || 'Pro-Grade Quality'}
               </h3>
             </div>
 
             {/* Support Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 lg:p-4 shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-[1.01] border border-gray-100 dark:border-gray-700 group text-center">
-              <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center mx-auto mb-2 shadow-md transform group-hover:scale-105 group-hover:rotate-1 transition-all duration-300">
-                <StarIcon className="w-7 h-7 text-white" />
+            <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-4 shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-[1.01] border border-gray-100 dark:border-gray-700 group text-center">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-600 rounded-lg flex items-center justify-center mx-auto mb-1.5 sm:mb-2 shadow-md transform group-hover:scale-105 group-hover:rotate-1 transition-all duration-300">
+                <StarIcon className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
               </div>
-              <h3 className="text-base lg:text-lg font-black text-primary-700 dark:text-primary-300">
+              <h3 className="text-sm sm:text-base lg:text-lg font-black text-primary-700 dark:text-primary-300">
                 {t('home.trust.support') || 'Experts on Call'}
               </h3>
             </div>
 
             {/* Returns Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 lg:p-4 shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-[1.01] border border-gray-100 dark:border-gray-700 group text-center">
-              <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center mx-auto mb-2 shadow-md transform group-hover:scale-105 group-hover:rotate-1 transition-all duration-300">
-                <CheckCircleIcon className="w-7 h-7 text-white" />
+            <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-4 shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-[1.01] border border-gray-100 dark:border-gray-700 group text-center">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-600 rounded-lg flex items-center justify-center mx-auto mb-1.5 sm:mb-2 shadow-md transform group-hover:scale-105 group-hover:rotate-1 transition-all duration-300">
+                <CheckCircleIcon className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
               </div>
-              <h3 className="text-base lg:text-lg font-black text-primary-700 dark:text-primary-300">
+              <h3 className="text-sm sm:text-base lg:text-lg font-black text-primary-700 dark:text-primary-300">
                 {t('home.trust.returns') || 'Hassle-Free Returns'}
               </h3>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Additional Customer Reviews Section */}
+      <section className="py-6 sm:py-12 md:py-16 lg:py-20 bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 scroll-snap-align-start overflow-x-hidden relative">
+        {/* Background decorative elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 right-0 w-72 h-72 bg-primary-300/5 dark:bg-primary-700/5 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-1/4 left-0 w-72 h-72 bg-primary-200/5 dark:bg-primary-800/5 rounded-full blur-3xl"></div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-5 md:px-6 lg:px-8 w-full relative z-10">
+          {/* Header */}
+          <div className="flex flex-col items-center gap-2 sm:gap-3 md:gap-4 lg:gap-5 mb-6 sm:mb-10 md:mb-12 lg:mb-16 text-center">
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-2 bg-gradient-to-r from-primary-100 to-primary-50 dark:from-primary-900/40 dark:to-primary-800/20 rounded-full border border-primary-200/50 dark:border-primary-700/30 shadow-sm">
+              <StarIcon className="w-3 h-3 sm:w-4 sm:h-4 text-primary-600 dark:text-primary-400" />
+              <span className="text-[10px] sm:text-xs md:text-sm font-bold text-primary-700 dark:text-primary-300">
+                {t('landing.reviews.badge') || 'Trusted by 500+ Customers'}
+              </span>
+            </div>
+            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-black text-gray-900 dark:text-white leading-tight">
+              {t('landing.reviews.title') || 'What Our Customers Say'}
+            </h2>
+            <p className="text-xs sm:text-sm md:text-base text-gray-600 dark:text-gray-400 max-w-2xl">
+              Real experiences from satisfied customers across Morocco
+            </p>
+          </div>
+          
+          {/* Reviews Grid - Enhanced Layout */}
+          <div className={`grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6 md:gap-8 ${isRTL ? 'rtl' : 'ltr'}`}>
+            {/* Review 1 */}
+            <div className="group relative bg-white dark:bg-gray-800 rounded-lg sm:rounded-2xl md:rounded-3xl p-3 sm:p-6 md:p-8 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-100/80 dark:border-gray-700/50 overflow-hidden">
+              {/* Left accent bar */}
+              <div className="absolute left-0 top-0 bottom-0 w-0.5 sm:w-1 bg-gradient-to-b from-gray-300 via-gray-400 to-gray-300 dark:from-gray-600 dark:via-gray-500 dark:to-gray-600 rounded-l-lg sm:rounded-l-2xl md:rounded-l-3xl"></div>
+              
+              {/* Quote icon */}
+              <div className="absolute top-1.5 sm:top-6 right-1.5 sm:right-6 opacity-5 group-hover:opacity-10 transition-opacity duration-300">
+                <svg className="w-12 h-12 sm:w-18 sm:h-18 md:w-20 md:h-20 text-gray-400 dark:text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.996 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+                </svg>
+              </div>
+              
+              <div className="relative z-10">
+                {/* Rating Stars */}
+                <div className="flex items-center gap-0.5 sm:gap-1 mb-2 sm:mb-4 md:mb-5">
+                  {[...Array(5)].map((_, i) => (
+                    <StarIcon
+                      key={i}
+                      className="w-3 h-3 sm:w-5 sm:h-5 text-yellow-400 fill-current drop-shadow-sm"
+                    />
+                  ))}
+                </div>
+                
+                {/* Review Text */}
+                <p className="text-xs sm:text-base md:text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-3 sm:mb-5 md:mb-6 font-medium">
+                  {t('landing.reviews.review1.text') || 'Pixel Pad transformed our office setup. Professional service, fast delivery, and excellent support. Highly recommended!'}
+                </p>
+                
+                {/* Customer Info */}
+                <div className="flex items-center gap-2 sm:gap-4 pt-2 sm:pt-4 md:pt-5 border-t border-gray-100 dark:border-gray-700">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-xs sm:text-base md:text-lg font-bold text-gray-900 dark:text-white mb-0 sm:mb-1">
+                      {t('landing.reviews.review1.name') || 'Ahmed Benali'}
+                    </h4>
+                    <p className="text-[10px] sm:text-sm text-gray-500 dark:text-gray-400">
+                      {t('landing.reviews.review1.role') || 'Business Owner, Casablanca'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Review 2 */}
+            <div className="group relative bg-white dark:bg-gray-800 rounded-lg sm:rounded-2xl md:rounded-3xl p-3 sm:p-6 md:p-8 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-100/80 dark:border-gray-700/50 overflow-hidden">
+              {/* Left accent bar */}
+              <div className="absolute left-0 top-0 bottom-0 w-0.5 sm:w-1 bg-gradient-to-b from-gray-300 via-gray-400 to-gray-300 dark:from-gray-600 dark:via-gray-500 dark:to-gray-600 rounded-l-lg sm:rounded-l-2xl md:rounded-l-3xl"></div>
+              
+              {/* Quote icon */}
+              <div className="absolute top-1.5 sm:top-6 right-1.5 sm:right-6 opacity-5 group-hover:opacity-10 transition-opacity duration-300">
+                <svg className="w-12 h-12 sm:w-18 sm:h-18 md:w-20 md:h-20 text-gray-400 dark:text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.996 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+                </svg>
+              </div>
+              
+              <div className="relative z-10">
+                {/* Rating Stars */}
+                <div className="flex items-center gap-0.5 sm:gap-1 mb-2 sm:mb-4 md:mb-5">
+                  {[...Array(5)].map((_, i) => (
+                    <StarIcon
+                      key={i}
+                      className="w-3 h-3 sm:w-5 sm:h-5 text-yellow-400 fill-current drop-shadow-sm"
+                    />
+                  ))}
+                </div>
+                
+                {/* Review Text */}
+                <p className="text-xs sm:text-base md:text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-3 sm:mb-5 md:mb-6 font-medium">
+                  {t('landing.reviews.review2.text') || 'Got my MacBook Pro here. Outstanding service, great warranty, and the team helped with everything. Best tech store!'}
+                </p>
+                
+                {/* Customer Info */}
+                <div className="flex items-center gap-2 sm:gap-4 pt-2 sm:pt-4 md:pt-5 border-t border-gray-100 dark:border-gray-700">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-xs sm:text-base md:text-lg font-bold text-gray-900 dark:text-white mb-0 sm:mb-1">
+                      {t('landing.reviews.review2.name') || 'Fatima Alami'}
+                    </h4>
+                    <p className="text-[10px] sm:text-sm text-gray-500 dark:text-gray-400">
+                      {t('landing.reviews.review2.role') || 'Designer, Rabat'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Review 3 */}
+            <div className="group relative bg-white dark:bg-gray-800 rounded-lg sm:rounded-2xl md:rounded-3xl p-3 sm:p-6 md:p-8 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 border border-gray-100/80 dark:border-gray-700/50 overflow-hidden">
+              {/* Left accent bar */}
+              <div className="absolute left-0 top-0 bottom-0 w-0.5 sm:w-1 bg-gradient-to-b from-gray-300 via-gray-400 to-gray-300 dark:from-gray-600 dark:via-gray-500 dark:to-gray-600 rounded-l-lg sm:rounded-l-2xl md:rounded-l-3xl"></div>
+              
+              {/* Quote icon */}
+              <div className="absolute top-1.5 sm:top-6 right-1.5 sm:right-6 opacity-5 group-hover:opacity-10 transition-opacity duration-300">
+                <svg className="w-12 h-12 sm:w-18 sm:h-18 md:w-20 md:h-20 text-gray-400 dark:text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.996 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+                </svg>
+              </div>
+              
+              <div className="relative z-10">
+                {/* Rating Stars */}
+                <div className="flex items-center gap-0.5 sm:gap-1 mb-2 sm:mb-4 md:mb-5">
+                  {[...Array(5)].map((_, i) => (
+                    <StarIcon
+                      key={i}
+                      className="w-3 h-3 sm:w-5 sm:h-5 text-yellow-400 fill-current drop-shadow-sm"
+                    />
+                  ))}
+                </div>
+                
+                {/* Review Text */}
+                <p className="text-xs sm:text-base md:text-lg text-gray-700 dark:text-gray-300 leading-relaxed mb-3 sm:mb-5 md:mb-6 font-medium">
+                  {t('landing.reviews.review3.text') || 'Perfect gaming PC setup! Great prices, expert help, and they even installed everything. 10/10 experience!'}
+                </p>
+                
+                {/* Customer Info */}
+                <div className="flex items-center gap-2 sm:gap-4 pt-2 sm:pt-4 md:pt-5 border-t border-gray-100 dark:border-gray-700">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-xs sm:text-base md:text-lg font-bold text-gray-900 dark:text-white mb-0 sm:mb-1">
+                      {t('landing.reviews.review3.name') || 'Youssef Idrissi'}
+                    </h4>
+                    <p className="text-[10px] sm:text-sm text-gray-500 dark:text-gray-400">
+                      {t('landing.reviews.review3.role') || 'Gamer, Marrakech'}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

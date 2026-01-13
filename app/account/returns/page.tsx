@@ -278,7 +278,7 @@ export default function ReturnsPage() {
                 return (
                   <div key={order.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-200 dark:border-gray-700 w-full">
                     {/* Order Header */}
-                    <div className="p-3 bg-gradient-to-r from-primary-50 to-primary-100 dark:from-gray-800 dark:to-gray-800 border-b border-gray-200 dark:border-gray-700 w-full">
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 w-full">
                       <div className="flex flex-col gap-2 w-full">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">

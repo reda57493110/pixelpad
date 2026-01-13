@@ -12,6 +12,7 @@ export interface Product {
   costPrice?: number; // Cost/purchase price (what you paid to buy the product)
   category: string; // Category ID (ObjectId as string) or category name
   image: string;
+  images?: string[]; // Multiple images for product gallery
   inStock: boolean;
   stockQuantity?: number; // Total quantity in stock
   soldQuantity?: number; // Total quantity sold
@@ -30,6 +31,13 @@ export interface Product {
   showInTrending?: boolean;
   showOnProductPage?: boolean; // Show on product page (default: true if not set)
   order?: number; // Display order (lower numbers appear first)
+  variants?: Array<{
+    ram: string;
+    storage: string;
+    storageType: string;
+    price: number;
+    originalPrice?: number;
+  }>;
 }
 
 export interface NavigationLink {

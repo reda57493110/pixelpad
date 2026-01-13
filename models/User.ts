@@ -34,7 +34,10 @@ const UserSchema = new Schema<IUser>(
   }
 )
 
-// Index is already created by unique: true on email field, so no need for duplicate
+// Indexes for efficient queries
+UserSchema.index({ role: 1 }) // For filtering by role (admin queries)
+UserSchema.index({ isActive: 1, role: 1 }) // Compound index for active users by role
+// Note: email field already has unique: true which creates an index automatically
 
 export default mongoose.models.User || mongoose.model<IUser>('User', UserSchema)
 

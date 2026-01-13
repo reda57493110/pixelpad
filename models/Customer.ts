@@ -31,5 +31,10 @@ const CustomerSchema = new Schema<ICustomer>(
   }
 )
 
+// Indexes for efficient queries
+CustomerSchema.index({ isGuest: 1 }) // For filtering guest vs regular customers
+// Note: email field already has unique: true which creates an index automatically
+// Compound index { email: 1, isGuest: 1 } is not needed since unique index on email already exists
+
 export default mongoose.models.Customer || mongoose.model<ICustomer>('Customer', CustomerSchema)
 

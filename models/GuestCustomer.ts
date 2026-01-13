@@ -27,6 +27,10 @@ const GuestCustomerSchema = new Schema<IGuestCustomer>(
   }
 )
 
+// Indexes for efficient queries
+GuestCustomerSchema.index({ orders: -1 }) // For sorting by order count
+// Note: email field already has unique: true which creates an index automatically, so no need for explicit email index
+
 export default mongoose.models.GuestCustomer || mongoose.model<IGuestCustomer>('GuestCustomer', GuestCustomerSchema)
 
 

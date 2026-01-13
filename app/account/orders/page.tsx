@@ -230,7 +230,7 @@ export default function OrdersPage() {
 
           {/* Success Message */}
           {success && (
-            <div className="rounded-lg border border-primary-300 dark:border-primary-600 bg-gradient-to-r from-primary-50 to-primary-100 dark:from-primary-800/90 dark:to-primary-700/90 text-primary-700 dark:text-primary-100 p-3 shadow-md">
+            <div className="rounded-lg border border-primary-300 dark:border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 p-3 shadow-md">
               {t('orders.orderPlacedSuccess') || 'Your order has been sent, wait for confirmation with you.'}
             </div>
           )}
@@ -271,46 +271,46 @@ export default function OrdersPage() {
           {/* Statistics Cards */}
           {orders.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-3">
-              <div className="bg-gradient-to-br from-primary-500 to-primary-600 dark:from-primary-600 dark:to-primary-700 rounded-lg p-2 sm:p-4 shadow-lg text-white overflow-hidden">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-4 shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-1.5">
                   <div className="min-w-0 flex-1">
-                    <p className="text-[10px] sm:text-xs text-primary-100 mb-0.5 sm:mb-1 truncate">{t('orders.totalOrders') || 'Total Orders'}</p>
-                    <p className="text-sm sm:text-lg font-bold text-white">{stats.total}</p>
+                    <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 mb-0.5 sm:mb-1 truncate">{t('orders.totalOrders') || 'Total Orders'}</p>
+                    <p className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white">{stats.total}</p>
                   </div>
-                  <div className="hidden sm:flex w-10 h-10 rounded-lg bg-white/20 backdrop-blur-sm items-center justify-center flex-shrink-0">
+                  <div className="hidden sm:flex w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 items-center justify-center flex-shrink-0">
                     <CubeIcon className="w-6 h-6 text-white" />
                   </div>
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-primary-500 to-primary-600 dark:from-primary-600 dark:to-primary-700 rounded-lg p-2 sm:p-4 shadow-lg text-white overflow-hidden">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-4 shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-1.5">
                   <div className="min-w-0 flex-1">
-                    <p className="text-[10px] sm:text-xs text-primary-100 mb-0.5 sm:mb-1 truncate">{t('orders.processingStatus') || 'Processing'}</p>
-                    <p className="text-sm sm:text-lg font-bold text-white">{stats.processing}</p>
+                    <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 mb-0.5 sm:mb-1 truncate">{t('orders.processingStatus') || 'Processing'}</p>
+                    <p className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white">{stats.processing}</p>
                   </div>
-                  <div className="hidden sm:flex w-10 h-10 rounded-lg bg-white/20 backdrop-blur-sm items-center justify-center flex-shrink-0">
+                  <div className="hidden sm:flex w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 items-center justify-center flex-shrink-0">
                     <ClockIcon className="w-6 h-6 text-white" />
                   </div>
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-primary-500 to-primary-600 dark:from-primary-600 dark:to-primary-700 rounded-lg p-2 sm:p-4 shadow-lg text-white overflow-hidden">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-4 shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-1.5">
                   <div className="min-w-0 flex-1">
-                    <p className="text-[10px] sm:text-xs text-primary-100 mb-0.5 sm:mb-1 truncate">{t('orders.completedStatus') || 'Completed'}</p>
-                    <p className="text-sm sm:text-lg font-bold text-white">{stats.completed}</p>
+                    <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 mb-0.5 sm:mb-1 truncate">{t('orders.completedStatus') || 'Completed'}</p>
+                    <p className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white">{stats.completed}</p>
                   </div>
-                  <div className="hidden sm:flex w-10 h-10 rounded-lg bg-white/20 backdrop-blur-sm items-center justify-center flex-shrink-0">
+                  <div className="hidden sm:flex w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 items-center justify-center flex-shrink-0">
                     <CheckBadgeIcon className="w-6 h-6 text-white" />
                   </div>
                 </div>
               </div>
-              <div className="bg-gradient-to-br from-primary-500 to-primary-600 dark:from-primary-600 dark:to-primary-700 rounded-lg p-2 sm:p-4 shadow-lg text-white overflow-hidden">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-4 shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-1.5">
                   <div className="min-w-0 flex-1">
-                    <p className="text-[10px] sm:text-xs text-primary-100 mb-0.5 sm:mb-1 truncate">{t('orders.totalSpent') || 'Total Spent'}</p>
-                    <p className="text-sm sm:text-lg font-bold text-white truncate">{formatCurrency(stats.totalSpent)}</p>
+                    <p className="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 mb-0.5 sm:mb-1 truncate">{t('orders.totalSpent') || 'Total Spent'}</p>
+                    <p className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white truncate">{formatCurrency(stats.totalSpent)}</p>
                   </div>
-                  <div className="hidden sm:flex w-10 h-10 rounded-lg bg-white/20 backdrop-blur-sm items-center justify-center flex-shrink-0">
+                  <div className="hidden sm:flex w-10 h-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 items-center justify-center flex-shrink-0">
                     <CurrencyDollarIcon className="w-6 h-6 text-white" />
                   </div>
                 </div>
@@ -347,7 +347,7 @@ export default function OrdersPage() {
                     className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-600 overflow-hidden"
                   >
                     {/* Order Header */}
-                    <div className="p-3 sm:p-4 bg-gradient-to-r from-primary-50 to-primary-100 dark:from-gray-800 dark:to-gray-800 border-b border-primary-200 dark:border-gray-700">
+                    <div className="p-3 sm:p-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2.5 sm:mb-3 gap-2">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 min-w-0 flex-1">
                           <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white break-words sm:truncate min-w-0 flex-1">

@@ -38,12 +38,12 @@ export default function AccountPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
             {cards.map((c) => (
               <Link key={c.href} href={c.href} className="group">
-                <div className={`rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-5 shadow-md sm:shadow-lg bg-gradient-to-br ${c.color} text-white hover:shadow-lg sm:hover:shadow-xl hover:scale-[1.02] sm:hover:scale-105 transition-all duration-300 h-full flex flex-col min-h-[120px] sm:min-h-[140px]`}> 
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center mb-2 sm:mb-3 flex-shrink-0">
+                <div className="rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-5 shadow-md sm:shadow-lg bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:shadow-lg sm:hover:shadow-xl hover:scale-[1.02] sm:hover:scale-105 transition-all duration-300 h-full flex flex-col min-h-[120px] sm:min-h-[140px]"> 
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-gradient-to-br ${c.color} flex items-center justify-center mb-2 sm:mb-3 flex-shrink-0`}>
                     <c.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                   </div>
-                  <div className="font-semibold text-sm sm:text-base mb-1 sm:mb-1.5 flex-shrink-0">{t(c.titleKey)}</div>
-                  <div className="text-xs sm:text-sm text-white/80 leading-snug sm:leading-tight flex-1">{t(c.descKey)}</div>
+                  <div className="font-semibold text-sm sm:text-base mb-1 sm:mb-1.5 flex-shrink-0 text-gray-900 dark:text-white">{t(c.titleKey)}</div>
+                  <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-snug sm:leading-tight flex-1">{t(c.descKey)}</div>
                 </div>
               </Link>
             ))}

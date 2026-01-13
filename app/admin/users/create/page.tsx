@@ -59,7 +59,7 @@ export default function CreateUserPage() {
       const allSelected = group.every(p => prev.permissions.includes(p))
       const permissions = allSelected
         ? prev.permissions.filter(p => !group.includes(p as Permission))
-        : [...new Set([...prev.permissions, ...group])]
+        : Array.from(new Set([...prev.permissions, ...group]))
       return { ...prev, permissions }
     })
   }

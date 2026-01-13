@@ -9,6 +9,7 @@ export interface CartItem {
   price: number // Price snapshot at time of adding to cart
   quantity: number
   image?: string
+  variantInfo?: string // Human-readable variant information (e.g., "16 GB - 256 GB SSD")
 }
 
 interface CartContextType {
@@ -46,7 +47,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
                 name: item.name,
                 price: item.price,
                 quantity: item.quantity,
-                image: item.image
+                image: item.image,
+                variantInfo: item.variantInfo
               }
             }
             // Ensure all required fields exist
@@ -56,7 +58,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
               name: item.name || '',
               price: item.price || 0,
               quantity: item.quantity || 1,
-              image: item.image
+              image: item.image,
+              variantInfo: item.variantInfo
             }
           }).filter((item: CartItem) => item.productId && item.name && item.price > 0)
         }

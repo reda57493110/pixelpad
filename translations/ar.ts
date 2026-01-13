@@ -123,6 +123,7 @@ export const ar = {
     
     // Common
     'common.save': 'حفظ',
+    'common.saving': 'جاري الحفظ...',
     'common.cancel': 'إلغاء',
     'common.back': 'رجوع',
     'common.edit': 'تعديل',
@@ -144,7 +145,7 @@ export const ar = {
     'testimonials.comment1.name': 'يوسف',
     'testimonials.comment1.text': 'توصيل سريع ودعم رائع. أنصح به بشدة!',
     'testimonials.comment2.name': 'سارة',
-    'testimonials.comment2.text': 'قاموا بتثبيت شبكة مكتبنا بلا عيوب.',
+    'testimonials.comment2.text': 'خدمة ممتازة! فريق محترف.',
     'testimonials.comment3.name': 'أنس',
     'testimonials.comment3.text': 'أسعار جيدة وخدمة مهنية.',
     'home.hero.title': 'اكتشف التكنولوجيا المتميزة',
@@ -236,6 +237,7 @@ export const ar = {
     
     // Product
     'product.addToCart': 'أضف إلى السلة',
+    'product.viewDetails': 'عرض التفاصيل',
     'product.outOfStock': 'نفد المخزون',
     'product.notFound': 'المنتج غير موجود',
     'product.backToProducts': 'العودة إلى المنتجات',
@@ -248,6 +250,7 @@ export const ar = {
     'product.securePayment': 'دفع آمن',
     'product.returnPolicy': 'إرجاع خلال 30 يوم',
     'product.warranty': 'ضمان شامل',
+    'product.selectConfiguration': 'اختر التكوين',
     'product.sale': 'تخفيض',
     'product.bestseller': 'الأكثر مبيعاً',
     'product.new': 'جديد',
@@ -992,6 +995,7 @@ export const ar = {
     'contact.info.subtitle': 'نحن هنا لمساعدتك في جميع احتياجاتك التقنية',
     'contact.info.phone': 'الهاتف',
     'contact.info.phoneNumber': '+212779318061',
+    'contact.info.whatsappNumber': '+212779318061',
     'contact.info.email': 'البريد الإلكتروني',
     'contact.info.address': 'العنوان',
     'contact.info.addressValue': 'Fes Champs de Course',
@@ -1849,13 +1853,13 @@ export const ar = {
     'landing.reviews.verified': 'متحقق',
     'landing.reviews.review1.name': 'أحمد بنعلي',
     'landing.reviews.review1.role': 'صاحب عمل، الدار البيضاء',
-    'landing.reviews.review1.text': 'لقد غيرت Pixel Pad إعداد مكتبنا. خدمة احترافية وتوصيل سريع ودعم ممتاز. أنصح به بشدة!',
+    'landing.reviews.review1.text': 'خدمة احترافية وتوصيل سريع. أنصح به بشدة!',
     'landing.reviews.review2.name': 'فاطمة العلمي',
     'landing.reviews.review2.role': 'مصممة، الرباط',
-    'landing.reviews.review2.text': 'اشتريت MacBook Pro من هنا. خدمة استثنائية وضمان رائع، وفريق العمل ساعد في كل شيء. أفضل متجر تقني!',
+    'landing.reviews.review2.text': 'خدمة استثنائية وضمان رائع. أفضل متجر تقني!',
     'landing.reviews.review3.name': 'يوسف الإدريسي',
     'landing.reviews.review3.role': 'لاعب، مراكش',
-    'landing.reviews.review3.text': 'إعداد كمبيوتر ألعاب مثالي! أسعار رائعة ومساعدة خبيرة، وحتى قاموا بتثبيت كل شيء. تجربة 10/10!',
+    'landing.reviews.review3.text': 'إعداد كمبيوتر ألعاب مثالي! أسعار رائعة ومساعدة خبيرة.',
     
     // Final CTA Section
     'landing.cta.badge': 'عرض خاص - وقت محدود',

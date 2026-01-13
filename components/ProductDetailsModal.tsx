@@ -110,7 +110,7 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
                   </span>
                 )}
                 {!product.inStock && (
-                  <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
+                  <span className="bg-primary-600 dark:bg-primary-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg dark:shadow-primary-900/50">
                     {t('product.outOfStock') || 'Out of Stock'}
                   </span>
                 )}
@@ -247,24 +247,17 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
           </button>
           <button
             onClick={handleAddToCart}
-            disabled={!product.inStock}
-            className={`flex-1 px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 ${
-              product.inStock
-                ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
+            className="flex-1 px-4 py-2 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
           >
             <ShoppingCartIcon className="h-5 w-5" />
-            {product.inStock ? (t('product.addToCart') || 'Add to Cart') : (t('product.outOfStock') || 'Out of Stock')}
+            {t('product.addToCart') || 'Add to Cart'}
           </button>
-          {product.inStock && (
-            <button
-              onClick={handleQuickOrder}
-              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors"
-            >
-              {t('product.quickOrder') || 'Quick Order'}
-            </button>
-          )}
+          <button
+            onClick={handleQuickOrder}
+            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors"
+          >
+            {t('product.quickOrder') || 'Quick Order'}
+          </button>
         </div>
       </div>
     </div>

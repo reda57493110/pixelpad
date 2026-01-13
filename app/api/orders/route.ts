@@ -18,10 +18,20 @@ export async function GET(request: NextRequest) {
     if (userId) query.userId = userId
     
     // Use lean() for faster queries and select only needed fields
-    const orders = await Order.find(query)
+    // Use compound index based on query: userId + date or email + date
+    let ordersQuery = Order.find(query)
       .select('id _id date items total status customerName customerPhone city email paymentSessionId paymentMethod paymentStatus returnNotes createdAt updatedAt')
       .sort({ date: -1 })
       .lean()
+    
+    // Hint the appropriate compound index based on query
+    if (query.userId) {
+      ordersQuery = ordersQuery.hint({ userId: 1, date: -1 })
+    } else if (query.email) {
+      ordersQuery = ordersQuery.hint({ email: 1, date: -1 })
+    }
+    
+    const orders = await ordersQuery
     
     // Batch update missing IDs (more efficient than individual updates)
     const ordersNeedingIds = orders.filter((order: any) => !order.id || !order.id.startsWith('PP-'))
@@ -93,33 +103,8 @@ export async function POST(request: NextRequest) {
     // Remove client-controlled bypass header - only admins can bypass
     const bypassStock = isAdmin
     
-    // Validate stock availability before creating order (skip for admins or if bypass is enabled)
-    if (body.items && body.status !== 'returned' && !bypassStock) {
-      const stockErrors: string[] = []
-      
-      for (const item of body.items) {
-        const product = await Product.findById(item.id)
-        if (!product) {
-          stockErrors.push(`Product not found`)
-          continue
-        }
-        
-        const availableStock = product.stockQuantity || 0
-        if (!product.inStock || availableStock < item.quantity) {
-          // Don't expose product names or IDs in errors
-          stockErrors.push(
-            availableStock === 0 ? 'One or more products are out of stock' : `Insufficient stock available`
-          )
-        }
-      }
-      
-      if (stockErrors.length > 0) {
-        return NextResponse.json(
-          { error: 'Stock validation failed', details: stockErrors },
-          { status: 400 }
-        )
-      }
-    }
+    // Stock validation removed - allow orders even when products are out of stock
+    // Products can still be ordered and will be fulfilled when stock becomes available
     
     // Reserve stock: Deduct stock quantity on order creation (for all users, including admins)
     if (body.items && body.status !== 'returned') {

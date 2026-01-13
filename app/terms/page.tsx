@@ -1,13 +1,28 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
+// Static page - no dynamic data
+export const dynamic = 'force-static'
 import Link from 'next/link'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useMemo, memo } from 'react'
+
+// Memoize sections to prevent unnecessary re-renders
+const TermsSection = memo(({ id, titleKey, children }: { id: string, titleKey: string, children: React.ReactNode }) => {
+  const { t } = useLanguage()
+  return (
+    <section id={id} className="scroll-mt-24">
+      <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t(titleKey)}</h2>
+      {children}
+    </section>
+  )
+})
+TermsSection.displayName = 'TermsSection'
 
 export default function TermsPage() {
   const { t } = useLanguage()
   
-  const navItems = [
+  // Memoize navItems to avoid recreating on every render
+  const navItems = useMemo(() => [
     { id: 'overview', labelKey: 'terms.overview' },
     { id: 'accounts', labelKey: 'terms.accounts' },
     { id: 'orders', labelKey: 'terms.orders' },
@@ -17,7 +32,7 @@ export default function TermsPage() {
     { id: 'law', labelKey: 'terms.governingLaw' },
     { id: 'changes', labelKey: 'terms.changes' },
     { id: 'contact', labelKey: 'terms.contact' }
-  ]
+  ], [])
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
@@ -40,31 +55,27 @@ export default function TermsPage() {
         </div>
 
         <div className="space-y-10 text-gray-700 dark:text-gray-300 leading-relaxed">
-          <section id="overview" className="scroll-mt-24">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('terms.overviewTitle')}</h2>
+          <TermsSection id="overview" titleKey="terms.overviewTitle">
             <p>{t('terms.overviewText')}</p>
-          </section>
+          </TermsSection>
 
-          <section id="accounts" className="scroll-mt-24">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('terms.accountsTitle')}</h2>
+          <TermsSection id="accounts" titleKey="terms.accountsTitle">
             <ul className="list-disc pl-6 space-y-2">
               <li>{t('terms.accountsItem1')}</li>
               <li>{t('terms.accountsItem2')}</li>
               <li>{t('terms.accountsItem3')}</li>
             </ul>
-          </section>
+          </TermsSection>
 
-          <section id="orders" className="scroll-mt-24">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('terms.ordersTitle')}</h2>
+          <TermsSection id="orders" titleKey="terms.ordersTitle">
             <ul className="list-disc pl-6 space-y-2">
               <li>{t('terms.ordersItem1')}</li>
               <li>{t('terms.ordersItem2')}</li>
               <li>{t('terms.ordersItem3')}</li>
             </ul>
-          </section>
+          </TermsSection>
 
-          <section id="returns" className="scroll-mt-24">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('terms.returnsTitle')}</h2>
+          <TermsSection id="returns" titleKey="terms.returnsTitle">
             <ul className="list-disc pl-6 space-y-2">
               <li>{t('terms.returnsItem1')}</li>
               <li>{t('terms.returnsItem2')}</li>
@@ -73,44 +84,39 @@ export default function TermsPage() {
                 <Link href="/contacts" className="text-primary-600 dark:text-primary-400 underline">{t('terms.returnsContactLink')}</Link>.
               </li>
             </ul>
-          </section>
+          </TermsSection>
 
-          <section id="acceptable" className="scroll-mt-24">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('terms.acceptableTitle')}</h2>
+          <TermsSection id="acceptable" titleKey="terms.acceptableTitle">
             <ul className="list-disc pl-6 space-y-2">
               <li>{t('terms.acceptableItem1')}</li>
               <li>{t('terms.acceptableItem2')}</li>
               <li>{t('terms.acceptableItem3')}</li>
             </ul>
-          </section>
+          </TermsSection>
 
-          <section id="privacy" className="scroll-mt-24">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('terms.privacyTitle')}</h2>
+          <TermsSection id="privacy" titleKey="terms.privacyTitle">
             <p>
               {t('terms.privacyText')}{' '}
               <Link href="/privacy" className="text-primary-600 dark:text-primary-400 underline">{t('terms.privacyPolicyLink')}</Link>,{' '}
               {t('terms.privacyText2')}
             </p>
-          </section>
+          </TermsSection>
 
-          <section id="law" className="scroll-mt-24">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('terms.lawTitle')}</h2>
+          <TermsSection id="law" titleKey="terms.lawTitle">
             <p>{t('terms.lawText')}</p>
-          </section>
+          </TermsSection>
 
-          <section id="changes" className="scroll-mt-24">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('terms.changesTitle')}</h2>
+          <TermsSection id="changes" titleKey="terms.changesTitle">
             <p>{t('terms.changesText')}</p>
-          </section>
+          </TermsSection>
 
-          <section id="contact" className="scroll-mt-24">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('terms.contactTitle')}</h2>
+          <TermsSection id="contact" titleKey="terms.contactTitle">
             <p>
               {t('terms.contactText')}{' '}
               <Link href="/contacts" className="text-primary-600 dark:text-primary-400 underline">{t('terms.contactLink')}</Link>{' '}
               {t('terms.contactText2')}
             </p>
-          </section>
+          </TermsSection>
 
           {/* Back to top */}
           <div className="pt-2">

@@ -213,7 +213,7 @@ export default function TrackOrderPage() {
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                 {t('orders.orderDetails') || 'Order Details'}
               </h2>
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 rounded-lg p-5 mb-4 border border-blue-200 dark:border-gray-700">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-5 mb-4 border border-gray-200 dark:border-gray-700">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                   <div>
                     <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">

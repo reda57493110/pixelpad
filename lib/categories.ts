@@ -20,7 +20,7 @@ export async function getAllCategories(activeOnly: boolean = false): Promise<Cat
     // Use regular fetch for categories (public endpoint, no auth needed)
     const response = await fetch(url, {
       cache: 'force-cache',
-      next: { revalidate: 1800 } // 30 minutes cache for faster loading
+      next: { revalidate: 600 } // 10 minutes cache for faster loading
     })
     if (!response.ok) {
       console.error('Failed to fetch categories:', response.status, response.statusText)

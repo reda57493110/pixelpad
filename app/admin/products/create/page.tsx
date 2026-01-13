@@ -52,11 +52,11 @@ export default function CreateProductPage() {
     order: 1,
   })
 
-  const [newFeature, setNewFeature] = useState('')
-  const [newSpecKey, setNewSpecKey] = useState('')
-  const [newSpecValue, setNewSpecValue] = useState('')
-  const [imagePreview, setImagePreview] = useState<string>('')
+  const [productImages, setProductImages] = useState<string[]>([])
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [imageInputMode, setImageInputMode] = useState<'upload' | 'url'>('url')
+  const [imageUrl, setImageUrl] = useState<string>('')
+  const [variants, setVariants] = useState<Array<{ ram: string; storage: string; storageType: string; price: number; originalPrice?: number }>>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [categoriesLoading, setCategoriesLoading] = useState(true)
   const [productCounts, setProductCounts] = useState({
@@ -120,8 +120,13 @@ export default function CreateProductPage() {
       }
 
       const data = await response.json()
-      setFormData({ ...formData, image: data.url })
-      setImagePreview(data.url)
+      const newImages = [...productImages, data.url]
+      setProductImages(newImages)
+      setFormData({ 
+        ...formData, 
+        image: newImages[0] || data.url, // Set first image as main image
+        images: newImages 
+      })
       setNotification({ message: t('admin.imageUploaded') || 'Image uploaded successfully', type: 'success' })
       setTimeout(() => setNotification(null), 3000)
     } catch (error: any) {
@@ -148,58 +153,26 @@ export default function CreateProductPage() {
       return
     }
 
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      setImagePreview(reader.result as string)
-    }
-    reader.readAsDataURL(file)
     handleImageUpload(file)
   }
 
-  const addFeature = () => {
-    if (newFeature.trim()) {
-      setFormData({
-        ...formData,
-        features: [...(formData.features || []), newFeature.trim()]
-      })
-      setNewFeature('')
-    }
-  }
 
-  const removeFeature = (index: number) => {
-    setFormData({
-      ...formData,
-      features: formData.features?.filter((_, i) => i !== index) || []
-    })
-  }
-
-  const addSpecification = () => {
-    if (newSpecKey.trim() && newSpecValue.trim()) {
-      setFormData({
-        ...formData,
-        specifications: {
-          ...(formData.specifications || {}),
-          [newSpecKey.trim()]: newSpecValue.trim()
-        }
-      })
-      setNewSpecKey('')
-      setNewSpecValue('')
-    }
-  }
-
-  const removeSpecification = (key: string) => {
-    const specs = { ...(formData.specifications || {}) }
-    delete specs[key]
-    setFormData({ ...formData, specifications: specs })
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!formData.name || !formData.description || !formData.price || !formData.image || !formData.category) {
+    if (!formData.name || !formData.description || !formData.price || (!formData.image && productImages.length === 0) || !formData.category) {
       setNotification({ message: t('admin.fillRequired') || 'Please fill all required fields', type: 'error' })
       setTimeout(() => setNotification(null), 3000)
       return
+    }
+
+    // Ensure images array is set and first image is set as main image
+    if (productImages.length > 0 && !formData.image) {
+      formData.image = productImages[0]
+    }
+    if (productImages.length > 0) {
+      formData.images = productImages
     }
 
     setIsSubmitting(true)
@@ -208,6 +181,8 @@ export default function CreateProductPage() {
       const productData = {
         ...formData,
         category: formData.category || 'laptops',
+        // Set price from first variant if variants exist, otherwise use form price
+        price: variants.length > 0 ? variants[0].price : (formData.price || 0),
         // Explicitly set all visibility flags (use ?? to preserve false values)
         showInHero: formData.showInHero ?? false,
         showOnHomeCarousel: formData.showOnHomeCarousel ?? false,
@@ -215,6 +190,9 @@ export default function CreateProductPage() {
         showInBestSellers: formData.showInBestSellers ?? false,
         showInSpecialOffers: formData.showInSpecialOffers ?? false,
         showInTrending: formData.showInTrending ?? false,
+        // Explicitly set showOnProductPage to true by default (unless explicitly set to false)
+        showOnProductPage: formData.showOnProductPage !== false,
+        variants: variants.length > 0 ? variants : undefined,
       } as Omit<Product, 'id'>
       
       await addProduct(productData)
@@ -349,13 +327,42 @@ export default function CreateProductPage() {
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       {t('admin.products.badge')}
                     </label>
-                    <input
-                      type="text"
+                    <select
                       value={formData.badge || ''}
-                      onChange={(e) => setFormData({ ...formData, badge: e.target.value })}
+                      onChange={(e) => {
+                        const badge = e.target.value
+                        const badgeMap: Record<string, string> = {
+                          'HOT DEAL': 'products.badge.hotDeal',
+                          'BESTSELLER': 'product.badge.bestseller',
+                          'POPULAR': 'product.badge.popular',
+                          'GAMING': 'product.badge.gaming',
+                          'LIMITED': 'products.badge.limited',
+                          'PRO': 'products.badge.pro',
+                          'PREMIUM': 'products.badge.premium',
+                          'WIRELESS': 'products.badge.wireless',
+                          'EXCLUSIVE': 'products.badge.exclusive',
+                          'PORTABLE': 'products.badge.portable'
+                        }
+                        setFormData({ 
+                          ...formData, 
+                          badge: badge,
+                          badgeKey: badge ? badgeMap[badge] || 'products.badge.hotDeal' : ''
+                        })
+                      }}
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                      placeholder="HOT DEAL, BESTSELLER, etc."
-                    />
+                    >
+                      <option value="">No Badge</option>
+                      <option value="HOT DEAL">HOT DEAL</option>
+                      <option value="BESTSELLER">BESTSELLER</option>
+                      <option value="POPULAR">POPULAR</option>
+                      <option value="GAMING">GAMING</option>
+                      <option value="LIMITED">LIMITED</option>
+                      <option value="PRO">PRO</option>
+                      <option value="PREMIUM">PREMIUM</option>
+                      <option value="WIRELESS">WIRELESS</option>
+                      <option value="EXCLUSIVE">EXCLUSIVE</option>
+                      <option value="PORTABLE">PORTABLE</option>
+                    </select>
                   </div>
                 </div>
               </div>
@@ -419,97 +426,153 @@ export default function CreateProductPage() {
               </div>
             </div>
 
-            {/* Features */}
+            {/* RAM - Storage Variants */}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
               <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-                {t('admin.products.features')}
+                RAM - Disque Dur (Variants)
               </h3>
               <div className="space-y-4">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newFeature}
-                    onChange={(e) => setNewFeature(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addFeature())}
-                    placeholder={t('admin.products.addFeature')}
-                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                  <button
-                    type="button"
-                    onClick={addFeature}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                  >
-                    {t('admin.products.add')}
-                  </button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {formData.features?.map((feature, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-lg text-sm"
-                    >
-                      {feature}
-                      <button
-                        type="button"
-                        onClick={() => removeFeature(index)}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        <XMarkIcon className="w-4 h-4" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Specifications */}
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-                {t('admin.products.specifications')}
-              </h3>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    value={newSpecKey}
-                    onChange={(e) => setNewSpecKey(e.target.value)}
-                    placeholder={t('admin.products.specKey')}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                  <input
-                    type="text"
-                    value={newSpecValue}
-                    onChange={(e) => setNewSpecValue(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSpecification())}
-                    placeholder={t('admin.products.specValue')}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={addSpecification}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  {t('admin.products.addSpec')}
-                </button>
-                <div className="space-y-2">
-                  {Object.entries(formData.specifications || {}).map(([key, value]) => (
-                    <div key={key} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
-                      <span className="text-sm text-gray-900 dark:text-white">
-                        <strong>{key}:</strong> {value}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => removeSpecification(key)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        <XMarkIcon className="w-4 h-4" />
-                      </button>
+                <div className="space-y-3">
+                  {variants.map((variant, index) => (
+                    <div key={index} className="grid grid-cols-12 gap-3 items-end p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <div className="col-span-2">
+                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          RAM
+                        </label>
+                        <select
+                          value={variant.ram}
+                          onChange={(e) => {
+                            const newVariants = [...variants]
+                            newVariants[index].ram = e.target.value
+                            setVariants(newVariants)
+                          }}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        >
+                          <option value="4 GB">4 GB</option>
+                          <option value="8 GB">8 GB</option>
+                          <option value="16 GB">16 GB</option>
+                          <option value="32 GB">32 GB</option>
+                          <option value="64 GB">64 GB</option>
+                        </select>
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Storage
+                        </label>
+                        <select
+                          value={variant.storage}
+                          onChange={(e) => {
+                            const newVariants = [...variants]
+                            newVariants[index].storage = e.target.value
+                            setVariants(newVariants)
+                          }}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        >
+                          <option value="128 GB">128 GB</option>
+                          <option value="256 GB">256 GB</option>
+                          <option value="512 GB">512 GB</option>
+                          <option value="1 TB">1 TB</option>
+                          <option value="2 TB">2 TB</option>
+                        </select>
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Storage Type
+                        </label>
+                        <select
+                          value={variant.storageType}
+                          onChange={(e) => {
+                            const newVariants = [...variants]
+                            newVariants[index].storageType = e.target.value
+                            setVariants(newVariants)
+                          }}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        >
+                          <option value="SSD">SSD</option>
+                          <option value="HDD">HDD</option>
+                          <option value="NVMe SSD">NVMe SSD</option>
+                          <option value="SSD + HDD">SSD + HDD</option>
+                        </select>
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Price (DH)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={variant.price}
+                          onChange={(e) => {
+                            const newVariants = [...variants]
+                            newVariants[index].price = parseFloat(e.target.value) || 0
+                            setVariants(newVariants)
+                            // Update main price if this is the first variant
+                            if (index === 0) {
+                              setFormData({ ...formData, price: newVariants[index].price })
+                            }
+                          }}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                          Original Price (DH)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={variant.originalPrice || ''}
+                          onChange={(e) => {
+                            const newVariants = [...variants]
+                            newVariants[index].originalPrice = parseFloat(e.target.value) || undefined
+                            setVariants(newVariants)
+                          }}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        />
+                      </div>
+                      <div className="col-span-2 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newVariants = variants.filter((_, i) => i !== index)
+                            setVariants(newVariants)
+                            // Update main price if first variant was removed
+                            if (index === 0 && newVariants.length > 0) {
+                              setFormData({ ...formData, price: newVariants[0].price })
+                            } else if (newVariants.length === 0) {
+                              setFormData({ ...formData, price: 0 })
+                            }
+                          }}
+                          className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+                        >
+                          <XMarkIcon className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newVariants = [...variants, { ram: '8 GB', storage: '256 GB', storageType: 'SSD', price: formData.price || 0 }]
+                    setVariants(newVariants)
+                    // Update main price to first variant's price
+                    if (variants.length === 0) {
+                      setFormData({ ...formData, price: newVariants[0].price })
+                    }
+                  }}
+                  className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                >
+                  + Add Variant
+                </button>
+                {variants.length > 0 && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    The first variant's price will be used as the main product price. You can change it by selecting a variant.
+                  </p>
+                )}
               </div>
             </div>
+
           </div>
 
           {/* Sidebar */}
@@ -520,28 +583,85 @@ export default function CreateProductPage() {
                 {t('admin.products.image')} *
               </h3>
               <div className="space-y-4">
-                {imagePreview ? (
-                  <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
-                    <Image
-                      src={imagePreview}
-                      alt="Preview"
-                      fill
-                      className="object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setImagePreview('')
-                        setFormData({ ...formData, image: '' })
-                      }}
-                      className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                    >
-                      <XMarkIcon className="w-5 h-5" />
-                    </button>
+                {/* Mode Toggle */}
+                <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700">
+                  <button
+                    type="button"
+                    onClick={() => setImageInputMode('url')}
+                    className={`px-4 py-2 text-sm font-medium transition-colors ${
+                      imageInputMode === 'url'
+                        ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                  >
+                    Enter URL
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImageInputMode('upload')}
+                    className={`px-4 py-2 text-sm font-medium transition-colors ${
+                      imageInputMode === 'upload'
+                        ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                  >
+                    Upload File
+                  </button>
+                </div>
+
+                {/* Add Image Input */}
+                {imageInputMode === 'url' ? (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Copy Image Address
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        value={imageUrl}
+                        onChange={(e) => setImageUrl(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter' && imageUrl.trim()) {
+                            e.preventDefault()
+                            const newImages = [...productImages, imageUrl.trim()]
+                            setProductImages(newImages)
+                            setFormData({ 
+                              ...formData, 
+                              image: newImages[0] || imageUrl.trim(),
+                              images: newImages 
+                            })
+                            setImageUrl('')
+                          }
+                        }}
+                        placeholder="https://jpm.ma/cdn/shop/files/image.webp"
+                        className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (imageUrl.trim()) {
+                            const newImages = [...productImages, imageUrl.trim()]
+                            setProductImages(newImages)
+                            setFormData({ 
+                              ...formData, 
+                              image: newImages[0] || imageUrl.trim(),
+                              images: newImages 
+                            })
+                            setImageUrl('')
+                          }
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                      >
+                        Add
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      Right-click on an image and select "Copy image address" or copy the URL from your browser
+                    </p>
                   </div>
                 ) : (
-                  <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <PhotoIcon className="w-12 h-12 text-gray-400 mb-2" />
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <PhotoIcon className="w-8 h-8 text-gray-400 mb-2" />
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                       {uploadingImage ? t('admin.uploading') : t('admin.clickToUpload')}
                     </span>
@@ -554,9 +674,67 @@ export default function CreateProductPage() {
                     />
                   </label>
                 )}
-                {formData.image && !imagePreview && (
-                  <div className="text-xs text-gray-500">
-                    {t('admin.products.imageUrl')}: {formData.image.substring(0, 50)}...
+
+                {/* Image Gallery */}
+                {productImages.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Product Images ({productImages.length})
+                    </label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {productImages.map((img, index) => (
+                        <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600">
+                          <Image
+                            src={img}
+                            alt={`Product image ${index + 1}`}
+                            fill
+                            className="object-cover"
+                          />
+                          {index === 0 && (
+                            <div className="absolute top-1 left-1 px-2 py-1 bg-blue-600 text-white text-xs font-semibold rounded">
+                              Main
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newImages = productImages.filter((_, i) => i !== index)
+                              setProductImages(newImages)
+                              setFormData({ 
+                                ...formData, 
+                                image: newImages[0] || '',
+                                images: newImages 
+                              })
+                            }}
+                            className="absolute top-1 right-1 p-1.5 bg-red-600 text-white rounded hover:bg-red-700"
+                          >
+                            <XMarkIcon className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (index > 0) {
+                                const newImages = [...productImages]
+                                ;[newImages[0], newImages[index]] = [newImages[index], newImages[0]]
+                                setProductImages(newImages)
+                                setFormData({ 
+                                  ...formData, 
+                                  image: newImages[0],
+                                  images: newImages 
+                                })
+                              }
+                            }}
+                            className="absolute bottom-1 left-1 px-2 py-1 bg-gray-800/70 text-white text-xs rounded hover:bg-gray-800"
+                            title="Set as main image"
+                          >
+                            Set Main
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      First image will be used as the main product image
+                    </p>
                   </div>
                 )}
               </div>

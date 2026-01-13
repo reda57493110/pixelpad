@@ -41,7 +41,13 @@ const CouponSchema = new Schema<ICoupon>(
   }
 )
 
-// Index is already created by unique: true on code field, so no need for duplicate
+// Indexes for efficient coupon validation and queries
+// Note: code field already has unique: true which creates an index automatically
+// Compound index { code: 1, isActive: 1 } can use the unique index on code, so we use isActive first
+CouponSchema.index({ isActive: 1, code: 1 }) // Compound index for validation (isActive first to avoid duplicate)
+CouponSchema.index({ isActive: 1, validFrom: 1, validUntil: 1 }) // For finding active coupons by date range
+CouponSchema.index({ isActive: 1 }) // For filtering active coupons
+CouponSchema.index({ validUntil: 1 }) // For finding expired coupons
 
 export default mongoose.models.Coupon || mongoose.model<ICoupon>('Coupon', CouponSchema)
 

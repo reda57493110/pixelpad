@@ -9,6 +9,7 @@ export interface IProduct extends Document {
   costPrice?: number
   category: mongoose.Types.ObjectId | string
   image: string
+  images?: string[] // Multiple images for product gallery
   inStock: boolean
   stockQuantity?: number
   soldQuantity?: number
@@ -27,6 +28,13 @@ export interface IProduct extends Document {
   showInTrending?: boolean
   showOnProductPage?: boolean
   order?: number
+  variants?: Array<{
+    ram: string
+    storage: string
+    storageType: string
+    price: number
+    originalPrice?: number
+  }>
   createdAt?: Date
   updatedAt?: Date
 }
@@ -45,6 +53,7 @@ const ProductSchema = new Schema<IProduct>(
       required: true 
     },
     image: { type: String, required: true },
+    images: { type: [String], default: [] }, // Multiple images for product gallery
     inStock: { type: Boolean, default: true },
     stockQuantity: { type: Number, default: 0 },
     soldQuantity: { type: Number, default: 0 },
@@ -63,6 +72,13 @@ const ProductSchema = new Schema<IProduct>(
     showInTrending: { type: Boolean, default: false },
     showOnProductPage: { type: Boolean, default: true },
     order: { type: Number, default: 0 },
+    variants: [{
+      ram: { type: String, required: true },
+      storage: { type: String, required: true },
+      storageType: { type: String, required: true },
+      price: { type: Number, required: true },
+      originalPrice: { type: Number }
+    }],
   },
   {
     timestamps: true,
@@ -70,16 +86,19 @@ const ProductSchema = new Schema<IProduct>(
 )
 
 // Add indexes for faster queries
-ProductSchema.index({ order: 1, createdAt: -1 })
-ProductSchema.index({ showOnHomeCarousel: 1 })
-ProductSchema.index({ showInHero: 1 })
-ProductSchema.index({ showInNewArrivals: 1 })
-ProductSchema.index({ showInBestSellers: 1 })
-ProductSchema.index({ showInSpecialOffers: 1 })
-ProductSchema.index({ showInTrending: 1 })
-ProductSchema.index({ showOnProductPage: 1 })
+// Compound indexes for common query patterns (order matters - equality first, then sort)
+ProductSchema.index({ showOnProductPage: 1, order: 1, createdAt: -1 }) // Most common query pattern
+ProductSchema.index({ showOnHomeCarousel: 1, order: 1, createdAt: -1 }) // Featured products query
+ProductSchema.index({ category: 1, inStock: 1, order: 1 }) // Category filtering with stock
+ProductSchema.index({ showInHero: 1, order: 1 })
+ProductSchema.index({ showInNewArrivals: 1, order: 1, createdAt: -1 })
+ProductSchema.index({ showInBestSellers: 1, order: 1, rating: -1 })
+ProductSchema.index({ showInSpecialOffers: 1, order: 1, discount: -1 })
+ProductSchema.index({ showInTrending: 1, order: 1, soldQuantity: -1 })
+// Single field indexes for individual lookups
 ProductSchema.index({ category: 1 })
 ProductSchema.index({ inStock: 1 })
+ProductSchema.index({ order: 1 }) // For max order queries
 
 export default mongoose.models.Product || mongoose.model<IProduct>('Product', ProductSchema)
 

@@ -2,11 +2,28 @@
 
 import Link from 'next/link'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useMemo, memo } from 'react'
+
+// Static page - no dynamic data
+export const dynamic = 'force-static'
+
+// Memoize sections to prevent unnecessary re-renders
+const PrivacySection = memo(({ id, titleKey, children }: { id: string, titleKey: string, children: React.ReactNode }) => {
+  const { t } = useLanguage()
+  return (
+    <section id={id} className="scroll-mt-24">
+      <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t(titleKey)}</h2>
+      {children}
+    </section>
+  )
+})
+PrivacySection.displayName = 'PrivacySection'
 
 export default function PrivacyPage() {
   const { t } = useLanguage()
   
-  const navItems = [
+  // Memoize navItems to avoid recreating on every render
+  const navItems = useMemo(() => [
     { id: 'intro', labelKey: 'privacy.introduction' },
     { id: 'data', labelKey: 'privacy.dataWeCollect' },
     { id: 'use', labelKey: 'privacy.howWeUseData' },
@@ -18,7 +35,7 @@ export default function PrivacyPage() {
     { id: 'cookies', labelKey: 'privacy.cookies' },
     { id: 'changes', labelKey: 'privacy.changes' },
     { id: 'contact', labelKey: 'privacy.contact' }
-  ]
+  ], [])
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
@@ -41,79 +58,68 @@ export default function PrivacyPage() {
         </div>
 
         <div className="space-y-10 text-gray-700 dark:text-gray-300 leading-relaxed">
-          <section id="intro" className="scroll-mt-24">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('privacy.introTitle')}</h2>
+          <PrivacySection id="intro" titleKey="privacy.introTitle">
             <p>{t('privacy.introText')}</p>
-          </section>
+          </PrivacySection>
 
-          <section id="data" className="scroll-mt-24">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('privacy.dataTitle')}</h2>
+          <PrivacySection id="data" titleKey="privacy.dataTitle">
             <ul className="list-disc pl-6 space-y-2">
               <li>{t('privacy.dataItem1')}</li>
               <li>{t('privacy.dataItem2')}</li>
               <li>{t('privacy.dataItem3')}</li>
             </ul>
-          </section>
+          </PrivacySection>
 
-          <section id="use" className="scroll-mt-24">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('privacy.useTitle')}</h2>
+          <PrivacySection id="use" titleKey="privacy.useTitle">
             <ul className="list-disc pl-6 space-y-2">
               <li>{t('privacy.useItem1')}</li>
               <li>{t('privacy.useItem2')}</li>
               <li>{t('privacy.useItem3')}</li>
             </ul>
-          </section>
+          </PrivacySection>
 
-          <section id="legal" className="scroll-mt-24">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('privacy.legalTitle')}</h2>
+          <PrivacySection id="legal" titleKey="privacy.legalTitle">
             <ul className="list-disc pl-6 space-y-2">
               <li>{t('privacy.legalItem1')}</li>
               <li>{t('privacy.legalItem2')}</li>
               <li>{t('privacy.legalItem3')}</li>
               <li>{t('privacy.legalItem4')}</li>
             </ul>
-          </section>
+          </PrivacySection>
 
-          <section id="share" className="scroll-mt-24">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('privacy.shareTitle')}</h2>
+          <PrivacySection id="share" titleKey="privacy.shareTitle">
             <p>{t('privacy.shareText')}</p>
-          </section>
+          </PrivacySection>
 
-          <section id="security" className="scroll-mt-24">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('privacy.securityTitle')}</h2>
+          <PrivacySection id="security" titleKey="privacy.securityTitle">
             <p>{t('privacy.securityText')}</p>
-          </section>
+          </PrivacySection>
 
-          <section id="retention" className="scroll-mt-24">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('privacy.retentionTitle')}</h2>
+          <PrivacySection id="retention" titleKey="privacy.retentionTitle">
             <p>{t('privacy.retentionText')}</p>
-          </section>
+          </PrivacySection>
 
-          <section id="rights" className="scroll-mt-24">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('privacy.rightsTitle')}</h2>
+          <PrivacySection id="rights" titleKey="privacy.rightsTitle">
             <p>
               {t('privacy.rightsText')}{' '}
               <Link href="/contacts" className="text-primary-600 dark:text-primary-400 underline">{t('privacy.rightsContactLink')}</Link>.
             </p>
-          </section>
+          </PrivacySection>
 
-          <section id="cookies" className="scroll-mt-24">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('privacy.cookiesTitle')}</h2>
+          <PrivacySection id="cookies" titleKey="privacy.cookiesTitle">
             <p>{t('privacy.cookiesText')}</p>
-          </section>
+          </PrivacySection>
 
-          <section id="changes" className="scroll-mt-24">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('privacy.changesTitle')}</h2>
+          <PrivacySection id="changes" titleKey="privacy.changesTitle">
             <p>{t('privacy.changesText')}</p>
-          </section>
+          </PrivacySection>
 
-          <section id="contact" className="scroll-mt-24">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t('privacy.contactTitle')}</h2>
+          <PrivacySection id="contact" titleKey="privacy.contactTitle">
             <p>
               {t('privacy.contactText')}{' '}
               <Link href="/contacts" className="text-primary-600 dark:text-primary-400 underline">{t('privacy.contactLink')}</Link>.
             </p>
-          </section>
+          </PrivacySection>
 
           {/* Back to top */}
           <div className="pt-2">

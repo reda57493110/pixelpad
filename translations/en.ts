@@ -122,6 +122,7 @@ export const en = {
     
     // Common
     'common.save': 'Save',
+    'common.saving': 'Saving...',
     'common.cancel': 'Cancel',
     'common.edit': 'Edit',
     'common.delete': 'Delete',
@@ -143,7 +144,7 @@ export const en = {
     'testimonials.comment1.name': 'Youssef',
     'testimonials.comment1.text': 'Fast delivery and great support. Highly recommend!',
     'testimonials.comment2.name': 'Sara',
-    'testimonials.comment2.text': 'They installed our office network flawlessly.',
+    'testimonials.comment2.text': 'Excellent service! Professional team.',
     'testimonials.comment3.name': 'Anas',
     'testimonials.comment3.text': 'Good prices and professional service.',
     'home.hero.title': 'Discover Next-Level Tech',
@@ -235,6 +236,7 @@ export const en = {
     
     // Product
     'product.addToCart': 'Add to Cart',
+    'product.viewDetails': 'View Details',
     'product.outOfStock': 'Out of Stock',
     'product.notFound': 'Product not found',
     'product.backToProducts': 'Back to Products',
@@ -247,6 +249,7 @@ export const en = {
     'product.securePayment': 'Secure Payment',
     'product.returnPolicy': '30-Day Returns',
     'product.warranty': 'Warranty Included',
+    'product.selectConfiguration': 'Select Configuration',
     'product.sale': 'Sale',
     'product.bestseller': 'BESTSELLER',
     'product.new': 'NEW',
@@ -1059,6 +1062,7 @@ export const en = {
     'contact.info.subtitle': 'We\'re here to help with all your technology needs',
     'contact.info.phone': 'Phone',
     'contact.info.phoneNumber': '0779318061',
+    'contact.info.whatsappNumber': '0779318061',
     'contact.info.email': 'Email',
     'contact.info.address': 'Address',
     'contact.info.addressValue': 'Fes Champs de Course',
@@ -1784,13 +1788,13 @@ export const en = {
     'landing.reviews.verified': 'Verified',
     'landing.reviews.review1.name': 'Ahmed Benali',
     'landing.reviews.review1.role': 'Business Owner, Casablanca',
-    'landing.reviews.review1.text': 'Pixel Pad transformed our office setup. Professional service, fast delivery, and excellent support. Highly recommended!',
+    'landing.reviews.review1.text': 'Professional service and fast delivery. Highly recommended!',
     'landing.reviews.review2.name': 'Fatima Alami',
     'landing.reviews.review2.role': 'Designer, Rabat',
-    'landing.reviews.review2.text': 'Got my MacBook Pro here. Outstanding service, great warranty, and the team helped with everything. Best tech store!',
+    'landing.reviews.review2.text': 'Outstanding service and great warranty. Best tech store!',
     'landing.reviews.review3.name': 'Youssef Idrissi',
     'landing.reviews.review3.role': 'Gamer, Marrakech',
-    'landing.reviews.review3.text': 'Perfect gaming PC setup! Great prices, expert help, and they even installed everything. 10/10 experience!',
+    'landing.reviews.review3.text': 'Perfect gaming PC setup! Great prices and expert help.',
     
     // Final CTA Section
     'landing.cta.badge': 'Special Offer - Limited Time',

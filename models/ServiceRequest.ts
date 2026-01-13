@@ -43,8 +43,14 @@ const ServiceRequestSchema = new Schema<IServiceRequest>(
   }
 )
 
+// Compound indexes for common query patterns
+ServiceRequestSchema.index({ userId: 1, date: -1 }) // User's service requests sorted by date
+ServiceRequestSchema.index({ status: 1, date: -1 }) // Filter by status and sort by date
+ServiceRequestSchema.index({ email: 1, date: -1 }) // Filter by email and sort by date
+// Single field indexes
 ServiceRequestSchema.index({ email: 1 })
 ServiceRequestSchema.index({ userId: 1 })
+ServiceRequestSchema.index({ status: 1 })
 
 // Clear cached model to ensure schema updates are applied
 if (mongoose.models.ServiceRequest) {

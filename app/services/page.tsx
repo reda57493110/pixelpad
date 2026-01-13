@@ -44,7 +44,7 @@ export default function ServicesPage() {
     generateCaptcha()
   }, [])
 
-  // Pre-fill form when user is logged in
+  // Pre-fill form when user is logged in - optimized with useEffect
   useEffect(() => {
     if (user) {
       setFormData(prev => ({
@@ -53,7 +53,7 @@ export default function ServicesPage() {
         email: user.email || prev.email
       }))
     }
-  }, [user])
+  }, [user?.name, user?.email])
 
   const generateCaptcha = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -67,10 +67,10 @@ export default function ServicesPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
-    // Validate number of computers to be max 25
+    // Validate number of computers to be at least 1 (no maximum limit)
     if (name === 'numberOfComputers') {
       const numValue = parseInt(value)
-      if (value === '' || (numValue >= 1 && numValue <= 25)) {
+      if (value === '' || (numValue >= 1)) {
         setFormData(prev => ({
           ...prev,
           [name]: value
@@ -139,9 +139,6 @@ export default function ServicesPage() {
       // Dispatch event to notify other components (like admin page)
       window.dispatchEvent(new Event('pixelpad_service_requests_changed'))
       
-      // Simulate form submission delay
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
       setIsSubmitting(false)
       setSubmitStatus('success')
       
@@ -178,68 +175,45 @@ export default function ServicesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+    <div className="min-h-screen bg-white dark:bg-gray-900 relative pt-20 sm:pt-20 md:pt-24 lg:pt-16">
       {/* Enhanced Hero Section */}
-      <section className="relative bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 dark:from-primary-800 dark:via-primary-900 dark:to-primary-950 text-white py-8 lg:py-10 pt-24 overflow-hidden">
-        {/* Enhanced Background Elements */}
-        <div className="absolute inset-0 overflow-hidden" style={{ willChange: 'transform', transform: 'translateZ(0)' }}>
-          <div className="absolute top-20 left-20 w-96 h-96 bg-gradient-to-br from-white/30 to-primary-300/40 rounded-full blur-3xl opacity-30 dark:opacity-20"></div>
-          <div className="absolute bottom-20 right-20 w-[32rem] h-[32rem] bg-gradient-to-br from-primary-300/30 to-primary-400/40 rounded-full blur-3xl opacity-30 dark:opacity-20" style={{ animationDelay: '1s' }}></div>
-          <div className="absolute top-1/2 left-1/3 w-80 h-80 bg-gradient-to-br from-primary-300/25 to-primary-400/35 rounded-full blur-3xl opacity-25 dark:opacity-15" style={{ animationDelay: '0.5s' }}></div>
-          <div className="absolute bottom-1/3 right-1/4 w-64 h-64 bg-gradient-to-br from-primary-300/25 to-primary-400/35 rounded-full blur-2xl opacity-25 dark:opacity-15" style={{ animationDelay: '1.5s' }}></div>
+      <section className="relative bg-white dark:bg-gray-900 shadow-lg overflow-hidden z-10 pt-4 sm:pt-4 md:pt-4 lg:pt-4">
+        {/* Background Elements */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute top-10 left-10 w-32 h-32 bg-primary-500 rounded-full blur-2xl"></div>
+          <div className="absolute bottom-10 right-10 w-40 h-40 bg-primary-500 rounded-full blur-2xl"></div>
         </div>
 
-        {/* Enhanced Grid Pattern */}
-        <div className="absolute inset-0 opacity-[0.05] dark:opacity-[0.08]">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `radial-gradient(circle at 25px 25px, rgba(255,255,255,0.3) 2px, transparent 0)`,
-            backgroundSize: '50px 50px'
-          }}></div>
-        </div>
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">
-          {/* Enhanced Badge */}
-          <div className="inline-flex items-center bg-white/20 backdrop-blur-xl text-white px-6 py-2.5 rounded-full text-xs font-bold mb-6 shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-300 group border border-white/20">
-            <div className="w-6 h-6 bg-white/30 rounded-full flex items-center justify-center mr-2 group-hover:rotate-12 transition-transform duration-300">
-              <span className="text-sm">🛠️</span>
-            </div>
-            <span>{t('services.hero.badge')}</span>
-            <div className="w-6 h-6 bg-white/30 rounded-full flex items-center justify-center ml-2 group-hover:-rotate-12 transition-transform duration-300">
-              <span className="text-sm">✨</span>
-            </div>
-          </div>
-
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-5 md:px-6 lg:px-8 pt-2 sm:pt-4 md:py-4 lg:pt-2 lg:pb-5 pb-4 sm:pb-5 md:pb-6 lg:pb-6 text-center z-10">
           {/* Enhanced Headline */}
-          <h1 className="text-3xl lg:text-4xl font-extrabold mb-6 animate-in slide-in-from-top duration-1000">
-            <span className="bg-gradient-to-r from-white via-primary-100 to-primary-200 bg-clip-text text-transparent drop-shadow-lg">
-              {t('services.hero.title')}
-            </span>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-3xl xl:text-4xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3 lg:mb-3 animate-in fade-in duration-1000 delay-300">
+            {t('services.hero.title')}
           </h1>
 
           {/* Enhanced Description */}
-          <p className="text-base lg:text-lg mb-8 opacity-95 max-w-4xl mx-auto animate-in slide-in-from-bottom duration-1000 delay-300 leading-relaxed font-medium">
+          <p className="text-sm sm:text-base md:text-lg lg:text-base xl:text-lg text-gray-700 dark:text-gray-300 mb-4 sm:mb-5 lg:mb-4 animate-in slide-in-from-bottom duration-1000 delay-500 px-2">
             {t('services.hero.subtitle')}
           </p>
 
           {/* Enhanced Service Badges */}
-          <div className="flex flex-wrap justify-center gap-3 lg:gap-4 animate-in slide-in-from-bottom duration-1000 delay-500">
-            <div className="group flex items-center bg-white/20 backdrop-blur-xl rounded-full px-4 py-2.5 border-2 border-white/30 hover:border-white/50 hover:bg-white/30 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105">
-              <div className="w-8 h-8 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center mr-2 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300 shadow-md">
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-3.5 md:gap-4 lg:gap-5 animate-in slide-in-from-bottom duration-1000 delay-700">
+            <div className="flex items-center bg-gray-50 dark:bg-gray-800 rounded-lg px-2.5 sm:px-3 md:px-3 lg:px-4 py-2 sm:py-2.5 md:py-2.5 lg:py-2.5 border border-gray-200 dark:border-gray-700 hover:scale-105 transition-transform duration-300 group">
+              <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center mr-2 group-hover:scale-110 transition-transform duration-300">
                 <ComputerDesktopIcon className="h-4 w-4 text-white" />
               </div>
-              <span className="text-sm font-bold">{t('services.hero.badge.computerInstallation')}</span>
+              <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">{t('services.hero.badge.computerInstallation')}</span>
             </div>
-            <div className="group flex items-center bg-white/20 backdrop-blur-xl rounded-full px-4 py-2.5 border-2 border-white/30 hover:border-white/50 hover:bg-white/30 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105">
-              <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center mr-2 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300 shadow-md">
+            <div className="flex items-center bg-gray-50 dark:bg-gray-800 rounded-lg px-2.5 sm:px-3 md:px-3 lg:px-4 py-2 sm:py-2.5 md:py-2.5 lg:py-2.5 border border-gray-200 dark:border-gray-700 hover:scale-105 transition-transform duration-300 group">
+              <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center mr-2 group-hover:scale-110 transition-transform duration-300">
                 <CameraIcon className="h-4 w-4 text-white" />
               </div>
-              <span className="text-sm font-bold">{t('services.hero.badge.securityCameras')}</span>
+              <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">{t('services.hero.badge.securityCameras')}</span>
             </div>
-            <div className="group flex items-center bg-white/20 backdrop-blur-xl rounded-full px-4 py-2.5 border-2 border-white/30 hover:border-white/50 hover:bg-white/30 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105">
-              <div className="w-8 h-8 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center mr-2 group-hover:rotate-12 group-hover:scale-110 transition-all duration-300 shadow-md">
+            <div className="flex items-center bg-gray-50 dark:bg-gray-800 rounded-lg px-2.5 sm:px-3 md:px-3 lg:px-4 py-2 sm:py-2.5 md:py-2.5 lg:py-2.5 border border-gray-200 dark:border-gray-700 hover:scale-105 transition-transform duration-300 group">
+              <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center mr-2 group-hover:scale-110 transition-transform duration-300">
                 <WrenchScrewdriverIcon className="h-4 w-4 text-white" />
               </div>
-              <span className="text-sm font-bold">{t('services.hero.badge.professionalSetup')}</span>
+              <span className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">{t('services.hero.badge.professionalSetup')}</span>
             </div>
           </div>
         </div>
@@ -300,7 +274,7 @@ export default function ServicesPage() {
       </section>
 
       {/* Enhanced Request Form */}
-      <section className="py-8 bg-gradient-to-br from-white via-primary-50 to-gray-50 dark:from-gray-900 dark:via-primary-900/30 dark:to-gray-800/30 relative overflow-hidden">
+      <section className="py-8 bg-gray-50 dark:bg-gray-900 relative overflow-hidden">
         {/* Enhanced Background Elements */}
         <div className="absolute inset-0 overflow-hidden" style={{ willChange: 'transform', transform: 'translateZ(0)' }}>
           <div className="absolute top-20 left-20 w-72 h-72 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full blur-3xl opacity-20 dark:opacity-30"></div>
@@ -466,7 +440,7 @@ export default function ServicesPage() {
               <div className="group">
                 <label htmlFor="numberOfComputers" className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center">
                   <ComputerDesktopIcon className="h-3.5 w-3.5 mr-1.5 text-primary-600 dark:text-primary-400" />
-                  {t('services.form.numberOfComputers')} * ({t('services.form.max25')})
+                  {t('services.form.numberOfComputers')} *
                 </label>
                 <div className="relative">
                   <input
@@ -477,7 +451,6 @@ export default function ServicesPage() {
                     onChange={handleInputChange}
                     required
                     min="1"
-                    max="25"
                     className="w-full px-4 py-3 text-sm border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:bg-opacity-90 dark:text-white transition-colors transition-shadow duration-150 shadow-sm hover:shadow-md focus:shadow-lg"
                     placeholder={t('services.form.numberOfComputersPlaceholder')}
                   />

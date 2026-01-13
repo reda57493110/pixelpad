@@ -217,12 +217,12 @@ export default function NavBar() {
   return (
     <>
 
-      {/* Main Navigation - Green pill style */}
-      <nav className="fixed top-0 left-0 right-0 z-[100] bg-transparent text-white transition-all duration-200">
+      {/* Main Navigation */}
+      <nav className="fixed top-0 left-0 right-0 z-[100] bg-transparent transition-all duration-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-3 py-2">
             {/* Desktop navigation pill */}
-            <div className="hidden lg:flex items-center gap-3 rounded-full bg-gradient-to-r from-slate-800/90 via-slate-700/90 to-slate-800/90 dark:from-slate-900/95 dark:via-slate-800/95 dark:to-slate-900/95 backdrop-blur-md border border-white/20 dark:border-white/10 text-white shadow-2xl px-4 sm:px-6 py-3 transition-all duration-200">
+            <div className="hidden lg:flex items-center gap-3 rounded-full bg-gray-50/95 dark:bg-gray-800/95 backdrop-blur-md border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white shadow-lg px-4 sm:px-6 py-3 transition-all duration-200">
               {/* Logo */}
               <div className="flex-shrink-0">
                 <Link href="/" className="flex items-center gap-2">
@@ -256,17 +256,17 @@ export default function NavBar() {
                         }}
                         className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                           item.accent
-                            ? 'bg-[#ffc847] text-[#2a1a00] hover:bg-[#ffd76d] dark:bg-[#f7b733] dark:text-[#0d1412] dark:hover:bg-[#ffc44f]'
+                            ? 'bg-primary-600 text-white hover:bg-primary-700 dark:bg-primary-500 dark:text-white dark:hover:bg-primary-600'
                             : isActive
-                              ? 'bg-white/20 text-white'
-                              : 'hover:bg-white/10 text-white/90'
+                              ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
+                              : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300'
                         }`}
                       >
-                        <item.icon className={`h-5 w-5 ${item.accent ? 'text-[#2a1a00] dark:text-[#0d1412]' : 'text-white'}`} />
+                        <item.icon className={`h-5 w-5 ${item.accent ? 'text-white dark:text-white' : isActive ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300'}`} />
                         <span>{item.label}</span>
                       </Link>
                       {index < desktopLinks.length - 1 && (
-                        <span className="hidden xl:block h-6 w-px bg-white/20" />
+                        <span className="hidden xl:block h-6 w-px bg-gray-300 dark:bg-gray-600" />
                       )}
                     </div>
                   )
@@ -279,7 +279,7 @@ export default function NavBar() {
                 <div className="relative" ref={languageMenuRef}>
                   <button
                     onClick={() => setIsLanguageMenuOpen(!isLanguageMenuOpen)}
-                    className="hidden lg:flex items-center justify-center w-10 h-10 xl:w-11 xl:h-11 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 transition-all duration-300 hover:scale-105 cursor-pointer dark:bg-white/10 dark:hover:bg-white/20"
+                    className="hidden lg:flex items-center justify-center w-10 h-10 xl:w-11 xl:h-11 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 transition-all duration-300 hover:scale-105 cursor-pointer"
                     aria-label={`Current language: ${language.toUpperCase()}. Click to select language`}
                   >
                       <Image 
@@ -347,18 +347,18 @@ export default function NavBar() {
                 <div className="relative" ref={userMenuRef}>
                   <button 
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center gap-2 px-3 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all duration-200"
+                    className="flex items-center gap-2 px-3 py-2 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white transition-all duration-200"
                   >
                     <div className="relative">
                       {isLoggedIn && user ? (
-                        <div className="w-8 h-8 lg:w-9 lg:h-9 bg-white/20 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                        <div className="w-8 h-8 lg:w-9 lg:h-9 bg-primary-600 dark:bg-primary-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
                           {user.name.charAt(0).toUpperCase()}
                         </div>
                       ) : (
                         <UserIcon className="h-5 w-5 lg:h-6 lg:w-6" />
                       )}
                     </div>
-                    <span className="hidden xl:inline text-sm font-semibold">
+                    <span className="hidden xl:inline text-sm font-semibold text-gray-900 dark:text-white">
                       {isLoggedIn ? translate('nav.myAccount') || 'My account' : translate('nav.login') || 'My account'}
                     </span>
                     <ChevronDownIcon className={`h-4 w-4 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
@@ -411,6 +411,7 @@ export default function NavBar() {
                           <div className="space-y-2">
                             <Link 
                               href="/account/profile" 
+                              prefetch={true}
                               className="flex items-center justify-center space-x-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-center"
                               onClick={() => setIsUserMenuOpen(false)}
                             >
@@ -420,6 +421,7 @@ export default function NavBar() {
                             
                             <Link 
                               href="/account" 
+                              prefetch={true}
                               className="flex items-center justify-center space-x-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-center"
                               onClick={() => setIsUserMenuOpen(false)}
                             >
@@ -514,7 +516,7 @@ export default function NavBar() {
                 {/* Cart */}
                 <button
                   onClick={openCart}
-                  className="relative px-3 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-all duration-200 dark:bg-white/15 dark:hover:bg-white/25"
+                  className="relative px-3 py-2 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white transition-all duration-200"
                   aria-label="Cart"
                 >
                   <div className="relative">
@@ -538,7 +540,7 @@ export default function NavBar() {
                 <div className="lg:hidden ml-1" dir="ltr">
                   <button 
                     onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    className="relative text-white px-3 py-2 rounded-full bg-white/10 hover:bg-white/20 transition-all duration-200 dark:bg-white/15 dark:hover:bg-white/25"
+                    className="relative text-gray-900 dark:text-white px-3 py-2 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200"
                     aria-label="Toggle mobile menu"
                     style={{ position: 'relative', transform: 'translateZ(0)' }}
                   >
@@ -550,7 +552,7 @@ export default function NavBar() {
 
             {/* Mobile navigation pill */}
             <div className="lg:hidden w-full">
-              <div className="flex items-center justify-between rounded-full bg-gradient-to-r from-slate-800/90 via-slate-700/90 to-slate-800/90 dark:from-slate-900/95 dark:via-slate-800/95 dark:to-slate-900/95 backdrop-blur-md border border-white/20 dark:border-white/10 text-white shadow-2xl px-3 py-2">
+              <div className="flex items-center justify-between rounded-full bg-gray-50/95 dark:bg-gray-800/95 backdrop-blur-md border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white shadow-lg px-3 py-2">
                 <Link href="/" className="flex items-center gap-2" onClick={() => setIsUserMenuOpen(false)}>
                   <Image 
                     src="/images/pixel-pad-logo-new.png" 
@@ -570,11 +572,11 @@ export default function NavBar() {
                         handleLogin()
                       }
                     }}
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 border border-white/15 transition-all duration-200 active:scale-95"
+                    className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 transition-all duration-200 active:scale-95"
                     aria-label="Account"
                   >
                     {isLoggedIn && user ? (
-                      <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                      <div className="w-8 h-8 bg-primary-600 dark:bg-primary-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
                         {user.name.charAt(0).toUpperCase()}
                       </div>
                     ) : (
@@ -587,10 +589,10 @@ export default function NavBar() {
                       openCart()
                       setIsUserMenuOpen(false)
                     }}
-                    className="relative w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 border border-white/15 transition-all duration-200 active:scale-95"
+                    className="relative w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 transition-all duration-200 active:scale-95"
                     aria-label="Cart"
                   >
-                    <ShoppingCartIcon className="w-5 h-5" />
+                    <ShoppingCartIcon className="w-5 h-5 text-gray-900 dark:text-white" />
                     {mounted && cartCount > 0 && (
                       <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center shadow-lg">
                         {cartCount}
@@ -600,7 +602,7 @@ export default function NavBar() {
 
                   <button
                     onClick={cycleLanguage}
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 border border-white/15 transition-all duration-200 active:scale-95 overflow-hidden"
+                    className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 transition-all duration-200 active:scale-95 overflow-hidden"
                     aria-label={`Switch language from ${language.toUpperCase()}`}
                   >
                     <Image 
@@ -614,7 +616,7 @@ export default function NavBar() {
 
                   <button 
                     onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 border border-white/15 transition-all duration-200 active:scale-95"
+                    className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 transition-all duration-200 active:scale-95"
                     aria-label="Toggle mobile menu"
                     style={{ position: 'relative', transform: 'translateZ(0)' }}
                   >
@@ -643,7 +645,7 @@ export default function NavBar() {
           <div className="lg:hidden fixed inset-0 z-[9999] pointer-events-none">
             {/* Mobile Menu Panel - Optimized for RTL */}
             <div 
-              className={`fixed ${isRTL ? 'left-0' : 'right-0'} top-0 h-[70vh] w-64 max-w-[75vw] bg-gradient-to-br from-white via-gray-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 shadow-2xl overflow-hidden ${isRTL ? 'rounded-r-2xl border-r' : 'rounded-l-2xl border-l'} border-gray-200 dark:border-gray-700 pointer-events-auto flex flex-col`}
+              className={`fixed ${isRTL ? 'left-0' : 'right-0'} top-0 h-[70vh] w-64 max-w-[75vw] bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 shadow-2xl overflow-hidden ${isRTL ? 'rounded-r-2xl border-r' : 'rounded-l-2xl border-l'} border-gray-300 dark:border-gray-700 pointer-events-auto flex flex-col`}
               style={isRTL ? {
                 left: 0,
                 right: 'auto',
@@ -660,7 +662,7 @@ export default function NavBar() {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Simple Hero Section */}
-              <div className="relative flex-shrink-0 bg-gradient-to-br from-slate-700/20 via-slate-600/20 to-slate-700/20 dark:from-slate-800/30 dark:via-slate-700/30 dark:to-slate-800/30 border-b border-slate-500/30 dark:border-slate-400/40">
+              <div className="relative flex-shrink-0 bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 border-b border-gray-300 dark:border-gray-700">
                 {/* Main Content Container */}
                 <div className="px-3 py-2.5">
                   {/* Top Row - Logo and Actions */}
@@ -668,7 +670,7 @@ export default function NavBar() {
                     {/* Simple Logo Section */}
                     <Link href="/" className={`flex items-center ${isRTL ? 'space-x-reverse space-x-2' : 'space-x-2'} group cursor-pointer flex-shrink-0 flex-1 min-w-0 focus:outline-none focus:ring-0 active:outline-none`} onClick={() => setIsMobileMenuOpen(false)}>
                       {/* Simple logo container */}
-                      <div className="w-12 h-12 bg-gradient-to-br from-slate-600 to-slate-700 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md">
+                      <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center flex-shrink-0 shadow-md border border-primary-300 dark:border-primary-700">
                         <Image 
                           src="/images/pixel-pad-logo-new.png" 
                           alt="Pixel Pad Logo" 
@@ -698,7 +700,7 @@ export default function NavBar() {
                             }, 2000)
                           }
                         }}
-                        className="p-1.5 bg-white/20 dark:bg-gray-800/40 hover:bg-white/30 dark:hover:bg-gray-700/50 rounded-lg transition-all duration-300 border border-gray-300/30 dark:border-gray-600/40 flex items-center justify-center group hover:scale-110 active:scale-95"
+                        className="p-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-all duration-300 border border-gray-300 dark:border-gray-600 flex items-center justify-center group hover:scale-110 active:scale-95"
                         aria-label={`Current language: ${language.toUpperCase()}. Tap to change`}
                       >
                         <div className="w-5 h-5 rounded overflow-hidden shadow-sm">
@@ -740,7 +742,7 @@ export default function NavBar() {
                           toggleTheme()
                           setIsMobileMenuOpen(false)
                         }}
-                        className="p-1.5 bg-white/20 dark:bg-gray-800/40 hover:bg-white/30 dark:hover:bg-gray-700/50 rounded-lg transition-all duration-300 border border-gray-300/30 dark:border-gray-600/40 flex items-center justify-center group hover:scale-110 active:scale-95 relative overflow-hidden"
+                        className="p-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-all duration-300 border border-gray-300 dark:border-gray-600 flex items-center justify-center group hover:scale-110 active:scale-95 relative overflow-hidden"
                         aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
                       >
                         <div className="relative w-4 h-4 z-10">
@@ -761,7 +763,7 @@ export default function NavBar() {
                       {/* Simple Close Button */}
                       <button
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="p-1.5 bg-white/20 dark:bg-gray-800/40 hover:bg-red-500/30 dark:hover:bg-red-500/40 rounded-lg transition-colors border border-gray-300/30 dark:border-gray-600/40 flex items-center justify-center"
+                        className="p-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors border border-gray-300 dark:border-gray-600 flex items-center justify-center"
                         aria-label="Close menu"
                       >
                         <XMarkIcon className="h-4 w-4 text-gray-700 dark:text-gray-300" />
@@ -788,7 +790,7 @@ export default function NavBar() {
                   <div className="space-y-1">
                     <div className={`flex items-center justify-between px-1 mb-1.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
                       <h4 className="text-[9px] font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest">{translate('mobileMenu.navigation')}</h4>
-                      <div className={`flex-1 h-px bg-gradient-to-r from-transparent via-slate-500 via-slate-400 via-slate-500 to-transparent ${isRTL ? 'mr-2' : 'ml-2'}`}></div>
+                      <div className={`flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-600 to-transparent ${isRTL ? 'mr-2' : 'ml-2'}`}></div>
                     </div>
                     {[
                       { href: '/', label: t('nav.home'), icon: HomeIcon, description: translate('mobileMenu.homeDescription') },
@@ -802,10 +804,11 @@ export default function NavBar() {
                         <Link
                           key={item.href}
                           href={item.href}
+                          prefetch={true}
                           className={`group flex items-center p-2 rounded-2xl transition-colors duration-200 relative overflow-hidden touch-manipulation ${isRTL ? 'flex-row-reverse' : ''} ${
                             isActive 
-                              ? 'bg-gradient-to-r from-slate-700/90 via-slate-600/90 to-slate-700/90 border border-white/20 shadow-lg shadow-black/20' 
-                              : 'bg-gradient-to-r from-slate-800/70 via-slate-700/70 to-slate-800/70 border border-white/10 hover:from-slate-700/85 hover:via-slate-600/85 hover:to-slate-700/85 active:from-slate-700/90 active:via-slate-600/90 active:to-slate-700/90'
+                              ? 'bg-primary-100 dark:bg-primary-900/30 border border-primary-300 dark:border-primary-700 shadow-md' 
+                              : 'bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/70 active:bg-gray-200 dark:active:bg-gray-700'
                           }`}
                           onClick={(e) => {
                             // Prevent navigation if already on the same page
@@ -822,23 +825,23 @@ export default function NavBar() {
                           }}
                         >
                           {/* Icon Container */}
-                          <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isRTL ? 'ml-2' : 'mr-2'} bg-white/10 border border-white/15`}>
-                            <item.icon className="w-5 h-5 text-white" style={{ direction: 'ltr' }} />
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isRTL ? 'ml-2' : 'mr-2'} bg-primary-100 dark:bg-primary-900/30 border border-primary-300 dark:border-primary-700`}>
+                            <item.icon className={`w-5 h-5 ${isActive ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300'}`} style={{ direction: 'ltr' }} />
                           </div>
                           
                           {/* Content - More Compact */}
                           <div className="flex-1 relative z-10 min-w-0">
                             <div className={`font-semibold text-sm mb-0 transition-all duration-300 ${isRTL ? 'text-right' : ''} ${
                               isActive 
-                                ? 'text-white' 
-                                : 'text-white/90'
+                                ? 'text-primary-700 dark:text-primary-300' 
+                                : 'text-gray-900 dark:text-gray-200'
                             }`}>
                               {item.label}
                             </div>
                             <div className={`text-[11px] transition-all duration-300 ${isRTL ? 'text-right' : ''} ${
                               isActive 
-                                ? 'text-white/80' 
-                                : 'text-white/70'
+                                ? 'text-primary-600 dark:text-primary-400' 
+                                : 'text-gray-600 dark:text-gray-400'
                             }`}>
                               {item.description}
                             </div>
@@ -846,8 +849,8 @@ export default function NavBar() {
                           
                           {/* Arrow */}
                           <div className={`${isRTL ? 'mr-1' : 'ml-1'} flex-shrink-0`}>
-                            <div className="w-6 h-6 rounded-full bg-white/15 border border-white/20 flex items-center justify-center">
-                              <ArrowRightIcon className={`h-3.5 w-3.5 text-white ${isRTL ? 'rotate-180' : ''}`} style={{ direction: 'ltr', transform: isRTL ? 'rotate(180deg)' : 'none' }} />
+                            <div className="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900/30 border border-primary-300 dark:border-primary-700 flex items-center justify-center">
+                              <ArrowRightIcon className={`h-3.5 w-3.5 ${isActive ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300'} ${isRTL ? 'rotate-180' : ''}`} style={{ direction: 'ltr', transform: isRTL ? 'rotate(180deg)' : 'none' }} />
                             </div>
                           </div>
                         </Link>
@@ -859,7 +862,7 @@ export default function NavBar() {
                   <div className="space-y-1 pt-2 border-t border-gray-300 dark:border-gray-700/50">
                     <div className={`flex items-center justify-between px-1 mb-1.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
                       <h4 className="text-[9px] font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest">{translate('nav.more')}</h4>
-                      <div className={`flex-1 h-px bg-gradient-to-r from-transparent via-slate-500 via-slate-400 via-slate-500 to-transparent ${isRTL ? 'mr-2' : 'ml-2'}`}></div>
+                      <div className={`flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-600 to-transparent ${isRTL ? 'mr-2' : 'ml-2'}`}></div>
                     </div>
                     {[
                       { href: '/more/about', label: t('nav.about'), icon: InformationCircleIcon },
@@ -872,10 +875,11 @@ export default function NavBar() {
                         <Link
                           key={item.href}
                           href={item.href}
+                          prefetch={true}
                           className={`group flex items-center p-2 rounded-2xl transition-colors duration-200 relative overflow-hidden touch-manipulation ${isRTL ? 'flex-row-reverse' : ''} ${
                             isActive 
-                              ? 'bg-gradient-to-r from-slate-700/90 via-slate-600/90 to-slate-700/90 border border-white/20 shadow-lg shadow-black/20' 
-                              : 'bg-gradient-to-r from-slate-800/70 via-slate-700/70 to-slate-800/70 border border-white/10 hover:from-slate-700/85 hover:via-slate-600/85 hover:to-slate-700/85 active:from-slate-700/90 active:via-slate-600/90 active:to-slate-700/90'
+                              ? 'bg-primary-100 dark:bg-primary-900/30 border border-primary-300 dark:border-primary-700 shadow-md' 
+                              : 'bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/70 active:bg-gray-200 dark:active:bg-gray-700'
                           }`}
                           onClick={() => {
                             if (!isActive) {
@@ -884,13 +888,13 @@ export default function NavBar() {
                             setIsMobileMenuOpen(false)
                           }}
                         >
-                          <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isRTL ? 'ml-2' : 'mr-2'} bg-white/10 border border-white/15`}>
-                            <item.icon className="w-5 h-5 text-white" />
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isRTL ? 'ml-2' : 'mr-2'} bg-primary-100 dark:bg-primary-900/30 border border-primary-300 dark:border-primary-700`}>
+                            <item.icon className={`w-5 h-5 ${isActive ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300'}`} />
                           </div>
                           <div className={`flex-1 font-semibold text-sm ${
                             isActive 
-                              ? 'text-white' 
-                              : 'text-white/90'
+                              ? 'text-primary-700 dark:text-primary-300' 
+                              : 'text-gray-900 dark:text-gray-200'
                           }`}>
                             {item.label}
                           </div>
@@ -905,22 +909,21 @@ export default function NavBar() {
                       {/* Enhanced Section Header with Animated Accent */}
                       <div className={`flex items-center justify-between px-1 mb-2 relative ${isRTL ? 'flex-row-reverse' : ''}`}>
                         <div className={`flex items-center ${isRTL ? 'gap-1.5 flex-row-reverse' : 'gap-1.5'}`}>
-                          <div className="w-0.5 h-4 bg-gradient-to-b from-slate-400 via-slate-300 via-slate-400 to-slate-500 rounded-full shadow-lg shadow-slate-500/50"></div>
+                          <div className="w-0.5 h-4 bg-gradient-to-b from-primary-400 via-primary-300 via-primary-400 to-primary-500 rounded-full shadow-lg shadow-primary-500/50"></div>
                           <h4 className="text-[10px] font-black text-gray-700 dark:text-gray-200 uppercase tracking-widest">{translate('mobileMenu.account')}</h4>
                         </div>
-                        <div className={`flex-1 h-px bg-gradient-to-r from-transparent via-slate-500/80 via-slate-400/80 via-slate-500/80 to-transparent ${isRTL ? 'mr-2' : 'ml-2'} relative`}>
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-slate-400 to-transparent opacity-50 animate-pulse"></div>
-                        </div>
+                        <div className={`flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-600 to-transparent ${isRTL ? 'mr-2' : 'ml-2'}`}></div>
                       </div>
                       
                       {/* Simple Account Card */}
                       <Link
                         href="/account"
-                        className={`group flex items-center p-3 rounded-xl bg-gradient-to-br from-slate-700/20 via-slate-600/20 to-slate-700/20 dark:from-slate-800/30 dark:via-slate-700/30 dark:to-slate-800/30 border border-slate-500/40 dark:border-slate-400/50 hover:border-slate-500/60 dark:hover:border-slate-400/70 transition-all duration-200 shadow-md hover:shadow-lg ${isRTL ? 'flex-row-reverse' : ''}`}
+                        prefetch={true}
+                        className={`group flex items-center p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 transition-all duration-200 shadow-md hover:shadow-lg ${isRTL ? 'flex-row-reverse' : ''}`}
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         {/* Simple Icon */}
-                        <div className={`bg-gradient-to-br from-slate-600 to-slate-700 rounded-lg flex items-center justify-center ${isRTL ? 'ml-3' : 'mr-3'} flex-shrink-0 w-10 h-10`}>
+                        <div className={`bg-primary-600 dark:bg-primary-500 rounded-lg flex items-center justify-center ${isRTL ? 'ml-3' : 'mr-3'} flex-shrink-0 w-10 h-10`}>
                           <UserIcon className="w-5 h-5 text-white" />
                         </div>
                         
@@ -937,17 +940,17 @@ export default function NavBar() {
                           </div>
                           <div className="flex items-center gap-2 flex-wrap">
                             {/* Simple Active Status */}
-                            <span className="inline-flex items-center px-2 py-0.5 bg-slate-500/20 dark:bg-slate-500/30 rounded-md border border-slate-400/50 dark:border-slate-400/60">
-                              <span className="w-1.5 h-1.5 bg-slate-500 rounded-full mr-1.5"></span>
-                              <span className="text-[9px] font-semibold text-slate-700 dark:text-slate-300">
+                            <span className="inline-flex items-center px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 rounded-md border border-primary-300 dark:border-primary-700">
+                              <span className="w-1.5 h-1.5 bg-primary-600 dark:bg-primary-400 rounded-full mr-1.5"></span>
+                              <span className="text-[9px] font-semibold text-primary-700 dark:text-primary-300">
                                 {translate('mobileMenu.active')}
                               </span>
                             </span>
                             {/* Simple Order Count */}
                             {mounted && ordersCount > 0 && (
-                              <span className="inline-flex items-center px-2 py-0.5 bg-slate-500/20 dark:bg-slate-500/30 rounded-md border border-slate-400/50 dark:border-slate-400/60">
-                                <ClipboardDocumentListIcon className="w-3 h-3 mr-1 text-slate-600 dark:text-slate-400" />
-                                <span className="text-[9px] font-semibold text-slate-700 dark:text-slate-300">
+                              <span className="inline-flex items-center px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 rounded-md border border-primary-300 dark:border-primary-700">
+                                <ClipboardDocumentListIcon className="w-3 h-3 mr-1 text-primary-600 dark:text-primary-400" />
+                                <span className="text-[9px] font-semibold text-primary-700 dark:text-primary-300">
                                   {ordersCount} {ordersCount === 1 ? translate('mobileMenu.order') : translate('mobileMenu.orders')}
                                 </span>
                               </span>
@@ -959,13 +962,14 @@ export default function NavBar() {
                       {/* Enhanced Quick Account Actions Grid */}
                       <div className="grid grid-cols-2 gap-2">
                         {[
-                          { href: '/account/messages', label: translate('account.messages.title'), icon: ChatBubbleLeftRightIcon, color: 'from-slate-500 via-slate-400 to-slate-600', bgColor: 'from-slate-50 to-slate-100 dark:from-slate-900/30 dark:to-slate-800/30', borderColor: 'border-slate-300 dark:border-slate-600' },
-                          { href: '/account/service-requests', label: translate('account.serviceRequests.title'), icon: WrenchScrewdriverIcon, color: 'from-slate-600 via-slate-500 to-slate-700', bgColor: 'from-slate-50 to-slate-100 dark:from-slate-900/30 dark:to-slate-800/30', borderColor: 'border-slate-300 dark:border-slate-600' },
+                          { href: '/account/messages', label: translate('account.messages.title'), icon: ChatBubbleLeftRightIcon, color: 'from-primary-500 via-primary-400 to-primary-600', bgColor: 'from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-800/50', borderColor: 'border-gray-200 dark:border-gray-700' },
+                          { href: '/account/service-requests', label: translate('account.serviceRequests.title'), icon: WrenchScrewdriverIcon, color: 'from-primary-600 via-primary-500 to-primary-700', bgColor: 'from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-800/50', borderColor: 'border-gray-200 dark:border-gray-700' },
                         ].map((item, index) => (
                           <Link
                             key={item.href}
                             href={item.href}
-                            className={`group/action flex flex-col items-center justify-center p-2 rounded-lg bg-gradient-to-br ${item.bgColor} border ${item.borderColor} hover:border-opacity-80 dark:hover:border-opacity-70 transition-all duration-300 relative overflow-hidden touch-manipulation shadow-sm hover:shadow-md hover:scale-105`}
+                            prefetch={true}
+                            className={`group/action flex flex-col items-center justify-center p-2 rounded-lg bg-gradient-to-br ${item.bgColor} border ${item.borderColor} hover:border-primary-300 dark:hover:border-primary-700 transition-all duration-300 relative overflow-hidden touch-manipulation shadow-sm hover:shadow-md hover:scale-105`}
                             onClick={() => setIsMobileMenuOpen(false)}
                           >
                             {/* Hover Background Glow */}
@@ -981,7 +985,7 @@ export default function NavBar() {
                             </div>
                             
                             {/* Compact Label */}
-                            <span className="text-[10px] font-semibold text-gray-900 dark:text-white group-hover/action:text-slate-700 dark:group-hover/action:text-slate-300 transition-colors duration-300 text-center relative z-10 leading-tight">
+                            <span className="text-[10px] font-semibold text-gray-900 dark:text-white group-hover/action:text-primary-700 dark:group-hover/action:text-primary-300 transition-colors duration-300 text-center relative z-10 leading-tight">
                               {item.label}
                             </span>
                             
@@ -996,8 +1000,8 @@ export default function NavBar() {
                   {/* Quick Actions Section - More Compact */}
                   <div className="space-y-1.5 pt-2 border-top border-gray-300 dark:border-gray-700/50">
                       <div className={`flex items-center justify-between px-1 mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <h4 className="text-[10px] font-bold text-white/80 uppercase tracking-widest">{translate('mobileMenu.quickActions')}</h4>
-                      <div className={`flex-1 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent ${isRTL ? 'mr-2' : 'ml-2'}`}></div>
+                      <h4 className="text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest">{translate('mobileMenu.quickActions')}</h4>
+                      <div className={`flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-600 to-transparent ${isRTL ? 'mr-2' : 'ml-2'}`}></div>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-2">
@@ -1006,11 +1010,11 @@ export default function NavBar() {
                           openCart()
                           setIsMobileMenuOpen(false)
                         }}
-                        className="group flex items-center gap-2 p-2 rounded-2xl bg-gradient-to-r from-slate-800/80 via-slate-700/80 to-slate-800/80 border border-white/10 hover:from-slate-700/90 hover:via-slate-600/90 hover:to-slate-700/90 active:from-slate-700/95 active:via-slate-600/95 active:to-slate-700/95 transition-all duration-200"
+                        className="group flex items-center gap-2 p-2 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/70 active:bg-gray-200 dark:active:bg-gray-700 transition-all duration-200"
                         aria-label="Cart"
                       >
-                        <div className="w-9 h-9 rounded-full bg-white/10 border border-white/15 flex items-center justify-center relative">
-                          <ShoppingCartIcon className="w-5 h-5 text-white" />
+                        <div className="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-900/30 border border-primary-300 dark:border-primary-700 flex items-center justify-center relative">
+                          <ShoppingCartIcon className="w-5 h-5 text-primary-700 dark:text-primary-300" />
                     {mounted && cartCount > 0 && (
                       <span className="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[9px] font-bold rounded-full h-4 w-4 flex items-center justify-center shadow-md">
                         {cartCount}
@@ -1018,9 +1022,9 @@ export default function NavBar() {
                     )}
                         </div>
                         <div className="flex flex-col leading-tight">
-                          <span className="text-sm font-semibold text-white">{translate('mobileMenu.cart')}</span>
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white">{translate('mobileMenu.cart')}</span>
                         {mounted && cartCount > 0 && (
-                            <span className="text-[10px] text-white/80">{cartCount} {translate('mobileMenu.items')}</span>
+                            <span className="text-[10px] text-gray-600 dark:text-gray-400">{cartCount} {translate('mobileMenu.items')}</span>
                         )}
                         </div>
                       </button>
@@ -1031,13 +1035,13 @@ export default function NavBar() {
                             setIsMobileMenuOpen(false)
                             handleLogin()
                           }}
-                          className="group flex items-center gap-2 p-2 rounded-2xl bg-gradient-to-r from-slate-800/80 via-slate-700/80 to-slate-800/80 border border-white/10 hover:from-slate-700/90 hover:via-slate-600/90 hover:to-slate-700/90 active:from-slate-700/95 active:via-slate-600/95 active:to-slate-700/95 transition-all duration-200"
+                          className="group flex items-center gap-2 p-2 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/70 active:bg-gray-200 dark:active:bg-gray-700 transition-all duration-200"
                         >
-                          <div className="w-9 h-9 rounded-full bg-white/10 border border-white/15 flex items-center justify-center">
-                            <UserIcon className="w-5 h-5 text-white" />
+                          <div className="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-900/30 border border-primary-300 dark:border-primary-700 flex items-center justify-center">
+                            <UserIcon className="w-5 h-5 text-primary-700 dark:text-primary-300" />
                           </div>
                           <div className="flex flex-col leading-tight text-left">
-                            <span className="text-sm font-semibold text-white">{translate('mobileMenu.signIn')}</span>
+                            <span className="text-sm font-semibold text-gray-900 dark:text-white">{translate('mobileMenu.signIn')}</span>
                           </div>
                         </button>
                       )}
@@ -1047,19 +1051,19 @@ export default function NavBar() {
                   {/* Language Section */}
                   <div id="mobile-language-section" className="space-y-2 pt-2 border-t border-gray-300 dark:border-gray-700/50">
                     <div className={`flex items-center justify-between px-1 mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <h4 className="text-[10px] font-bold text-white/80 uppercase tracking-widest">{translate('mobileMenu.preferences')}</h4>
-                      <div className={`flex-1 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent ${isRTL ? 'mr-2' : 'ml-2'}`}></div>
+                      <h4 className="text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest">{translate('mobileMenu.preferences')}</h4>
+                      <div className={`flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-600 to-transparent ${isRTL ? 'mr-2' : 'ml-2'}`}></div>
                     </div>
                     
                     {/* Language Switcher Card */}
-                    <div className="rounded-2xl p-3 bg-gradient-to-r from-slate-800/80 via-slate-700/80 to-slate-800/80 border border-white/10">
+                    <div className="rounded-2xl p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
                       <div className="flex items-center space-x-2 mb-3">
-                        <div className="w-8 h-8 rounded-full bg-white/10 border border-white/15 flex items-center justify-center flex-shrink-0">
-                          <span className="text-sm text-white">🌐</span>
+                        <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 border border-primary-300 dark:border-primary-700 flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm">🌐</span>
                         </div>
                         <div className="flex-1 min-w-0">
-                          <span className="text-xs font-semibold text-white block">{translate('mobileMenu.language')}</span>
-                          <span className="text-[11px] text-white/70">{translate('mobileMenu.chooseLanguage')}</span>
+                          <span className="text-xs font-semibold text-gray-900 dark:text-white block">{translate('mobileMenu.language')}</span>
+                          <span className="text-[11px] text-gray-600 dark:text-gray-400">{translate('mobileMenu.chooseLanguage')}</span>
                         </div>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
@@ -1075,12 +1079,12 @@ export default function NavBar() {
                             }}
                             className={`flex flex-col items-center justify-center space-y-1.5 p-2.5 rounded-xl text-xs font-medium transition-all duration-200 touch-manipulation relative overflow-hidden ${
                               language === lang.code 
-                                ? 'bg-gradient-to-r from-slate-700 via-slate-600 to-slate-700 text-white border border-white/15 shadow-md scale-[1.02]' 
-                                : 'bg-gradient-to-r from-slate-800/80 via-slate-700/80 to-slate-800/80 text-white/80 border border-white/10 hover:from-slate-700 hover:via-slate-600 hover:to-slate-700 active:from-slate-700 active:via-slate-600 active:to-slate-700'
+                                ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border border-primary-300 dark:border-primary-700 shadow-md scale-[1.02]' 
+                                : 'bg-white dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/70 active:bg-gray-100 dark:active:bg-gray-700'
                             }`}
                             style={{ transform: 'translateZ(0)', willChange: 'transform' }}
                           >
-                            <div className="w-9 h-9 rounded-full overflow-hidden border border-white/20">
+                            <div className={`w-9 h-9 rounded-full overflow-hidden border ${language === lang.code ? 'border-primary-300 dark:border-primary-700' : 'border-gray-300 dark:border-gray-600'}`}>
                               <Image 
                                 src={lang.flag} 
                                 alt={lang.fullName} 
@@ -1091,8 +1095,8 @@ export default function NavBar() {
                             </div>
                             <span className="text-[10px] font-semibold">{lang.name}</span>
                             {language === lang.code && (
-                              <div className="absolute top-1 right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow-md">
-                                <svg className="w-2.5 h-2.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <div className="absolute top-1 right-1 w-4 h-4 bg-primary-600 dark:bg-primary-500 rounded-full flex items-center justify-center shadow-md">
+                                <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                 </svg>
                               </div>

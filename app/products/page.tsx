@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import Link from 'next/link'
 import Image from 'next/image'
 import QuickOrderModal from '@/components/QuickOrderModal'
@@ -8,7 +10,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useCart } from '@/contexts/CartContext'
-import { getProductPageProducts, getAllProducts, getProductsByCategory, searchProducts } from '@/lib/products'
+import { getProductPageProducts, getAllProducts, getProductsByCategory, searchProducts, clearProductsCache } from '@/lib/products'
 import { getAllCategories, matchProductToCategory, Category } from '@/lib/categories'
 import { Product } from '@/types'
 import { 
@@ -367,73 +369,54 @@ export default function ProductsPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 15
 
-  // Load products and categories - Optimized for faster loading
+  // Load products and categories - Non-blocking, optimized for fast navigation
   useEffect(() => {
     let isMounted = true
     
     const loadData = async () => {
       try {
-        // Load in parallel for faster loading
-        // Use Promise.allSettled to handle partial failures gracefully
-        const [productsResult, categoriesResult] = await Promise.allSettled([
-          getProductPageProducts(), // Only show products that should be visible
-          getAllCategories(true) // Only active categories
+        // Load cached data first for instant display (non-blocking)
+        const cachedDataPromise = Promise.allSettled([
+          getProductPageProducts(false).catch(() => []),
+          getAllCategories(false).catch(() => [])
         ])
         
-        if (!isMounted) return
-        
-        // Handle products
-        if (productsResult.status === 'fulfilled') {
-          setProducts(productsResult.value)
+        // Set cached data immediately when available (don't wait)
+        cachedDataPromise.then(([productsResult, categoriesResult]) => {
+          if (!isMounted) return
           
-          // Preload first 15 product images for faster display (increased for better UX)
-          if (productsResult.value && productsResult.value.length > 0 && typeof window !== 'undefined') {
-            productsResult.value.slice(0, 15).forEach((product) => {
-              if (product.image) {
-                const img = document.createElement('img')
-                img.src = product.image
-                img.loading = 'eager'
-                // @ts-ignore - fetchPriority is supported in modern browsers
-                img.fetchPriority = 'high'
-                // Start loading in background
-                document.body.appendChild(img)
-                setTimeout(() => {
-                  if (img.parentNode) {
-                    img.parentNode.removeChild(img)
-                  }
-                }, 0)
-              }
-            })
-            
-            // Prefetch product detail pages for first 5 products on hover
-            productsResult.value.slice(0, 5).forEach((product) => {
-              if (product.id) {
-                fetch(`/api/products/${product.id}`, { method: 'HEAD' }).catch(() => {})
-              }
-            })
+          if (productsResult.status === 'fulfilled' && productsResult.value.length > 0) {
+            setProducts(productsResult.value)
           }
-        } else {
-          console.error('Error loading products:', productsResult.reason)
-          setProducts([])
-        }
+          if (categoriesResult.status === 'fulfilled' && categoriesResult.value.length > 0) {
+            setCategories(categoriesResult.value.sort((a: Category, b: Category) => a.order - b.order))
+          }
+        }).catch(() => {}) // Ignore errors, continue with background refresh
         
-        // Handle categories
-        if (categoriesResult.status === 'fulfilled') {
-          setCategories(categoriesResult.value.sort((a, b) => a.order - b.order))
-        } else {
-          console.error('Error loading categories:', categoriesResult.reason)
-          setCategories([])
-        }
+        // Refresh in background (completely non-blocking)
+        // Use setTimeout to defer so it doesn't block navigation
+        setTimeout(() => {
+          Promise.allSettled([
+            getProductPageProducts(true).catch(() => []),
+            getAllCategories(true).catch(() => [])
+          ]).then(([productsResult, categoriesResult]) => {
+            if (!isMounted) return
+            // Update with fresh data if available
+            if (productsResult.status === 'fulfilled' && productsResult.value.length > 0) {
+              setProducts(productsResult.value)
+            }
+            if (categoriesResult.status === 'fulfilled' && categoriesResult.value.length > 0) {
+              setCategories(categoriesResult.value.sort((a: Category, b: Category) => a.order - b.order))
+            }
+          }).catch(() => {}) // Ignore background refresh errors
+        }, 100) // Small delay to ensure navigation isn't blocked
       } catch (error) {
         console.error('Error loading data:', error)
-        if (isMounted) {
-          setProducts([])
-          setCategories([])
-        }
+        // Don't block on errors - page should still render
       }
     }
     
-    // Start loading immediately
+    // Start loading immediately but don't await
     loadData()
     
     // Listen for product changes (still works for client-side updates)
@@ -635,16 +618,43 @@ export default function ProductsPage() {
     setCurrentPage(1)
   }, [selectedCategories, searchQuery, sortOption])
 
-  // Performance optimization: Preload images
+  // Performance optimization: Preload images (non-blocking, deferred)
   useEffect(() => {
+    if (products.length === 0) return
+    
+    // Use requestIdleCallback to defer image preloading so it doesn't block navigation
     const preloadImages = () => {
-      products.forEach(product => {
-        const img = document.createElement('img')
-        img.src = product.image
-      })
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => {
+          // Only preload first 5 images to avoid blocking
+          products.slice(0, 5).forEach((product, index) => {
+            setTimeout(() => {
+              if (product.image) {
+                const img = document.createElement('img')
+                img.src = product.image
+                img.loading = 'lazy'
+              }
+            }, index * 100) // Stagger loading
+          })
+        }, { timeout: 2000 })
+      } else {
+        // Fallback: defer with setTimeout
+        setTimeout(() => {
+          products.slice(0, 5).forEach((product, index) => {
+            setTimeout(() => {
+              if (product.image) {
+                const img = document.createElement('img')
+                img.src = product.image
+                img.loading = 'lazy'
+              }
+            }, index * 100)
+          })
+        }, 1000)
+      }
     }
     
-    preloadImages()
+    // Defer preloading until after initial render
+    setTimeout(preloadImages, 500)
   }, [products])
 
 
@@ -722,22 +732,22 @@ export default function ProductsPage() {
   })();
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 relative pt-20 sm:pt-24">
+    <div className="min-h-screen bg-white dark:bg-gray-900 relative pt-12 sm:pt-20 md:pt-24 lg:pt-16">
       
       {/* Enhanced Header */}
-      <div className="relative bg-white dark:bg-gray-900 shadow-lg overflow-hidden z-10 pt-24">
+      <div className="relative bg-white dark:bg-gray-900 shadow-lg overflow-hidden z-10 pt-12 sm:pt-20 md:pt-24 lg:pt-16">
         {/* Background Elements */}
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-10 left-10 w-32 h-32 bg-primary-500 rounded-full blur-2xl"></div>
           <div className="absolute bottom-10 right-10 w-40 h-40 bg-primary-500 rounded-full blur-2xl"></div>
         </div>
         
-        <div className="max-w-7xl mx-auto px-4 sm:px-5 md:px-6 lg:px-8 py-4 sm:py-5 md:py-6 lg:py-6 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-5 md:px-6 lg:px-8 pt-2 sm:pt-4 md:py-4 lg:pt-2 lg:pb-5 pb-4 sm:pb-5 md:pb-6 lg:pb-6 relative z-10">
           <div className="text-center animate-in slide-in-from-top duration-1000">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-3xl xl:text-4xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3 lg:mb-4 animate-in fade-in duration-1000 delay-300">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-3xl xl:text-4xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3 lg:mb-3 animate-in fade-in duration-1000 delay-300">
               {t('products.title')}
             </h1>
-            <p className="text-sm sm:text-base md:text-lg lg:text-base xl:text-lg text-gray-700 dark:text-gray-300 mb-4 sm:mb-5 lg:mb-6 animate-in slide-in-from-bottom duration-1000 delay-500 px-2">
+            <p className="text-sm sm:text-base md:text-lg lg:text-base xl:text-lg text-gray-700 dark:text-gray-300 mb-4 sm:mb-5 lg:mb-4 animate-in slide-in-from-bottom duration-1000 delay-500 px-2">
               {t('products.subtitle')}
             </p>
             
@@ -776,7 +786,7 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      <div id="products" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-6 relative z-10">
+      <div id="products" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-4 lg:pt-6 pb-4 lg:pb-6 relative z-10">
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-5">
           
           {/* Enhanced Sidebar Filters - Compact for Desktop */}
@@ -1063,16 +1073,16 @@ export default function ProductsPage() {
         )}
 
         {/* Enhanced Professional Support Section */}
-        <div className="mt-8 relative z-10">
-          {/* Background with gradient */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary-50 to-gray-50 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800 rounded-2xl -z-10"></div>
-          <div className="absolute inset-0 opacity-10">
+        <div className="mt-4 sm:mt-6 md:mt-8 relative z-10">
+          {/* Background with gradient - hidden on mobile */}
+          <div className="absolute inset-0 bg-gray-50 dark:bg-gray-900 rounded-2xl -z-10 hidden md:block"></div>
+          <div className="absolute inset-0 opacity-10 hidden md:block">
             <div className="absolute top-10 left-10 w-24 h-24 bg-primary-400 rounded-full blur-2xl"></div>
             <div className="absolute bottom-10 right-10 w-32 h-32 bg-primary-400 rounded-full blur-2xl"></div>
           </div>
           
-          <div className="relative bg-white dark:bg-gray-800 dark:bg-opacity-95 rounded-xl p-4 lg:p-5 shadow-lg border border-gray-200 dark:border-gray-700">
-            <div className="text-center mb-4">
+          <div className="relative bg-white dark:bg-gray-800 dark:bg-opacity-95 rounded-lg sm:rounded-xl p-2 sm:p-3 md:p-4 lg:p-5 shadow-md sm:shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="text-center mb-4 hidden md:block">
               <div className="inline-flex items-center bg-gradient-to-r from-primary-600 to-primary-700 text-white px-3 py-1.5 rounded-full text-[10px] font-bold mb-3 shadow-md">
                 <ShieldCheckIcon className="h-3 w-3 mr-1" />
                 {t('products.support.title')}
@@ -1094,72 +1104,71 @@ export default function ProductsPage() {
                 </div>
                 <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 dark:bg-opacity-90 rounded-full border border-transparent dark:border-gray-600">
                   <CheckCircleIcon className="h-3 w-3 text-primary-600 dark:text-primary-400" />
-                  <span className="text-[10px] font-medium text-gray-700 dark:text-gray-300">{t('products.support.expertAdvice')}</span>
-                </div>
-                <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 dark:bg-opacity-90 rounded-full border border-transparent dark:border-gray-600">
-                  <CheckCircleIcon className="h-3 w-3 text-primary-600 dark:text-primary-400" />
                   <span className="text-[10px] font-medium text-gray-700 dark:text-gray-300">{t('products.support.fastResponse')}</span>
                 </div>
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 lg:gap-4">
-              <div className="group relative bg-gradient-to-br from-primary-50 to-gray-50 dark:from-gray-800 dark:to-gray-800 dark:bg-opacity-90 rounded-lg p-3 border border-primary-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-600 transition-all duration-300 hover:shadow-lg">
-                <div className="absolute top-2 right-2 opacity-20 group-hover:opacity-30 transition-opacity">
-                  <PhoneIcon className="h-8 w-8 text-primary-600 dark:text-primary-400" />
+            <div className="grid grid-cols-3 md:grid-cols-3 gap-2.5 sm:gap-3 md:gap-3 lg:gap-4">
+              <div className="group relative bg-white dark:bg-gray-800 rounded-lg sm:rounded-lg p-3 sm:p-2.5 md:p-3 border border-gray-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-600 transition-all duration-300 hover:shadow-md sm:hover:shadow-lg flex flex-col">
+                <div className="absolute top-2 right-2 opacity-20 group-hover:opacity-30 transition-opacity hidden sm:block">
+                  <PhoneIcon className="h-6 w-6 sm:h-8 sm:w-8 text-primary-600 dark:text-primary-400" />
                 </div>
-                <div className="relative">
-                  <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center mb-2 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300 shadow-md">
-                    <PhoneIcon className="h-4 w-4 text-white" />
+                <div className="relative flex flex-col flex-1">
+                  <div className="w-8 h-8 sm:w-6 sm:h-6 md:w-8 md:h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center mb-2 sm:mb-2 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300 shadow-sm sm:shadow-md mx-auto sm:mx-0">
+                    <PhoneIcon className="h-4 w-4 sm:h-3 sm:w-3 md:h-4 md:w-4 text-white" />
                   </div>
-                  <h3 className="text-sm font-bold mb-1 text-gray-900 dark:text-white group-hover:text-primary-700 dark:group-hover:text-primary-400 transition-colors duration-300">{t('products.support.phone.title')}</h3>
-                  <p className="text-gray-600 dark:text-gray-300 mb-2 text-[10px] leading-relaxed">{t('products.support.phone.description')}</p>
-                  <div className="text-[9px] text-gray-500 dark:text-gray-300 mb-2 flex items-center gap-1">
-                    <PhoneIcon className="h-2 w-2" />
+                  <h3 className="text-[11px] sm:text-[10px] md:text-sm font-bold mb-1.5 sm:mb-1 text-gray-900 dark:text-white group-hover:text-primary-700 dark:group-hover:text-primary-400 transition-colors duration-300 text-center sm:text-left">{t('products.support.phone.title')}</h3>
+                  <p className="text-gray-600 dark:text-gray-300 mb-1.5 sm:mb-2 text-[8px] sm:text-[9px] md:text-[10px] leading-tight sm:leading-relaxed hidden sm:block flex-1">{t('products.support.phone.description')}</p>
+                  <div className="text-[7px] sm:text-[8px] md:text-[9px] text-gray-500 dark:text-gray-300 mb-1.5 sm:mb-2 flex items-center gap-0.5 sm:gap-1 justify-center sm:justify-start hidden sm:flex">
+                    <PhoneIcon className="h-1.5 w-1.5 sm:h-2 sm:w-2" />
                     <span>{t('products.support.phone.available')}</span>
                   </div>
-                  <a href="tel:+212779318061" className="inline-flex items-center justify-center w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg">
-                    {t('products.support.phone.callNow')}
-                    <ArrowRightIcon className={`ml-1 h-3 w-3 group-hover:translate-x-1 transition-transform ${language === 'ar' ? 'rotate-180 group-hover:-translate-x-1' : ''}`} />
+                  <a href="tel:+212779318061" className="inline-flex items-center justify-center w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white px-2.5 sm:px-2 md:px-3 py-2 sm:py-1.5 rounded-lg text-[10px] sm:text-[9px] md:text-xs font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-300 transform hover:scale-105 shadow-sm sm:shadow-md hover:shadow-lg mt-auto">
+                    <span className="hidden sm:inline">{t('products.support.phone.callNow')}</span>
+                    <span className="sm:hidden">Call</span>
+                    <ArrowRightIcon className={`ml-1 sm:ml-1 h-2.5 w-2.5 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3 group-hover:translate-x-1 transition-transform ${language === 'ar' ? 'rotate-180 group-hover:-translate-x-1' : ''}`} />
                   </a>
                 </div>
               </div>
               
-              <div className="group relative bg-gradient-to-br from-primary-50 to-gray-50 dark:from-gray-800 dark:to-gray-800 dark:bg-opacity-90 rounded-lg p-3 border border-primary-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-600 transition-all duration-300 hover:shadow-lg">
-                <div className="absolute top-2 right-2 opacity-20 group-hover:opacity-30 transition-opacity">
-                  <EnvelopeIcon className="h-8 w-8 text-primary-600 dark:text-primary-400" />
+              <div className="group relative bg-white dark:bg-gray-800 rounded-lg sm:rounded-lg p-3 sm:p-2.5 md:p-3 border border-gray-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-600 transition-all duration-300 hover:shadow-md sm:hover:shadow-lg flex flex-col">
+                <div className="absolute top-2 right-2 opacity-20 group-hover:opacity-30 transition-opacity hidden sm:block">
+                  <EnvelopeIcon className="h-6 w-6 sm:h-8 sm:w-8 text-primary-600 dark:text-primary-400" />
                 </div>
-                <div className="relative">
-                  <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center mb-2 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300 shadow-md">
-                    <EnvelopeIcon className="h-4 w-4 text-white" />
+                <div className="relative flex flex-col flex-1">
+                  <div className="w-8 h-8 sm:w-6 sm:h-6 md:w-8 md:h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center mb-2 sm:mb-2 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300 shadow-sm sm:shadow-md mx-auto sm:mx-0">
+                    <EnvelopeIcon className="h-4 w-4 sm:h-3 sm:w-3 md:h-4 md:w-4 text-white" />
                   </div>
-                  <h3 className="text-sm font-bold mb-1 text-gray-900 dark:text-white group-hover:text-primary-700 dark:group-hover:text-primary-400 transition-colors duration-300">{t('products.support.email.title')}</h3>
-                  <p className="text-gray-600 dark:text-gray-300 mb-2 text-[10px] leading-relaxed">{t('products.support.email.description')}</p>
-                  <div className="text-[9px] text-gray-500 dark:text-gray-300 mb-2">📧 {t('products.support.email.response')}</div>
-                  <a href="mailto:pixelpad77@gmail.com?subject=Product%20Inquiry&body=Hello,%20I%20need%20help%20choosing%20the%20right%20product." className="inline-flex items-center justify-center w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg">
-                    {t('products.support.email.send')}
-                    <ArrowRightIcon className={`ml-1 h-3 w-3 group-hover:translate-x-1 transition-transform ${language === 'ar' ? 'rotate-180 group-hover:-translate-x-1' : ''}`} />
+                  <h3 className="text-[11px] sm:text-[10px] md:text-sm font-bold mb-1.5 sm:mb-1 text-gray-900 dark:text-white group-hover:text-primary-700 dark:group-hover:text-primary-400 transition-colors duration-300 text-center sm:text-left">{t('products.support.email.title')}</h3>
+                  <p className="text-gray-600 dark:text-gray-300 mb-1.5 sm:mb-2 text-[8px] sm:text-[9px] md:text-[10px] leading-tight sm:leading-relaxed hidden sm:block flex-1">{t('products.support.email.description')}</p>
+                  <div className="text-[7px] sm:text-[8px] md:text-[9px] text-gray-500 dark:text-gray-300 mb-1.5 sm:mb-2 hidden sm:block">📧 {t('products.support.email.response')}</div>
+                  <a href="mailto:pixelpad77@gmail.com?subject=Product%20Inquiry&body=Hello,%20I%20need%20help%20choosing%20the%20right%20product." className="inline-flex items-center justify-center w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white px-2.5 sm:px-2 md:px-3 py-2 sm:py-1.5 rounded-lg text-[10px] sm:text-[9px] md:text-xs font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-300 transform hover:scale-105 shadow-sm sm:shadow-md hover:shadow-lg mt-auto">
+                    <span className="hidden sm:inline">{t('products.support.email.send')}</span>
+                    <span className="sm:hidden">Email</span>
+                    <ArrowRightIcon className={`ml-1 sm:ml-1 h-2.5 w-2.5 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3 group-hover:translate-x-1 transition-transform ${language === 'ar' ? 'rotate-180 group-hover:-translate-x-1' : ''}`} />
                   </a>
                 </div>
               </div>
 
-              <div className="group relative bg-gradient-to-br from-primary-50 to-gray-50 dark:from-gray-800 dark:to-gray-800 dark:bg-opacity-90 rounded-lg p-3 border border-primary-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-600 transition-all duration-300 hover:shadow-lg">
-                <div className="absolute top-2 right-2 opacity-20 group-hover:opacity-30 transition-opacity">
-                  <ChatBubbleLeftRightIcon className="h-8 w-8 text-primary-600 dark:text-primary-400" />
+              <div className="group relative bg-white dark:bg-gray-800 rounded-lg sm:rounded-lg p-3 sm:p-2.5 md:p-3 border border-gray-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-600 transition-all duration-300 hover:shadow-md sm:hover:shadow-lg flex flex-col">
+                <div className="absolute top-2 right-2 opacity-20 group-hover:opacity-30 transition-opacity hidden sm:block">
+                  <ChatBubbleLeftRightIcon className="h-6 w-6 sm:h-8 sm:w-8 text-primary-600 dark:text-primary-400" />
                 </div>
-                <div className="relative">
-                  <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center mb-2 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300 shadow-md">
-                    <ChatBubbleLeftRightIcon className="h-4 w-4 text-white" />
+                <div className="relative flex flex-col flex-1">
+                  <div className="w-8 h-8 sm:w-6 sm:h-6 md:w-8 md:h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center mb-2 sm:mb-2 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300 shadow-sm sm:shadow-md mx-auto sm:mx-0">
+                    <ChatBubbleLeftRightIcon className="h-4 w-4 sm:h-3 sm:w-3 md:h-4 md:w-4 text-white" />
                   </div>
-                  <h3 className="text-sm font-bold mb-1 text-gray-900 dark:text-white group-hover:text-primary-700 dark:group-hover:text-primary-400 transition-colors duration-300">{t('products.support.whatsapp.title')}</h3>
-                  <p className="text-gray-600 dark:text-gray-300 mb-2 text-[10px] leading-relaxed">{t('products.support.whatsapp.description')}</p>
-                  <div className="text-[9px] text-gray-500 dark:text-gray-300 mb-2 flex items-center gap-1">
-                    <ChatBubbleLeftRightIcon className="h-2 w-2" />
+                  <h3 className="text-[11px] sm:text-[10px] md:text-sm font-bold mb-1.5 sm:mb-1 text-gray-900 dark:text-white group-hover:text-primary-700 dark:group-hover:text-primary-400 transition-colors duration-300 text-center sm:text-left">{t('products.support.whatsapp.title')}</h3>
+                  <p className="text-gray-600 dark:text-gray-300 mb-1.5 sm:mb-2 text-[8px] sm:text-[9px] md:text-[10px] leading-tight sm:leading-relaxed hidden sm:block flex-1">{t('products.support.whatsapp.description')}</p>
+                  <div className="text-[7px] sm:text-[8px] md:text-[9px] text-gray-500 dark:text-gray-300 mb-1.5 sm:mb-2 flex items-center gap-0.5 sm:gap-1 justify-center sm:justify-start hidden sm:flex">
+                    <ChatBubbleLeftRightIcon className="h-1.5 w-1.5 sm:h-2 sm:w-2" />
                     <span>{t('products.support.whatsapp.instant')}</span>
                   </div>
-                  <a href="https://wa.me/212779318061?text=Hello!%20I%20need%20help%20choosing%20the%20right%20product." target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg">
-                    {t('products.support.whatsapp.start')}
-                    <ArrowRightIcon className={`ml-1 h-3 w-3 group-hover:translate-x-1 transition-transform ${language === 'ar' ? 'rotate-180 group-hover:-translate-x-1' : ''}`} />
+                  <a href="https://wa.me/212779318061?text=Hello!%20I%20need%20help%20choosing%20the%20right%20product." target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white px-2.5 sm:px-2 md:px-3 py-2 sm:py-1.5 rounded-lg text-[10px] sm:text-[9px] md:text-xs font-semibold hover:from-primary-700 hover:to-primary-800 transition-all duration-300 transform hover:scale-105 shadow-sm sm:shadow-md hover:shadow-lg mt-auto">
+                    <span className="hidden sm:inline">{t('products.support.whatsapp.start')}</span>
+                    <span className="sm:hidden">Chat</span>
+                    <ArrowRightIcon className={`ml-1 sm:ml-1 h-2.5 w-2.5 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3 group-hover:translate-x-1 transition-transform ${language === 'ar' ? 'rotate-180 group-hover:-translate-x-1' : ''}`} />
                   </a>
                 </div>
               </div>

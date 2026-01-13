@@ -38,9 +38,20 @@ async function connectDB(): Promise<typeof mongoose> {
       cached.errorCount = 0
       return cached.conn
     }
-    // If connection is connecting, wait for it
+    // If connection is connecting, wait for it (but with timeout)
     if (state === 2) {
-      return cached.promise || cached.conn
+      // Wait max 2 seconds for connection to complete
+      try {
+        await Promise.race([
+          cached.promise || Promise.resolve(cached.conn),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 2000))
+        ])
+        return cached.conn
+      } catch {
+        // Timeout - reset and try again
+        cached.conn = null
+        cached.promise = null
+      }
     }
     // Only reset if fully disconnected
     if (state === 0) {
@@ -52,17 +63,21 @@ async function connectDB(): Promise<typeof mongoose> {
   if (!cached.promise) {
     const opts: mongoose.ConnectOptions = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 10000, // Reduced to 10s for faster failure
-      socketTimeoutMS: 30000, // 30s socket timeout
-      connectTimeoutMS: 10000, // 10s initial connection timeout
+      serverSelectionTimeoutMS: 5000, // Reduced to 5s for faster failure
+      socketTimeoutMS: 20000, // 20s socket timeout - faster
+      connectTimeoutMS: 5000, // 5s initial connection timeout - faster
       maxPoolSize: 5, // Reduced pool size
       minPoolSize: 1, // Keep at least 1 connection alive
       maxIdleTimeMS: 60000, // Close idle connections after 60s (increased)
       retryWrites: true,
       retryReads: true,
       heartbeatFrequencyMS: 30000, // Check connection health every 30s (less frequent)
-      // Note: SSL/TLS is automatically enabled for mongodb+srv:// connections
-      // Don't set tls options explicitly as they can conflict with Atlas
+      // Explicit TLS configuration for MongoDB Atlas
+      // For mongodb+srv:// connections, TLS is required
+      // These options help resolve SSL/TLS handshake issues
+      tls: true,
+      tlsAllowInvalidCertificates: false,
+      tlsAllowInvalidHostnames: false,
     }
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {

@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import Coupon from '@/models/Coupon'
+import type { ICoupon } from '@/models/Coupon'
+import type { Document } from 'mongoose'
+
+type LeanCoupon = Omit<ICoupon, keyof Document> & { _id: string }
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,7 +12,10 @@ export async function POST(request: NextRequest) {
     const { code, total } = await request.json()
     
     const normalized = code.trim().toUpperCase().replace(/\s+/g, '')
+    // Use compound index: code + isActive for faster lookup
     const coupon = await Coupon.findOne({ code: normalized, isActive: true })
+      .lean() // Use lean() for faster queries
+      .hint({ isActive: 1, code: 1 }) as LeanCoupon | null
     
     if (!coupon) {
       return NextResponse.json({

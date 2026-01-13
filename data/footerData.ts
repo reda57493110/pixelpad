@@ -15,6 +15,18 @@ export const companyInfo: CompanyInfo = {
       url: 'https://www.instagram.com/pixel.pad77?igsh=NWlubzJhMmszOTY4',
       icon: 'instagram',
       ariaLabel: 'Follow us on Instagram'
+    },
+    {
+      name: 'TikTok',
+      url: 'https://www.tiktok.com/@pixel.pad1',
+      icon: 'tiktok',
+      ariaLabel: 'Follow us on TikTok'
+    },
+    {
+      name: 'WhatsApp',
+      url: 'https://wa.me/212779318061',
+      icon: 'whatsapp',
+      ariaLabel: 'Contact us on WhatsApp'
     }
   ],
   contact: {
