@@ -1,57 +1,64 @@
 // Shared utility for managing password reset tokens
-// In production, use a database or Redis instead of in-memory storage
+// Uses MongoDB for persistence across serverless function invocations
 
-interface ResetToken {
+import connectDB from './mongodb'
+import ResetToken from '@/models/ResetToken'
+
+interface ResetTokenData {
   email: string
   token: string
   expiresAt: number
 }
 
-// In-memory storage (use a database in production)
-const resetTokens = new Map<string, ResetToken>()
-
-// Clean up expired tokens periodically
-if (typeof setInterval !== 'undefined') {
-  setInterval(() => {
-    const now = Date.now()
-    Array.from(resetTokens.entries()).forEach(([token, data]) => {
-      if (data.expiresAt < now) {
-        resetTokens.delete(token)
-      }
-    })
-  }, 60 * 60 * 1000) // Clean every hour
-}
-
-export function createResetToken(email: string): { token: string; expiresAt: number } {
+export async function createResetToken(email: string): Promise<{ token: string; expiresAt: number }> {
+  await connectDB()
+  
   // Generate reset token
   const token = Math.random().toString(36).substring(2, 15) + 
                 Math.random().toString(36).substring(2, 15) + 
                 Date.now().toString(36)
   
   // Token expires in 1 hour
-  const expiresAt = Date.now() + 60 * 60 * 1000
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
 
-  // Store token
-  resetTokens.set(token, { email, token, expiresAt })
+  // Delete any existing tokens for this email
+  await ResetToken.deleteMany({ email: email.toLowerCase().trim() })
 
-  return { token, expiresAt }
+  // Store token in database
+  await ResetToken.create({
+    email: email.toLowerCase().trim(),
+    token,
+    expiresAt,
+  })
+
+  return { token, expiresAt: expiresAt.getTime() }
 }
 
-export function getResetTokenData(token: string): ResetToken | null {
-  const data = resetTokens.get(token)
-  if (!data) return null
+export async function getResetTokenData(token: string): Promise<ResetTokenData | null> {
+  await connectDB()
   
-  // Check if expired
-  if (data.expiresAt < Date.now()) {
-    resetTokens.delete(token)
+  const tokenDoc = await ResetToken.findOne({ token })
+  
+  if (!tokenDoc) {
     return null
   }
   
-  return data
+  // Check if expired (MongoDB TTL should handle this, but double-check)
+  if (tokenDoc.expiresAt.getTime() < Date.now()) {
+    await ResetToken.deleteOne({ token })
+    return null
+  }
+  
+  return {
+    email: tokenDoc.email,
+    token: tokenDoc.token,
+    expiresAt: tokenDoc.expiresAt.getTime(),
+  }
 }
 
-export function deleteResetToken(token: string): void {
-  resetTokens.delete(token)
+export async function deleteResetToken(token: string): Promise<void> {
+  await connectDB()
+  await ResetToken.deleteOne({ token })
 }
 
 

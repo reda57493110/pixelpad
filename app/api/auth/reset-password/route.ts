@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getResetTokenData, deleteResetToken } from '@/lib/resetTokens'
+import connectDB from '@/lib/mongodb'
+import User from '@/models/User'
+import Customer from '@/models/Customer'
+import bcrypt from 'bcryptjs'
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,8 +23,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get token data
-    const tokenData = getResetTokenData(token)
+    // Get token data from MongoDB
+    const tokenData = await getResetTokenData(token)
     
     if (!tokenData) {
       return NextResponse.json(
@@ -29,17 +33,39 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Delete the token (one-time use) before returning
-    const email = tokenData.email
-    deleteResetToken(token)
+    // Delete the token (one-time use) before updating password
+    const email = tokenData.email.toLowerCase().trim()
+    await deleteResetToken(token)
 
-    // In production, update the password in your database:
-    // await updateUserPassword(email, newPassword)
+    // Connect to database
+    await connectDB()
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10)
+
+    // Try to find user (admin/team) first
+    let user = await User.findOne({ email })
+    
+    // If not found, try customer
+    if (!user) {
+      user = await Customer.findOne({ email })
+    }
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    // Update password in database
+    user.password = hashedPassword
+    await user.save()
 
     return NextResponse.json({
       success: true,
       message: 'Password has been reset successfully. You can now log in with your new password.',
-      email // Return email so client can update localStorage
+      email
     })
   } catch (error) {
     console.error('Reset password error:', error)

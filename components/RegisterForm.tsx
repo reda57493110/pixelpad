@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { 
   UserIcon,
@@ -28,6 +28,20 @@ export default function RegisterForm({ onClose, onSwitchToLogin }: RegisterFormP
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Scroll to top and prevent body scroll when modal opens
+  useEffect(() => {
+    // Scroll to top immediately
+    window.scrollTo({ top: 0, behavior: 'instant' })
+    
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden'
+    
+    // Cleanup: restore body scroll when modal closes
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -68,8 +82,8 @@ export default function RegisterForm({ onClose, onSwitchToLogin }: RegisterFormP
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md animate-in slide-in-from-bottom duration-300">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4 pt-24 sm:pt-28 overflow-y-auto">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md animate-in slide-in-from-top duration-300 max-h-[calc(100vh-8rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Create Account</h2>

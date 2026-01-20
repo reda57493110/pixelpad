@@ -12,12 +12,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user exists in localStorage (simulated - in production, check database)
-    // Since we can't access localStorage from the server, we'll generate tokens for any email
-    // In production, verify the email exists in your database first
+    // Check if user exists in database
+    // Note: We generate tokens for any email to prevent user enumeration
+    // In production, you might want to verify the email exists first
 
-    // Generate and store reset token
-    const { token } = createResetToken(email)
+    // Generate and store reset token in MongoDB
+    const { token } = await createResetToken(email)
 
     // In production, send email here using services like:
     // - Resend (https://resend.com)

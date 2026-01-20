@@ -73,16 +73,7 @@ function ResetPasswordForm() {
         return
       }
 
-      // Update password in localStorage using the email from the API response
-      if (data.email) {
-        const users = JSON.parse(localStorage.getItem('pixelpad_users') || '[]')
-        const userIndex = users.findIndex((u: any) => u.email === data.email)
-        if (userIndex !== -1) {
-          users[userIndex].password = password
-          localStorage.setItem('pixelpad_users', JSON.stringify(users))
-        }
-      }
-
+      // Password has been updated in MongoDB, no need to update localStorage
       setSuccess(true)
       
       // Redirect to login after 2 seconds

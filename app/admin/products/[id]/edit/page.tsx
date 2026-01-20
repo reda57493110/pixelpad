@@ -488,8 +488,8 @@ export default function EditProductPage() {
               <div className="space-y-4">
                 <div className="space-y-3">
                   {variants.map((variant, index) => (
-                    <div key={index} className="grid grid-cols-12 gap-3 items-end p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                      <div className="col-span-2">
+                    <div key={index} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <div className="col-span-1 sm:col-span-1 lg:col-span-2">
                         <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                           RAM
                         </label>
@@ -509,7 +509,7 @@ export default function EditProductPage() {
                           <option value="64 GB">64 GB</option>
                         </select>
                       </div>
-                      <div className="col-span-2">
+                      <div className="col-span-1 sm:col-span-1 lg:col-span-2">
                         <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Storage
                         </label>
@@ -529,7 +529,7 @@ export default function EditProductPage() {
                           <option value="2 TB">2 TB</option>
                         </select>
                       </div>
-                      <div className="col-span-2">
+                      <div className="col-span-1 sm:col-span-1 lg:col-span-2">
                         <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Storage Type
                         </label>
@@ -548,7 +548,7 @@ export default function EditProductPage() {
                           <option value="SSD + HDD">SSD + HDD</option>
                         </select>
                       </div>
-                      <div className="col-span-2">
+                      <div className="col-span-1 sm:col-span-1 lg:col-span-2">
                         <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Price (DH)
                         </label>
@@ -568,7 +568,7 @@ export default function EditProductPage() {
                           className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                         />
                       </div>
-                      <div className="col-span-2">
+                      <div className="col-span-1 sm:col-span-1 lg:col-span-2">
                         <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Original Price (DH)
                         </label>
@@ -584,7 +584,7 @@ export default function EditProductPage() {
                           className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                         />
                       </div>
-                      <div className="col-span-2 flex gap-2">
+                      <div className="col-span-1 sm:col-span-1 lg:col-span-2 flex gap-2">
                         <button
                           type="button"
                           onClick={() => {
@@ -597,9 +597,10 @@ export default function EditProductPage() {
                               setFormData({ ...formData, price: 0 })
                             }
                           }}
-                          className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+                          className="w-full sm:w-auto px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm flex items-center justify-center gap-2"
                         >
                           <XMarkIcon className="w-4 h-4" />
+                          <span className="sm:hidden">Delete</span>
                         </button>
                       </div>
                     </div>

@@ -74,9 +74,14 @@ export default function LoginForm({ onClose, onSwitchToRegister }: LoginFormProp
     }))
   }
 
-  // Lock body scroll when modal is open
+  // Scroll to top and lock body scroll when modal is open
   useEffect(() => {
+    // Scroll to top immediately
+    window.scrollTo({ top: 0, behavior: 'instant' })
+    
+    // Prevent body scroll
     document.body.style.overflow = 'hidden'
+    
     return () => {
       document.body.style.overflow = ''
     }

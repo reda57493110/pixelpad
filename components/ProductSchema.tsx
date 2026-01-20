@@ -24,7 +24,7 @@ export default function ProductSchema({ product }: ProductSchemaProps) {
     },
     offers: {
       '@type': 'Offer',
-      url: `${baseUrl}/products?product=${product.id}`,
+      url: `${baseUrl}/products/${product.id}`,
       priceCurrency: 'MAD',
       price: product.price.toString(),
       availability: product.inStock 

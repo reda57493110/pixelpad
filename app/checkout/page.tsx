@@ -328,10 +328,21 @@ export default function CheckoutPage() {
             continue
           }
           
-          const availableStock = product.stockQuantity || 0
-          if (!product.inStock || availableStock < item.quantity) {
+          // Normalize values to avoid false failures (e.g., inStock=false but stockQuantity > 0)
+          const availableStock = typeof product.stockQuantity === 'number' ? product.stockQuantity : 0
+          const requestedQty = Math.max(1, Number(item.quantity) || 1)
+          const isAvailable = product.inStock || availableStock > 0
+
+          // If no stock at all, block checkout
+          if (!isAvailable) {
+            stockValidationErrors.push(`${item.name} - Out of stock`)
+            continue
+          }
+
+          // If stock exists but less than requested, show precise limit
+          if (availableStock > 0 && requestedQty > availableStock) {
             stockValidationErrors.push(
-              `${item.name} - ${availableStock === 0 ? 'Out of stock' : `Only ${availableStock} available (requested ${item.quantity})`}`
+              `${item.name} - Only ${availableStock} available (requested ${requestedQty})`
             )
           }
         }

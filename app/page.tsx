@@ -10,6 +10,8 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { getAllProducts, clearProductsCache } from '@/lib/products'
+import OrganizationSchema from '@/components/OrganizationSchema'
+import LocalBusinessSchema from '@/components/LocalBusinessSchema'
 import {
   ShieldCheckIcon,
   TruckIcon,
@@ -593,9 +595,6 @@ export default function HomePage() {
   useEffect(() => {
     if (newArrivalsToShow.length === 0) return
     
-    // Reset scroll position to start from beginning when products change
-    setNewArrivalsScroll(0)
-    
     let animationFrameId: number
     let lastTime = 0
     const scrollSpeed = 0.5 // pixels per frame for smooth scrolling
@@ -632,6 +631,13 @@ export default function HomePage() {
       }
     }
   }, [isNewArrivalsPaused, newArrivalsToShow.length])
+
+  // Reset scroll position only when products actually change (not on pause state changes)
+  useEffect(() => {
+    if (newArrivalsToShow.length > 0) {
+      setNewArrivalsScroll(0)
+    }
+  }, [newArrivalsToShow.length])
 
   // Auto-scroll Best Sellers carousel - smooth animation
   useEffect(() => {
@@ -1271,7 +1277,12 @@ export default function HomePage() {
               className="overflow-x-hidden relative w-full max-w-full -mx-2 px-2 sm:-mx-4 sm:px-4 md:mx-0 md:px-0"
               onMouseEnter={() => setIsNewArrivalsPaused(true)}
               onMouseLeave={() => setIsNewArrivalsPaused(false)}
-              onTouchStart={() => setIsNewArrivalsPaused(true)}
+              onTouchStart={(e) => {
+                // Only pause if touching the container, not individual product cards
+                if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.overflow-x-hidden')) {
+                  setIsNewArrivalsPaused(true)
+                }
+              }}
               onTouchEnd={() => {
                 setTimeout(() => setIsNewArrivalsPaused(false), 1000)
               }}
@@ -1536,41 +1547,41 @@ export default function HomePage() {
       {/* Discount Products Section removed */}
 
       {/* Why Choose Us */}
-      <section ref={benefitsRef} className="py-8 sm:py-10 md:py-12 bg-white dark:bg-gray-900">
+      <section ref={benefitsRef} className="py-4 sm:py-8 md:py-10 lg:py-12 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-5 md:px-6 lg:px-8">
-          <div className="text-center mb-6 sm:mb-8 md:mb-10">
-            <h2 className="text-2xl sm:text-3xl md:text-[32px] lg:text-4xl font-black text-primary-700 dark:text-primary-300 mb-2">
+          <div className="text-center mb-4 sm:mb-6 md:mb-8 lg:mb-10">
+            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-primary-700 dark:text-primary-300 mb-1 sm:mb-2">
               {t('promo.whyChooseUs') || 'Why Choose PIXEL PAD?'}
             </h2>
           </div>
           
-          <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-5 md:gap-5 lg:gap-5 ${isRTL ? 'rtl' : 'ltr'}`}>
+          <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-4 md:gap-5 lg:gap-5 ${isRTL ? 'rtl' : 'ltr'}`}>
             {/* Quality Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-4 shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-[1.01] border border-gray-100 dark:border-gray-700 group text-center">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-600 rounded-lg flex items-center justify-center mx-auto mb-1.5 sm:mb-2 shadow-md transform group-hover:scale-105 group-hover:rotate-1 transition-all duration-300">
-                <ShieldCheckIcon className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
+            <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 lg:p-4 shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-[1.01] border border-gray-100 dark:border-gray-700 group text-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-primary-600 dark:bg-primary-500 rounded-lg flex items-center justify-center mx-auto mb-1 sm:mb-1.5 md:mb-2 shadow-md transform group-hover:scale-105 group-hover:rotate-1 transition-all duration-300">
+                <ShieldCheckIcon className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 text-white" />
               </div>
-              <h3 className="text-sm sm:text-base lg:text-lg font-black text-primary-700 dark:text-primary-300">
+              <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-black text-primary-700 dark:text-primary-300">
                 {t('home.trust.quality') || 'Pro-Grade Quality'}
               </h3>
             </div>
 
             {/* Support Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-4 shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-[1.01] border border-gray-100 dark:border-gray-700 group text-center">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-600 rounded-lg flex items-center justify-center mx-auto mb-1.5 sm:mb-2 shadow-md transform group-hover:scale-105 group-hover:rotate-1 transition-all duration-300">
-                <StarIcon className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
+            <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 lg:p-4 shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-[1.01] border border-gray-100 dark:border-gray-700 group text-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-primary-600 dark:bg-primary-500 rounded-lg flex items-center justify-center mx-auto mb-1 sm:mb-1.5 md:mb-2 shadow-md transform group-hover:scale-105 group-hover:rotate-1 transition-all duration-300">
+                <StarIcon className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 text-white" />
               </div>
-              <h3 className="text-sm sm:text-base lg:text-lg font-black text-primary-700 dark:text-primary-300">
+              <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-black text-primary-700 dark:text-primary-300">
                 {t('home.trust.support') || 'Experts on Call'}
               </h3>
             </div>
 
             {/* Returns Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-3 sm:p-4 lg:p-4 shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-[1.01] border border-gray-100 dark:border-gray-700 group text-center">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-600 rounded-lg flex items-center justify-center mx-auto mb-1.5 sm:mb-2 shadow-md transform group-hover:scale-105 group-hover:rotate-1 transition-all duration-300">
-                <CheckCircleIcon className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
+            <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl p-2.5 sm:p-3 md:p-4 lg:p-4 shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5 hover:scale-[1.01] border border-gray-100 dark:border-gray-700 group text-center">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-primary-600 dark:bg-primary-500 rounded-lg flex items-center justify-center mx-auto mb-1 sm:mb-1.5 md:mb-2 shadow-md transform group-hover:scale-105 group-hover:rotate-1 transition-all duration-300">
+                <CheckCircleIcon className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 text-white" />
               </div>
-              <h3 className="text-sm sm:text-base lg:text-lg font-black text-primary-700 dark:text-primary-300">
+              <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-black text-primary-700 dark:text-primary-300">
                 {t('home.trust.returns') || 'Hassle-Free Returns'}
               </h3>
             </div>
@@ -1734,7 +1745,9 @@ export default function HomePage() {
         </div>
       </section>
 
-
+      {/* SEO Structured Data */}
+      <OrganizationSchema />
+      <LocalBusinessSchema />
     </div>
   )
 }

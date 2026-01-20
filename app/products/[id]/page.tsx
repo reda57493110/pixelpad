@@ -21,6 +21,8 @@ import {
   ChevronRightIcon
 } from '@heroicons/react/24/outline'
 import QuickOrderModal from '@/components/QuickOrderModal'
+import ProductSchema from '@/components/ProductSchema'
+import BreadcrumbSchema from '@/components/BreadcrumbSchema'
 
 // Product Review Section Component
 function ProductReviewSection({ productId, user, token, t, isRTL }: { productId: string, user: any, token: string | null, t: any, isRTL: boolean }) {
@@ -312,24 +314,76 @@ export default function ProductDetailPage() {
       setIsLoading(true)
       console.log('Loading product with ID:', id)
       
-      // Use Promise.race to add timeout (reduced to 2s for faster feedback)
-      const data = await Promise.race([
-        getProductById(id),
-        new Promise<Product | undefined>((resolve) => 
-          setTimeout(() => resolve(undefined), 2000)
-        )
-      ])
-      
-      console.log('Product loaded:', data ? 'Found' : 'Not found')
-      setProduct(data || null)
-      // Set first variant as selected if variants exist
-      if (data?.variants && data.variants.length > 0) {
-        setSelectedVariant(data.variants[0])
+      // Non-blocking: Load product data without blocking UI
+      // Use fetch directly for better control
+      const fetchProduct = async () => {
+        try {
+          const response = await fetch(`/api/products/${id}`, {
+            cache: 'force-cache',
+            next: { revalidate: 60 }
+          })
+          
+          if (!response.ok) {
+            setProduct(null)
+            setIsLoading(false)
+            return
+          }
+          
+          const data = await response.json()
+          const productData = {
+            id: data._id?.toString() || data.id,
+            name: data.name,
+            nameFr: data.nameFr,
+            description: data.description,
+            descriptionFr: data.descriptionFr,
+            price: data.price,
+            originalPrice: data.originalPrice,
+            deliveryPrice: data.deliveryPrice,
+            costPrice: data.costPrice,
+            category: typeof data.category === 'object' ? data.category._id?.toString() || data.category.toString() : String(data.category || ''),
+            image: data.image,
+            images: data.images || (data.image ? [data.image] : []),
+            inStock: data.inStock ?? true,
+            stockQuantity: data.stockQuantity ?? 0,
+            soldQuantity: data.soldQuantity ?? 0,
+            rating: data.rating ?? 0,
+            reviews: data.reviews ?? 0,
+            features: data.features || [],
+            specifications: data.specifications || {},
+            badge: data.badge,
+            badgeKey: data.badgeKey,
+            discount: data.discount ?? 0,
+            showOnHomeCarousel: data.showOnHomeCarousel ?? false,
+            showInHero: data.showInHero ?? false,
+            showInNewArrivals: data.showInNewArrivals ?? false,
+            showInBestSellers: data.showInBestSellers ?? false,
+            showInSpecialOffers: data.showInSpecialOffers ?? false,
+            showInTrending: data.showInTrending ?? false,
+            showOnProductPage: data.showOnProductPage !== false,
+            order: data.order ?? 0,
+            variants: data.variants || undefined,
+          } as Product
+          
+          console.log('Product loaded:', productData ? 'Found' : 'Not found')
+          setProduct(productData || null)
+          
+          // Set first variant as selected if variants exist
+          if (productData?.variants && productData.variants.length > 0) {
+            setSelectedVariant(productData.variants[0])
+          }
+        } catch (error) {
+          console.error('Error loading product:', error)
+          setProduct(null)
+        } finally {
+          setIsLoading(false)
+        }
       }
+      
+      // Start loading immediately, non-blocking
+      fetchProduct()
     } catch (error) {
-      console.error('Error loading product:', error)
+      console.error('Error in loadProduct:', error)
       setProduct(null)
-    } finally {
       setIsLoading(false)
     }
   }
@@ -385,8 +439,8 @@ export default function ProductDetailPage() {
     }
   }
 
-  // Show skeleton immediately while loading
-  if (isLoading) {
+  // Show skeleton only if we have no product data yet
+  if (isLoading && !product) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-20 sm:pt-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -434,9 +488,9 @@ export default function ProductDetailPage() {
         {/* Back Button - Goes to previous page */}
         <button
           onClick={handleBack}
-          className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 sm:mb-6 px-4 sm:px-0 transition-colors"
+          className="inline-flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4 sm:mb-6 px-4 sm:px-0 transition-colors"
         >
-          <ArrowLeftIcon className="w-5 h-5" />
+          <ArrowLeftIcon className="w-4 h-4 sm:w-5 sm:h-5" />
           <span>{t('common.back') || 'Back'}</span>
         </button>
 
@@ -545,11 +599,11 @@ export default function ProductDetailPage() {
             <div className="space-y-4 sm:space-y-6 px-4 sm:px-0">
               {/* Title */}
               <div>
-                <h1 className="text-2xl lg:text-3xl font-black text-gray-900 dark:text-white mb-3">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-gray-900 dark:text-white mb-3">
                   {productName || product.name}
                 </h1>
                 {productDescription && (
-                  <p className="text-sm lg:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
+                  <p className="text-xs sm:text-sm lg:text-base text-gray-600 dark:text-gray-300 leading-relaxed">
                     {productDescription}
                   </p>
                 )}
@@ -562,7 +616,7 @@ export default function ProductDetailPage() {
                     {[...Array(5)].map((_, i) => (
                       <StarIcon
                         key={i}
-                        className={`w-5 h-5 ${
+                        className={`w-4 h-4 sm:w-5 sm:h-5 ${
                           i < Math.floor(product.rating || 0)
                             ? 'text-yellow-400 fill-yellow-400'
                             : 'text-gray-300 dark:text-gray-600'
@@ -570,11 +624,11 @@ export default function ProductDetailPage() {
                       />
                     ))}
                   </div>
-                  <span className="text-lg font-bold text-gray-900 dark:text-white">
+                  <span className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
                     {product.rating}
                   </span>
                   {typeof product.reviews === 'number' && (
-                    <span className="text-gray-600 dark:text-gray-400">
+                    <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                       ({product.reviews} {t('product.reviews') || 'reviews'})
                     </span>
                   )}
@@ -584,7 +638,7 @@ export default function ProductDetailPage() {
               {/* Variants Selection */}
               {product.variants && product.variants.length > 0 && (
                 <div className="space-y-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                  <h3 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white">
+                  <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 dark:text-white">
                     {t('product.selectConfiguration') || 'Select Configuration'}
                   </h3>
                   <div className="space-y-3">
@@ -592,7 +646,7 @@ export default function ProductDetailPage() {
                       <button
                         key={index}
                         onClick={() => setSelectedVariant(variant)}
-                        className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
+                        className={`w-full p-3 sm:p-4 rounded-lg border-2 transition-all text-left ${
                           selectedVariant && 
                           selectedVariant.ram === variant.ram && 
                           selectedVariant.storage === variant.storage && 
@@ -603,21 +657,21 @@ export default function ProductDetailPage() {
                       >
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="font-semibold text-gray-900 dark:text-white">
+                            <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
                               {variant.ram} - {variant.storage} {variant.storageType}
                             </div>
                             {variant.originalPrice && variant.originalPrice > variant.price && (
-                              <div className="text-sm text-gray-500 dark:text-gray-400 line-through">
+                              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 line-through">
                                 {formatCurrency(variant.originalPrice)}
                               </div>
                             )}
                           </div>
                           <div className="text-right">
-                            <div className="text-lg lg:text-xl font-bold text-blue-600 dark:text-blue-400">
+                            <div className="text-base sm:text-lg lg:text-xl font-bold text-blue-600 dark:text-blue-400">
                               {formatCurrency(variant.price)}
                             </div>
                             {variant.originalPrice && variant.originalPrice > variant.price && (
-                              <div className="text-xs lg:text-sm text-green-600 dark:text-green-400">
+                              <div className="text-xs sm:text-xs lg:text-sm text-green-600 dark:text-green-400">
                                 Save {formatCurrency(variant.originalPrice - variant.price)}
                               </div>
                             )}
@@ -632,17 +686,17 @@ export default function ProductDetailPage() {
               {/* Price */}
               <div className="space-y-2">
                 <div className="flex items-baseline gap-3">
-                  <span className="text-3xl lg:text-4xl font-black text-blue-600 dark:text-blue-400">
+                  <span className="text-2xl sm:text-3xl lg:text-4xl font-black text-blue-600 dark:text-blue-400">
                     {formatCurrency(displayPrice)}
                   </span>
                   {displayOriginalPrice && displayOriginalPrice > displayPrice && (
-                    <span className="text-lg lg:text-xl text-gray-500 dark:text-gray-400 line-through">
+                    <span className="text-base sm:text-lg lg:text-xl text-gray-500 dark:text-gray-400 line-through">
                       {formatCurrency(displayOriginalPrice)}
                     </span>
                   )}
                 </div>
                 {displayOriginalPrice && displayOriginalPrice > displayPrice && (
-                  <div className="text-base lg:text-lg text-green-600 dark:text-green-400 font-bold">
+                  <div className="text-sm sm:text-base lg:text-lg text-green-600 dark:text-green-400 font-bold">
                     {t('product.save') || 'Save'} {formatCurrency(displayOriginalPrice - displayPrice)}!
                   </div>
                 )}
@@ -651,13 +705,13 @@ export default function ProductDetailPage() {
               {/* Features */}
               {product.features && product.features.length > 0 && (
                 <div>
-                  <h3 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                  <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 dark:text-white mb-3">
                     {t('product.features') || 'Features'}
                   </h3>
                   <ul className="space-y-2">
                     {product.features.map((feature, index) => (
-                      <li key={index} className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
-                        <CheckCircleIcon className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
+                      <li key={index} className="flex items-start gap-2 text-xs sm:text-sm text-gray-700 dark:text-gray-300">
+                        <CheckCircleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 flex-shrink-0 mt-0.5" />
                         <span>{feature}</span>
                       </li>
                     ))}
@@ -668,14 +722,14 @@ export default function ProductDetailPage() {
               {/* Specifications */}
               {product.specifications && Object.keys(product.specifications).length > 0 && (
                 <div>
-                  <h3 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-white mb-3">
+                  <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 dark:text-white mb-3">
                     {t('product.specifications') || 'Specifications'}
                   </h3>
                   <div className="space-y-2">
                     {Object.entries(product.specifications).map(([key, value]) => (
                       <div key={key} className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                        <span className="text-gray-600 dark:text-gray-400 font-medium">{key}:</span>
-                        <span className="text-gray-900 dark:text-white">{value}</span>
+                        <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 font-medium">{key}:</span>
+                        <span className="text-xs sm:text-sm text-gray-900 dark:text-white">{value}</span>
                       </div>
                     ))}
                   </div>
@@ -686,10 +740,10 @@ export default function ProductDetailPage() {
               <div className="space-y-3 pt-4">
                 <button
                   onClick={handleAddToCart}
-                  className="w-full py-3 lg:py-4 px-6 rounded-xl font-bold text-base lg:text-lg transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                  className="w-full py-2.5 sm:py-3 lg:py-4 px-6 rounded-xl font-bold text-sm sm:text-base lg:text-lg transition-all duration-200 bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
                 >
                   <div className="flex items-center justify-center gap-2">
-                    <ShoppingCartIcon className="w-6 h-6" />
+                    <ShoppingCartIcon className="w-5 h-5 sm:w-6 sm:h-6" />
                     <span>
                       {t('product.addToCart') || 'Add to Cart'}
                     </span>
@@ -698,7 +752,7 @@ export default function ProductDetailPage() {
                 
                 <button
                   onClick={() => setShowQuickOrder(true)}
-                  className="w-full py-3 px-6 rounded-xl font-semibold text-base transition-all duration-200 border-2 border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                  className="w-full py-2.5 sm:py-3 px-6 rounded-xl font-semibold text-sm sm:text-base transition-all duration-200 border-2 border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                 >
                   {t('product.quickOrder') || 'Quick Order'}
                 </button>
@@ -706,20 +760,20 @@ export default function ProductDetailPage() {
 
               {/* Trust Indicators */}
               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <TruckIcon className="w-5 h-5 text-green-500" />
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                  <TruckIcon className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
                   <span>{t('product.fastShipping') || 'Fast Shipping'}</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <ShieldCheckIcon className="w-5 h-5 text-green-500" />
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                  <ShieldCheckIcon className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
                   <span>{t('product.securePayment') || 'Secure Payment'}</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <CheckCircleIcon className="w-5 h-5 text-green-500" />
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                  <CheckCircleIcon className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
                   <span>{t('product.returnPolicy') || '30-Day Returns'}</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <CheckCircleIcon className="w-5 h-5 text-green-500" />
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                  <CheckCircleIcon className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
                   <span>{t('product.warranty') || 'Warranty Included'}</span>
                 </div>
               </div>
@@ -750,6 +804,20 @@ export default function ProductDetailPage() {
           }}
           onClose={() => setShowQuickOrder(false)}
         />
+      )}
+
+      {/* SEO Structured Data */}
+      {product && (
+        <>
+          <ProductSchema product={product} />
+          <BreadcrumbSchema
+            items={[
+              { name: 'Home', url: '/' },
+              { name: 'Products', url: '/products' },
+              { name: product.name, url: `/products/${product.id}` },
+            ]}
+          />
+        </>
       )}
     </div>
   )

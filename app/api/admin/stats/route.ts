@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
     const [
       productStats,
       orderStats,
+      orderProfitStats,
       userCount,
       customerCount,
       guestCustomerCount,
@@ -86,6 +87,54 @@ export async function GET(request: NextRequest) {
           }
         }
       ]),
+      // Profit calculated from COMPLETED orders (more reliable than Product.soldQuantity)
+      Order.aggregate([
+        { $match: { status: 'completed' } },
+        { $unwind: { path: '$items', preserveNullAndEmptyArrays: false } },
+        {
+          $addFields: {
+            _productObjectId: {
+              $convert: {
+                input: '$items.id',
+                to: 'objectId',
+                onError: null,
+                onNull: null
+              }
+            },
+            _qty: { $ifNull: ['$items.quantity', 0] },
+            _salePrice: { $ifNull: ['$items.price', 0] }
+          }
+        },
+        {
+          $lookup: {
+            from: 'products',
+            localField: '_productObjectId',
+            foreignField: '_id',
+            as: '_product'
+          }
+        },
+        { $unwind: { path: '$_product', preserveNullAndEmptyArrays: true } },
+        {
+          $addFields: {
+            _cost: { $ifNull: ['$_product.costPrice', 0] },
+            _delivery: { $ifNull: ['$_product.deliveryPrice', 0] }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalProductsSold: { $sum: '$_qty' },
+            totalProfit: {
+              $sum: {
+                $multiply: [
+                  '$_qty',
+                  { $subtract: ['$_salePrice', { $add: ['$_cost', '$_delivery'] }] }
+                ]
+              }
+            }
+          }
+        }
+      ]),
       // User count
       User.countDocuments({ isActive: true }),
       // Customer counts (registered + guests)
@@ -144,6 +193,11 @@ export async function GET(request: NextRequest) {
       pendingOrders: 0
     }
 
+    const orderProfitData = orderProfitStats[0] || {
+      totalProductsSold: 0,
+      totalProfit: 0
+    }
+
     const messageData = messageStats[0] || {
       totalMessages: 0,
       newMessages: 0
@@ -168,8 +222,9 @@ export async function GET(request: NextRequest) {
       totalStockQuantity: productData.totalStockQuantity || 0,
       totalSoldQuantity: productData.totalSoldQuantity || 0,
       lowStockProducts: productData.lowStockProducts || 0,
-      totalProfit: productData.totalProfit || 0,
-      totalProductsSold: productData.totalSoldQuantity || 0
+      // Prefer orders-based profit; fallback to product-based if no completed orders yet
+      totalProfit: (orderProfitData.totalProductsSold > 0 ? orderProfitData.totalProfit : (productData.totalProfit || 0)),
+      totalProductsSold: (orderProfitData.totalProductsSold > 0 ? orderProfitData.totalProductsSold : (productData.totalSoldQuantity || 0))
     })
   } catch (error) {
     console.error('Error fetching admin stats:', error)

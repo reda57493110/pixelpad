@@ -196,11 +196,15 @@ export default function NavBar() {
   const handleLogin = () => {
     setIsUserMenuOpen(false)
     setShowLoginForm(true)
+    // Scroll to top to ensure modal is visible in viewport
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleRegister = () => {
     setIsUserMenuOpen(false)
     setShowRegisterForm(true)
+    // Scroll to top to ensure modal is visible in viewport
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleLogout = () => {
