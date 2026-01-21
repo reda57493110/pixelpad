@@ -115,6 +115,8 @@ export const ar = {
     'product.badge.popular': 'شائع',
     'product.badge.gaming': 'ألعاب',
     'product.badge.new': 'جديد',
+    'product.badge.trending': 'ترند',
+    'product.badge.limitedTime': 'وقت محدود',
     'product.discount.off': 'خصم',
     'home.trust.happyCustomers': 'عملاء سعداء',
     'home.trust.customerRating': 'تقييم العملاء',

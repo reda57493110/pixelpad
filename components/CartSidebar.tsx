@@ -102,8 +102,8 @@ export default function CartSidebar() {
         }`}
         style={{
           top: isOpen ? `${scrollTop}px` : (isRTL ? '-100%' : '100%'),
-          height: '85vh',
-          maxHeight: '85vh',
+          height: '100vh',
+          maxHeight: '100vh',
           pointerEvents: isOpen ? 'auto' : 'none',
           visibility: isOpen ? 'visible' : 'hidden',
           display: isOpen ? 'flex' : 'none'

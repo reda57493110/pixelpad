@@ -37,7 +37,7 @@ function ProductCard({ product, variant = 'default', hideIds = false }: ProductC
   
   return (
     <div 
-      className={`${isHero ? 'bg-white dark:bg-gray-800 shadow-xl' : 'bg-white dark:bg-gray-800 shadow-xl'} rounded-2xl shadow-md dark:shadow-xl dark:shadow-gray-900/50 overflow-hidden group flex flex-col ${isHero ? 'h-full' : 'h-full'} relative isolate border border-gray-200 dark:border-gray-700`}
+      className={`${isHero ? 'bg-white dark:bg-gray-800' : 'bg-white dark:bg-gray-800'} rounded-2xl dark:shadow-xl dark:shadow-gray-900/50 overflow-hidden group flex flex-col ${isHero ? 'h-full' : 'h-full'} relative isolate border-0 dark:border dark:border-gray-700`}
       onMouseEnter={() => {
         // Prefetch product page and data on hover for instant loading
         if (typeof window !== 'undefined' && product.id) {
@@ -93,10 +93,10 @@ function ProductCard({ product, variant = 'default', hideIds = false }: ProductC
           {/* Top Left: Discount Badge */}
           {product.originalPrice && product.originalPrice > product.price && (
             <div 
-              className={`absolute top-1.5 sm:top-2 md:top-2.5 lg:top-2 ${isRTL ? 'right-1.5 sm:right-2 md:right-2.5 lg:right-2' : 'left-1.5 sm:left-2 md:left-2.5 lg:left-2'} ${isHero ? 'bg-gradient-to-r from-primary-600 via-blue-500 to-primary-500 text-white px-1.5 sm:px-2.5 md:px-3 lg:px-4 py-0.5 sm:py-1 md:py-1.5 lg:py-2 rounded-full text-[9px] sm:text-[10px] md:text-xs lg:text-sm font-black shadow-2xl z-20' : 'bg-gradient-to-r from-primary-600 to-blue-600 text-white px-2 sm:px-2.5 md:px-3 py-0.5 sm:py-1 md:py-1 rounded-full text-[9px] sm:text-[10px] md:text-xs font-bold shadow-lg'} cursor-pointer hover:scale-110 transition-all duration-300 pointer-events-auto`}
+              className={`absolute top-1.5 sm:top-2 md:top-2 lg:top-1.5 ${isRTL ? 'right-1.5 sm:right-2 md:right-2 lg:right-1.5' : 'left-1.5 sm:left-2 md:left-2 lg:left-1.5'} ${isHero ? 'bg-gradient-to-r from-primary-600 via-blue-500 to-primary-500 text-white px-1.5 sm:px-2.5 md:px-2 lg:px-2.5 py-0.5 sm:py-1 md:py-0.5 lg:py-1 rounded-full text-[9px] sm:text-[10px] md:text-[9px] lg:text-[10px] font-black shadow-2xl z-20' : 'bg-gradient-to-r from-primary-600 to-blue-600 text-white px-2 sm:px-2.5 md:px-2 lg:px-2.5 py-0.5 sm:py-1 md:py-0.5 lg:py-1 rounded-full text-[9px] sm:text-[10px] md:text-[9px] lg:text-[10px] font-bold shadow-lg'} cursor-pointer hover:scale-110 transition-all duration-300 pointer-events-auto`}
               onClick={() => router.push(`/products/${product.id}`)}
             >
-              {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+              {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% {t('product.discount.off') || 'OFF'}
             </div>
           )}
           
@@ -104,18 +104,18 @@ function ProductCard({ product, variant = 'default', hideIds = false }: ProductC
             <>
               {/* Trending Badge - Top Right for Hero */}
               <div 
-                className={`absolute top-1.5 sm:top-2 md:top-2.5 lg:top-2 ${isRTL ? 'left-1.5 sm:left-2 md:left-2.5 lg:left-2' : 'right-1.5 sm:right-2 md:right-2.5 lg:right-2'} bg-gradient-to-r from-primary-600 via-blue-500 to-primary-500 text-white px-1.5 sm:px-2.5 md:px-3 lg:px-3 py-0.5 sm:py-1 md:py-1.5 lg:py-1.5 rounded-full text-[9px] sm:text-[10px] md:text-[10px] lg:text-xs font-black shadow-xl cursor-pointer hover:scale-110 transition-all duration-300 z-20 pointer-events-auto`}
+                className={`absolute top-1.5 sm:top-2 md:top-2 lg:top-1.5 ${isRTL ? 'left-1.5 sm:left-2 md:left-2 lg:left-1.5' : 'right-1.5 sm:right-2 md:right-2 lg:right-1.5'} bg-gradient-to-r from-primary-600 via-blue-500 to-primary-500 text-white px-1.5 sm:px-2.5 md:px-2 lg:px-2.5 py-0.5 sm:py-1 md:py-0.5 lg:py-1 rounded-full text-[9px] sm:text-[10px] md:text-[9px] lg:text-[10px] font-black shadow-xl cursor-pointer hover:scale-110 transition-all duration-300 z-20 pointer-events-auto`}
                 onClick={() => router.push(`/products/${product.id}`)}
               >
-                TRENDING
+                {t('product.badge.trending') || 'TRENDING'}
               </div>
               
               {/* Limited Time - Bottom Left */}
               <div 
-                className={`absolute bottom-1.5 sm:bottom-2 md:bottom-2.5 lg:bottom-2 ${isRTL ? 'right-1.5 sm:right-2 md:right-2.5 lg:right-2' : 'left-1.5 sm:left-2 md:left-2.5 lg:left-2'} bg-gradient-to-r from-primary-600 via-blue-500 to-primary-500 text-white px-1.5 sm:px-2.5 md:px-3 lg:px-3 py-0.5 sm:py-1 md:py-1.5 lg:py-1.5 rounded-full text-[9px] sm:text-[10px] md:text-[10px] lg:text-xs font-black shadow-xl cursor-pointer hover:scale-110 transition-all duration-300 z-20 pointer-events-auto`}
+                className={`absolute bottom-1.5 sm:bottom-2 md:bottom-2 lg:bottom-1.5 ${isRTL ? 'right-1.5 sm:right-2 md:right-2 lg:right-1.5' : 'left-1.5 sm:left-2 md:left-2 lg:left-1.5'} bg-gradient-to-r from-primary-600 via-blue-500 to-primary-500 text-white px-1.5 sm:px-2.5 md:px-2 lg:px-2.5 py-0.5 sm:py-1 md:py-0.5 lg:py-1 rounded-full text-[9px] sm:text-[10px] md:text-[9px] lg:text-[10px] font-black shadow-xl cursor-pointer hover:scale-110 transition-all duration-300 z-20 pointer-events-auto`}
                 onClick={() => router.push(`/products/${product.id}`)}
               >
-                LIMITED TIME
+                {t('product.badge.limitedTime') || 'LIMITED TIME'}
               </div>
             </>
           )}

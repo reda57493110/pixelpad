@@ -113,6 +113,8 @@ export const en = {
     'product.badge.popular': 'POPULAR',
     'product.badge.gaming': 'GAMING',
     'product.badge.new': 'NEW',
+    'product.badge.trending': 'TRENDING',
+    'product.badge.limitedTime': 'LIMITED TIME',
     'product.discount.off': 'OFF',
     'home.trust.happyCustomers': 'Happy Customers',
     'home.trust.customerRating': 'Customer Rating',

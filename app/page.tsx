@@ -850,7 +850,7 @@ export default function HomePage() {
           >
             <div className="relative max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-6 lg:py-8">
               <div className={`flex ${isRTL ? 'justify-center lg:justify-start' : 'justify-center sm:justify-center lg:justify-end'}`}>
-                <div className="w-full max-w-[320px] sm:max-w-sm md:max-w-md lg:max-w-md bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl md:rounded-3xl border-2 border-gray-200/80 dark:border-gray-700/80 shadow-2xl p-2.5 sm:p-2.5 md:p-2.5 lg:p-3 transform hover:scale-[1.02] transition-transform duration-300">
+                <div className="w-full max-w-[320px] sm:max-w-sm md:max-w-md lg:max-w-md">
                   <ProductCard product={heroProduct} variant="hero" hideIds />
                 </div>
               </div>
@@ -900,8 +900,7 @@ export default function HomePage() {
                     
                     return (
                       <div key={product.id} className="w-full flex-shrink-0 px-2 sm:px-2.5 md:px-3 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
-                        <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl lg:rounded-2xl p-2 sm:p-2.5 md:p-3 lg:p-4 shadow-lg hover:shadow-2xl border border-gray-100/80 dark:border-gray-700 transition-all duration-300">
-                          <div className={`grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-2.5 md:gap-3 lg:gap-4 items-center ${isRTL ? 'rtl' : 'ltr'}`}>
+                        <div className={`grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-2.5 md:gap-3 lg:gap-4 items-center ${isRTL ? 'rtl' : 'ltr'}`}>
                             {/* Product Image */}
                             <div className="relative">
                               <div className="aspect-square bg-gray-50 dark:bg-gray-800 rounded-md sm:rounded-lg lg:rounded-xl p-2 sm:p-2.5 md:p-3 lg:p-3 flex items-center justify-center relative overflow-hidden">
@@ -1019,7 +1018,6 @@ export default function HomePage() {
                               </div>
                             </div>
                           </div>
-                        </div>
                       </div>
                     )
                   })}
