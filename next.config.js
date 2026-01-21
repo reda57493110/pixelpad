@@ -108,6 +108,8 @@ const nextConfig = {
     optimizeCss: true,
     // Enable faster navigation
     optimizePackageImports: ['@heroicons/react'],
+    // Enable webpack build worker for faster builds on Vercel
+    webpackBuildWorker: true,
   },
   
   // Development server configuration
