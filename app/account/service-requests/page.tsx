@@ -1,8 +1,57 @@
-import ServiceRequestsClient from './ServiceRequestsClient'
+'use client'
+
+export const dynamic = 'force-dynamic'
+import Protected from '@/components/Protected'
+import AccountLayout from '@/components/AccountLayout'
+import RefreshButton from '@/components/RefreshButton'
+import { useAuth } from '@/contexts/AuthContext'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { getUserServiceRequests, getAllServiceRequests, updateServiceRequestStatus, updateServiceRequest, findServiceRequestOwner } from '@/lib/serviceRequests'
+import { ServiceRequest } from '@/types'
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import {
+  ComputerDesktopIcon,
+  CameraIcon,
+  ClockIcon,
+  ShieldCheckIcon,
+  PencilIcon,
+  CheckIcon,
+  XMarkIcon,
+  MapPinIcon,
+  EnvelopeIcon,
+  PhoneIcon,
+  CalendarIcon,
+  BuildingOfficeIcon,
+  UserIcon
+} from '@heroicons/react/24/outline'
+
+function formatDate(iso: string) {
+  try {
+    const date = new Date(iso)
+    return date.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  } catch {
+    return iso
+  }
+}
+
+function getStatusColor(status: string): string {
+  const colors: Record<string, string> = {
+    'new': 'bg-primary-100 dark:bg-gray-700 text-primary-700 dark:text-primary-400',
+    'in-progress': 'bg-primary-100 dark:bg-gray-700 text-primary-700 dark:text-primary-400',
+    'completed': 'bg-primary-100 dark:bg-gray-700 text-primary-700 dark:text-primary-400',
+    'cancelled': 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+  }
+  return colors[status] || colors['new']
+}
 
 export default function ServiceRequestsPage() {
-  return <ServiceRequestsClient />
-}
   const { user } = useAuth()
   const { t } = useLanguage()
   const [requests, setRequests] = useState<ServiceRequest[]>([])

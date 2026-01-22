@@ -1,8 +1,9 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
-
 import { useState, useEffect } from 'react'
+
+// Static page - no dynamic data
+export const dynamic = 'force-static'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -29,7 +30,7 @@ import {
   ArrowRightIcon
 } from '@heroicons/react/24/outline'
 
-export default function ContactsPage() {
+export default function ContactsClient() {
   const { t, language } = useLanguage()
   const { user } = useAuth()
   const [formData, setFormData] = useState({

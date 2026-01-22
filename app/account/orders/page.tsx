@@ -1,8 +1,33 @@
-import OrdersClient from './OrdersClient'
+"use client"
 
-export default function OrdersPage() {
-  return <OrdersClient />
-}
+export const dynamic = 'force-dynamic'
+
+import Protected from '@/components/Protected'
+import AccountLayout from '@/components/AccountLayout'
+import RefreshButton from '@/components/RefreshButton'
+import { useAuth } from '@/contexts/AuthContext'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { getUserOrders, cancelOrder, Order } from '@/lib/orders'
+import { getAllProducts } from '@/lib/products'
+import { Product } from '@/types'
+import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import Image from 'next/image'
+import { 
+  ShoppingBagIcon,
+  ClockIcon,
+  CheckBadgeIcon,
+  XCircleIcon,
+  TruckIcon,
+  CalendarIcon,
+  CurrencyDollarIcon,
+  CubeIcon,
+  PencilIcon,
+  ArrowPathIcon
+} from '@heroicons/react/24/outline'
+
+function OrdersPageContent() {
   const { user } = useAuth()
   const { t, formatCurrency } = useLanguage()
   const search = useSearchParams()
@@ -492,6 +517,23 @@ export default function OrdersPage() {
         </div>
       </AccountLayout>
     </Protected>
+  )
+}
+
+export default function OrdersPage() {
+  const { t } = useLanguage()
+  return (
+    <Suspense fallback={
+      <Protected>
+        <AccountLayout title={t('account.orders.title') || 'Order History'}>
+          <div className="text-center py-12">
+            <p className="text-gray-600 dark:text-gray-400">{t('orders.loading') || 'Loading...'}</p>
+          </div>
+        </AccountLayout>
+      </Protected>
+    }>
+      <OrdersPageContent />
+    </Suspense>
   )
 }
 

@@ -347,7 +347,7 @@ const legacyProducts = [
 ]
 */
 
-export default function ProductsPage() {
+export default function ProductsClient() {
   const router = useRouter()
   const { t, language, formatCurrency } = useLanguage()
   const { addItem } = useCart()

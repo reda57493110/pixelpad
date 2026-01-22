@@ -15,11 +15,6 @@ export default function AdminProtected({ children }: { children: ReactNode }) {
   const verificationInProgressRef = useRef(false)
   const lastTokenRef = useRef<string | null>(null)
 
-  // Skip protection for login route
-  if (pathname === '/admin/login') {
-    return <>{children}</>
-  }
-
   // Check if we have a valid admin or team user immediately (synchronous check)
   const isAdminOrTeam = user?.type === 'user' && (user?.role === 'admin' || user?.role === 'team')
   const shouldVerify = !isLoading && !isAdminOrTeam && !hasVerifiedRef.current
@@ -131,6 +126,11 @@ export default function AdminProtected({ children }: { children: ReactNode }) {
       }
     }
   }, [isLoading, isVerifying, user, isAdminOrTeam, router, pathname])
+
+  // Skip protection for login route
+  if (pathname === '/admin/login') {
+    return <>{children}</>
+  }
 
   if (isLoading || isVerifying) {
     return (

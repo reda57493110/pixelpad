@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -18,26 +20,18 @@ export default function StockManagementPage() {
   const router = useRouter()
   const { t } = useLanguage()
   const { can } = usePermissions()
-
-  useEffect(() => {
-    if (!can('stock.view')) {
-      router.replace('/admin/orders')
-    }
-  }, [can, router])
-
-  if (!can('stock.view')) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-600 dark:text-gray-400">Access denied. Redirecting...</p>
-      </div>
-    )
-  }
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [stockFilter, setStockFilter] = useState<string>('all')
   // Removed bypass stock functionality for security
+
+  useEffect(() => {
+    if (!can('stock.view')) {
+      router.replace('/admin/orders')
+    }
+  }, [can, router])
 
   useEffect(() => {
     const loadData = async () => {
@@ -51,6 +45,14 @@ export default function StockManagementPage() {
     window.addEventListener('pixelpad_products_changed', handleChange)
     return () => window.removeEventListener('pixelpad_products_changed', handleChange)
   }, [])
+
+  if (!can('stock.view')) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-600 dark:text-gray-400">Access denied. Redirecting...</p>
+      </div>
+    )
+  }
 
   const loadCategories = async () => {
     try {

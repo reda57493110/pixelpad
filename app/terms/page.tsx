@@ -1,7 +1,6 @@
 'use client'
 
-// Static page - no dynamic data
-export const dynamic = 'force-static'
+export const dynamic = 'force-dynamic'
 import Link from 'next/link'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useMemo, memo } from 'react'

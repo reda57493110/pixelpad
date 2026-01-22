@@ -1,8 +1,17 @@
-import CreateCouponClient from './CreateCouponClient'
+'use client'
+
+export const dynamic = 'force-dynamic'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { addCoupon } from '@/lib/coupons'
+import { Coupon } from '@/lib/coupons'
+import {
+  ArrowLeftIcon,
+} from '@heroicons/react/24/outline'
 
 export default function CreateCouponPage() {
-  return <CreateCouponClient />
-}
   const router = useRouter()
   const { t } = useLanguage()
   const [isSubmitting, setIsSubmitting] = useState(false)

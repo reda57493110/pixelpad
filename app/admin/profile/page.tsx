@@ -2,6 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -159,9 +160,9 @@ export default function AdminProfilePage() {
         {/* Profile Information */}
         <div className="bg-white dark:bg-gray-800 rounded-lg sm:rounded-xl shadow-md sm:shadow-lg p-4 sm:p-6 space-y-4 sm:space-y-6 mb-6">
           <div className="flex items-center gap-4 pb-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-xl sm:text-2xl shadow-lg">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-xl sm:text-2xl shadow-lg overflow-hidden">
               {avatar ? (
-                <img src={avatar} alt={name} className="w-full h-full rounded-full object-cover" />
+                <Image src={avatar} alt={name || 'User'} width={80} height={80} className="w-full h-full rounded-full object-cover" />
               ) : (
                 <span>{getInitials(name)}</span>
               )}

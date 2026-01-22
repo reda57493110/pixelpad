@@ -1,8 +1,23 @@
-import AddressesClient from '@/app/account/addresses/AddressesClient'
+"use client"
+
+export const dynamic = 'force-dynamic'
+import Protected from '@/components/Protected'
+import AccountLayout from '@/components/AccountLayout'
+import { useAuth } from '@/contexts/AuthContext'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { useEffect, useState } from 'react'
+
+interface Address {
+  id: string
+  fullName: string
+  phone: string
+  city: string
+  line1: string
+}
+
+const STORAGE = 'pixelpad_addresses'
 
 export default function AddressesPage() {
-  return <AddressesClient />
-}
   const { user } = useAuth()
   const { t } = useLanguage()
   const email = user?.email || 'guest'

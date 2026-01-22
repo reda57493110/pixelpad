@@ -1,9 +1,9 @@
 'use client'
+
+export const dynamic = 'force-dynamic'
+
 import { useLanguage } from '@/contexts/LanguageContext'
 import Link from 'next/link'
-
-// Static page - no dynamic data
-export const dynamic = 'force-static'
 
 export default function ReturnPage() {
   const { t } = useLanguage()

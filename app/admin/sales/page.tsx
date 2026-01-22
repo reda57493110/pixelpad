@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -19,12 +21,20 @@ export default function SalesAnalyticsPage() {
   const router = useRouter()
   const { t } = useLanguage()
   const { can } = usePermissions()
+  const [stats, setStats] = useState<any>(null)
+  const [orders, setOrders] = useState<Order[]>([])
+  const [products, setProducts] = useState<Product[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     if (!can('sales.view')) {
       router.replace('/admin/orders')
     }
   }, [can, router])
+
+  useEffect(() => {
+    loadData()
+  }, [])
 
   if (!can('sales.view')) {
     return (
@@ -33,14 +43,6 @@ export default function SalesAnalyticsPage() {
       </div>
     )
   }
-  const [stats, setStats] = useState<any>(null)
-  const [orders, setOrders] = useState<Order[]>([])
-  const [products, setProducts] = useState<Product[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    loadData()
-  }, [])
 
   const loadData = async () => {
     try {

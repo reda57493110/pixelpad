@@ -1,17 +1,42 @@
-import CouponsClient from './CouponsClient'
+'use client'
+
+export const dynamic = 'force-dynamic'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { usePermissions } from '@/hooks/usePermissions'
+import { getAllCoupons, deleteCoupon } from '@/lib/coupons'
+import { Coupon } from '@/lib/coupons'
+import {
+  PlusIcon,
+  EyeIcon,
+  PencilIcon,
+  TrashIcon,
+  MagnifyingGlassIcon,
+} from '@heroicons/react/24/outline'
 
 export default function CouponsListPage() {
-  return <CouponsClient />
-}
   const router = useRouter()
   const { t } = useLanguage()
   const { can } = usePermissions()
+  const [coupons, setCoupons] = useState<Coupon[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     if (!can('coupons.view')) {
       router.replace('/admin/orders')
     }
   }, [can, router])
+
+  useEffect(() => {
+    loadCoupons()
+    const handleChange = () => loadCoupons()
+    window.addEventListener('pixelpad_coupons_changed', handleChange)
+    return () => window.removeEventListener('pixelpad_coupons_changed', handleChange)
+  }, [])
 
   if (!can('coupons.view')) {
     return (
@@ -20,16 +45,6 @@ export default function CouponsListPage() {
       </div>
     )
   }
-  const [coupons, setCoupons] = useState<Coupon[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-
-  useEffect(() => {
-    loadCoupons()
-    const handleChange = () => loadCoupons()
-    window.addEventListener('pixelpad_coupons_changed', handleChange)
-    return () => window.removeEventListener('pixelpad_coupons_changed', handleChange)
-  }, [])
 
   const loadCoupons = async () => {
     try {

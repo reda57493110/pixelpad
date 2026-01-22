@@ -1,25 +1,24 @@
-import CustomersClient from './CustomersClient'
+'use client'
+
+export const dynamic = 'force-dynamic'
+
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { usePermissions } from '@/hooks/usePermissions'
+import { getAllCustomers } from '@/lib/admin'
+import {
+  UserIcon,
+  UserGroupIcon,
+  MagnifyingGlassIcon,
+  ArrowPathIcon,
+} from '@heroicons/react/24/outline'
 
 export default function CustomersListPage() {
-  return <CustomersClient />
-}
   const router = useRouter()
   const { t } = useLanguage()
   const { can } = usePermissions()
-
-  useEffect(() => {
-    if (!can('customers.view')) {
-      router.replace('/admin/orders')
-    }
-  }, [can, router])
-
-  if (!can('customers.view')) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-600 dark:text-gray-400">Access denied. Redirecting...</p>
-      </div>
-    )
-  }
   const [customers, setCustomers] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -28,8 +27,22 @@ export default function CustomersListPage() {
   const [syncMessage, setSyncMessage] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!can('customers.view')) {
+      router.replace('/admin/orders')
+    }
+  }, [can, router])
+
+  useEffect(() => {
     loadCustomers()
   }, [])
+
+  if (!can('customers.view')) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-600 dark:text-gray-400">Access denied. Redirecting...</p>
+      </div>
+    )
+  }
 
   const loadCustomers = async () => {
     try {

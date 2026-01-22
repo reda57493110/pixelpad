@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -16,12 +18,19 @@ export default function WarrantyListPage() {
   const router = useRouter()
   const { t } = useLanguage()
   const { can } = usePermissions()
+  const [orders, setOrders] = useState<Order[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     if (!can('warranty.view')) {
       router.replace('/admin/orders')
     }
   }, [can, router])
+
+  useEffect(() => {
+    loadOrders()
+  }, [])
 
   if (!can('warranty.view')) {
     return (
@@ -30,13 +39,6 @@ export default function WarrantyListPage() {
       </div>
     )
   }
-  const [orders, setOrders] = useState<Order[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-
-  useEffect(() => {
-    loadOrders()
-  }, [])
 
   const loadOrders = async () => {
     try {

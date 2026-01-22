@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, Suspense, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -18,18 +18,7 @@ function ResetPasswordForm() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
 
-  useEffect(() => {
-    const tokenParam = searchParams.get('token')
-    if (tokenParam) {
-      setToken(tokenParam)
-      validateToken(tokenParam)
-    } else {
-      setIsValidating(false)
-      setError(t('resetPassword.noToken'))
-    }
-  }, [searchParams])
-
-  const validateToken = async (tokenToValidate: string) => {
+  const validateToken = useCallback(async (tokenToValidate: string) => {
     try {
       // We'll validate when submitting, but we can check if token exists
       setIsValidating(false)
@@ -39,7 +28,18 @@ function ResetPasswordForm() {
       setIsValid(false)
       setError(t('resetPassword.invalidToken'))
     }
-  }
+  }, [t])
+
+  useEffect(() => {
+    const tokenParam = searchParams.get('token')
+    if (tokenParam) {
+      setToken(tokenParam)
+      validateToken(tokenParam)
+    } else {
+      setIsValidating(false)
+      setError(t('resetPassword.noToken'))
+    }
+  }, [searchParams, t, validateToken])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

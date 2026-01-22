@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+export const dynamic = 'force-dynamic'
+
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -28,7 +30,7 @@ import Link from 'next/link'
 type PaymentMethod = 'cash' | 'card' | 'mobile'
 type CheckoutStep = 'auth' | 'shipping' | 'payment' | 'review'
 
-export default function CheckoutPage() {
+function CheckoutForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, updateProfile, login, register } = useAuth()
@@ -1457,6 +1459,23 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function CheckoutPage() {
+  const { t } = useLanguage()
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-24 pb-12">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="text-center">
+            <p className="text-gray-600 dark:text-gray-400">{t('checkout.loading') || 'Loading...'}</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <CheckoutForm />
+    </Suspense>
   )
 }
 

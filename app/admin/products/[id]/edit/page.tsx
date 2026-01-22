@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -103,14 +103,7 @@ export default function EditProductPage() {
     return () => window.removeEventListener('pixelpad_products_changed', handleChange)
   }, [])
 
-  // Load product data
-  useEffect(() => {
-    if (params.id) {
-      loadProduct(params.id as string)
-    }
-  }, [params.id])
-
-  const loadProduct = async (id: string) => {
+  const loadProduct = useCallback(async (id: string) => {
     try {
       setIsLoading(true)
       const product = await getProductById(id)
@@ -155,7 +148,14 @@ export default function EditProductPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [t])
+
+  // Load product data
+  useEffect(() => {
+    if (params.id) {
+      loadProduct(params.id as string)
+    }
+  }, [params.id, loadProduct])
 
   const handleImageUpload = async (file: File) => {
     setUploadingImage(true)
@@ -622,7 +622,7 @@ export default function EditProductPage() {
                 </button>
                 {variants.length > 0 && (
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    The first variant's price will be used as the main product price. You can change it by selecting a variant.
+                    The first variant&apos;s price will be used as the main product price. You can change it by selecting a variant.
                   </p>
                 )}
               </div>
@@ -711,7 +711,7 @@ export default function EditProductPage() {
                       </button>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Right-click on an image and select "Copy image address" or copy the URL from your browser
+                      Right-click on an image and select &quot;Copy image address&quot; or copy the URL from your browser
                     </p>
                   </div>
                 ) : (

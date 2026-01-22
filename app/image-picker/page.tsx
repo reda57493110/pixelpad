@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -147,9 +149,9 @@ export default function ImagePickerPage() {
             <ol className="text-sm text-blue-700 dark:text-blue-300 space-y-1 list-decimal list-inside mb-3">
               <li>Browse Google Images or any website</li>
               <li><strong>Click on the image</strong> to open it in full size (important for quality!)</li>
-              <li>Right-click on the <strong>full-size image</strong> → "Copy image address"</li>
-              <li>Paste the URL above and click "Download & Add"</li>
-              <li>You'll be redirected to the admin panel with the image ready!</li>
+              <li>Right-click on the <strong>full-size image</strong> → &quot;Copy image address&quot;</li>
+              <li>Paste the URL above and click &quot;Download & Add&quot;</li>
+              <li>You&apos;ll be redirected to the admin panel with the image ready!</li>
             </ol>
             <div className="mt-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded text-xs text-yellow-800 dark:text-yellow-200">
               <strong>⚠️ Important:</strong> Always click the image first to open it in full size before copying the URL. Copying from the thumbnail will give you a low-quality image!

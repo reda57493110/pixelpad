@@ -192,7 +192,7 @@ export default function LoginForm({ onClose, onSwitchToRegister }: LoginFormProp
           {/* Switch to Register */}
           <div className="text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Don't have an account?{' '}
+              Don&apos;t have an account?{' '}
               <button
                 type="button"
                 onClick={onSwitchToRegister}

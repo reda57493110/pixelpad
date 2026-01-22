@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -20,9 +20,11 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon
 } from '@heroicons/react/24/outline'
-import QuickOrderModal from '@/components/QuickOrderModal'
-import ProductSchema from '@/components/ProductSchema'
-import BreadcrumbSchema from '@/components/BreadcrumbSchema'
+
+// Lazy load components that are not needed for initial render
+const QuickOrderModal = lazy(() => import('@/components/QuickOrderModal'))
+const ProductSchema = lazy(() => import('@/components/ProductSchema'))
+const BreadcrumbSchema = lazy(() => import('@/components/BreadcrumbSchema'))
 
 // Product Review Section Component
 function ProductReviewSection({ productId, user, token, t, isRTL }: { productId: string, user: any, token: string | null, t: any, isRTL: boolean }) {
@@ -170,7 +172,7 @@ function ProductReviewSection({ productId, user, token, t, isRTL }: { productId:
             </div>
             
             <p className="text-[10px] sm:text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-2 sm:mb-4 font-medium">
-              "{userReview.comment}"
+              &quot;{userReview.comment}&quot;
             </p>
             
             <div className="flex items-center gap-1.5 sm:gap-3 pt-1.5 sm:pt-3 border-t border-gray-100 dark:border-gray-700">
@@ -796,19 +798,27 @@ export default function ProductDetailPage() {
       </div>
 
       {showQuickOrder && (
-        <QuickOrderModal
-          product={{ 
-            id: product.id, 
-            name: productName || product.name, 
-            price: displayPrice 
-          }}
-          onClose={() => setShowQuickOrder(false)}
-        />
+        <Suspense fallback={
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[10000]">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6">
+              <div className="animate-pulse text-gray-600 dark:text-gray-400">Loading...</div>
+            </div>
+          </div>
+        }>
+          <QuickOrderModal
+            product={{ 
+              id: product.id, 
+              name: productName || product.name, 
+              price: displayPrice 
+            }}
+            onClose={() => setShowQuickOrder(false)}
+          />
+        </Suspense>
       )}
 
       {/* SEO Structured Data */}
       {product && (
-        <>
+        <Suspense fallback={null}>
           <ProductSchema product={product} />
           <BreadcrumbSchema
             items={[
@@ -817,7 +827,7 @@ export default function ProductDetailPage() {
               { name: product.name, url: `/products/${product.id}` },
             ]}
           />
-        </>
+        </Suspense>
       )}
     </div>
   )

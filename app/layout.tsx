@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext'
 import { LanguageProvider } from '@/contexts/LanguageContext'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { CartProvider } from '@/contexts/CartContext'
+import { Suspense } from 'react'
 import { NavigationLoadingProvider } from '@/contexts/NavigationLoadingContext'
 import PageTransitionLoader from '@/components/PageTransitionLoader'
 import GoogleAnalytics from '@/components/GoogleAnalytics'
@@ -108,7 +109,9 @@ export default function RootLayout({
         />
       </head>
       <body className={inter.className}>
-        <GoogleAnalytics />
+        <Suspense fallback={null}>
+          <GoogleAnalytics />
+        </Suspense>
         <ThemeProvider>
           <LanguageProvider>
             <AuthProvider>

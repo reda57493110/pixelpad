@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -22,6 +24,8 @@ export default function AdminDashboard() {
   const router = useRouter()
   const { t } = useLanguage()
   const { can } = usePermissions()
+  const [stats, setStats] = useState<AdminStats | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     // If user doesn't have dashboard permission, redirect to first available page
@@ -37,16 +41,6 @@ export default function AdminDashboard() {
     }
   }, [can, router])
 
-  if (!can('dashboard.view')) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-600 dark:text-gray-400">Access denied. Redirecting...</p>
-      </div>
-    )
-  }
-  const [stats, setStats] = useState<AdminStats | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-
   useEffect(() => {
     const loadStats = async () => {
       try {
@@ -60,6 +54,14 @@ export default function AdminDashboard() {
     }
     loadStats()
   }, [])
+
+  if (!can('dashboard.view')) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-600 dark:text-gray-400">Access denied. Redirecting...</p>
+      </div>
+    )
+  }
 
   if (isLoading) {
     return <div className="text-center py-12">{t('admin.loading')}</div>

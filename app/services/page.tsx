@@ -1,4 +1,7 @@
 'use client'
+
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react'
 import { 
   ComputerDesktopIcon,
@@ -53,7 +56,7 @@ export default function ServicesPage() {
         email: user.email || prev.email
       }))
     }
-  }, [user?.name, user?.email])
+  }, [user])
 
   const generateCaptcha = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'

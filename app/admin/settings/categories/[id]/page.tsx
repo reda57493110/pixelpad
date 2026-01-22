@@ -2,6 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -177,7 +178,7 @@ export default function ViewCategoryPage() {
                 <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
                   {t('admin.settings.icon') || 'Icon'}
                 </label>
-                <img src={category.icon} alt={category.name} className="w-16 h-16 object-contain" />
+                <Image src={category.icon} alt={category.name} width={64} height={64} className="w-16 h-16 object-contain" />
               </div>
             )}
           </div>

@@ -1,14 +1,15 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
-
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useMemo, lazy, Suspense } from 'react'
+
+// Static page - no dynamic data
+export const dynamic = 'force-static'
 
 // Lazy load FAQSchema to improve initial page load
 const FAQSchema = lazy(() => import('@/components/FAQSchema'))
 
-export default function FAQPage() {
+export default function FAQClient() {
   const { t, language } = useLanguage()
   
   // Use useMemo instead of useState + useEffect for better performance

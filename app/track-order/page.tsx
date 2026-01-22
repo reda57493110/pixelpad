@@ -1,7 +1,8 @@
 "use client"
 
 export const dynamic = 'force-dynamic'
-import { useState, useEffect } from 'react'
+
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { getUserOrders, Order } from '@/lib/orders'
@@ -18,7 +19,7 @@ import {
   CubeIcon
 } from '@heroicons/react/24/outline'
 
-export default function TrackOrderPage() {
+function TrackOrderForm() {
   const { t, formatCurrency } = useLanguage()
   const searchParams = useSearchParams()
   const [orderId, setOrderId] = useState('')
@@ -297,6 +298,25 @@ export default function TrackOrderPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function TrackOrderPage() {
+  const { t } = useLanguage()
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-24 sm:pt-28 pb-12">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8">
+            <div className="text-center">
+              <p className="text-gray-600 dark:text-gray-400">{t('checkout.loading') || 'Loading...'}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <TrackOrderForm />
+    </Suspense>
   )
 }
 

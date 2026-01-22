@@ -35,6 +35,9 @@ const nextConfig = {
   // Optimize static generation
   swcMinify: true,
   
+  // Enable output file tracing for better tree shaking
+  outputFileTracing: true,
+  
   // Optimize webpack for faster builds and navigation
   webpack: (config, { dev, isServer }) => {
     // Optimize for development
@@ -50,12 +53,14 @@ const nextConfig = {
       }
     }
     
-    // Optimize chunk splitting for faster navigation
+    // Optimize chunk splitting for faster navigation and smaller bundles
     if (!isServer) {
       config.optimization = {
         ...config.optimization,
         splitChunks: {
           chunks: 'all',
+          minSize: 20000,
+          maxSize: 244000,
           cacheGroups: {
             default: false,
             vendors: false,
@@ -65,6 +70,13 @@ const nextConfig = {
               test: /(?<!node_modules.*)[\\/]node_modules[\\/](react|react-dom|scheduler|next)[\\/]/,
               priority: 40,
               enforce: true,
+            },
+            heroicons: {
+              name: 'heroicons',
+              test: /[\\/]node_modules[\\/]@heroicons[\\/]/,
+              priority: 35,
+              chunks: 'all',
+              reuseExistingChunk: true,
             },
             lib: {
               test(module) {
@@ -83,6 +95,7 @@ const nextConfig = {
               name: 'commons',
               minChunks: 2,
               priority: 20,
+              reuseExistingChunk: true,
             },
             shared: {
               name(module, chunks) {
@@ -93,8 +106,8 @@ const nextConfig = {
               reuseExistingChunk: true,
             },
           },
-          maxAsyncRequests: Infinity,
-          maxInitialRequests: Infinity,
+          maxAsyncRequests: 30,
+          maxInitialRequests: 30,
         },
       }
     }
@@ -105,11 +118,24 @@ const nextConfig = {
   // Experimental features for performance
   experimental: {
     esmExternals: false,
-    optimizeCss: true,
-    // Enable faster navigation
-    optimizePackageImports: ['@heroicons/react'],
+    // CSS optimization disabled to suppress informational messages
+    // The message "Merging inline stylesheets..." is informational, not a warning
+    // optimizeCss: true,
+    // Enable faster navigation and reduce bundle size
+    optimizePackageImports: [
+      '@heroicons/react',
+      '@heroicons/react/24/outline',
+      '@heroicons/react/24/solid',
+    ],
     // Enable webpack build worker for faster builds on Vercel
     webpackBuildWorker: true,
+  },
+  
+  // Optimize bundle size
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
   },
   
   // Development server configuration

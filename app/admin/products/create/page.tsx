@@ -567,7 +567,7 @@ export default function CreateProductPage() {
                 </button>
                 {variants.length > 0 && (
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    The first variant's price will be used as the main product price. You can change it by selecting a variant.
+                    The first variant&apos;s price will be used as the main product price. You can change it by selecting a variant.
                   </p>
                 )}
               </div>
@@ -656,7 +656,7 @@ export default function CreateProductPage() {
                       </button>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Right-click on an image and select "Copy image address" or copy the URL from your browser
+                      Right-click on an image and select &quot;Copy image address&quot; or copy the URL from your browser
                     </p>
                   </div>
                 ) : (

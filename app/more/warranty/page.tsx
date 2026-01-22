@@ -1,8 +1,8 @@
 'use client'
-import { useLanguage } from '@/contexts/LanguageContext'
 
-// Static page - no dynamic data
-export const dynamic = 'force-static'
+export const dynamic = 'force-dynamic'
+
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function WarrantyPage() {
   const { t } = useLanguage()

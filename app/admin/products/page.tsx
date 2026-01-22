@@ -1,6 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+export const dynamic = 'force-dynamic'
+
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -22,22 +24,6 @@ export default function ProductsListPage() {
   const router = useRouter()
   const { t } = useLanguage()
   const { can } = usePermissions()
-
-  // Check permission and redirect if not allowed
-  useEffect(() => {
-    if (!can('products.view')) {
-      router.replace('/admin/orders')
-    }
-  }, [can, router])
-
-  // Show nothing while checking permissions
-  if (!can('products.view')) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-600 dark:text-gray-400">Access denied. Redirecting...</p>
-      </div>
-    )
-  }
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -45,6 +31,35 @@ export default function ProductsListPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [stockFilter, setStockFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<string>('name')
+
+  const loadCategories = useCallback(async () => {
+    try {
+      const categoriesData = await getAllCategories(true) // Only active categories
+      setCategories(categoriesData)
+    } catch (error) {
+      console.error('Error loading categories:', error)
+    }
+  }, [])
+
+  const loadProducts = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      const data = await getAllProducts(true) // Bypass cache to get fresh data
+      setProducts(data)
+    } catch (error) {
+      console.error('Error loading products:', error)
+      alert(t('admin.errorLoading') || 'Failed to load products')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [t])
+
+  // Check permission and redirect if not allowed
+  useEffect(() => {
+    if (!can('products.view')) {
+      router.replace('/admin/orders')
+    }
+  }, [can, router])
 
   useEffect(() => {
     const loadData = async () => {
@@ -57,28 +72,15 @@ export default function ProductsListPage() {
     const handleChange = () => loadData()
     window.addEventListener('pixelpad_products_changed', handleChange)
     return () => window.removeEventListener('pixelpad_products_changed', handleChange)
-  }, [])
+  }, [loadProducts, loadCategories])
 
-  const loadCategories = async () => {
-    try {
-      const categoriesData = await getAllCategories(true) // Only active categories
-      setCategories(categoriesData)
-    } catch (error) {
-      console.error('Error loading categories:', error)
-    }
-  }
-
-  const loadProducts = async () => {
-    try {
-      setIsLoading(true)
-      const data = await getAllProducts(true) // Bypass cache to get fresh data
-      setProducts(data)
-    } catch (error) {
-      console.error('Error loading products:', error)
-      alert(t('admin.errorLoading') || 'Failed to load products')
-    } finally {
-      setIsLoading(false)
-    }
+  // Show nothing while checking permissions
+  if (!can('products.view')) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-600 dark:text-gray-400">Access denied. Redirecting...</p>
+      </div>
+    )
   }
 
   const handleDelete = async (id: string) => {

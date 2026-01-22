@@ -1,11 +1,10 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import Link from 'next/link'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useMemo, memo } from 'react'
-
-// Static page - no dynamic data
-export const dynamic = 'force-static'
 
 // Memoize sections to prevent unnecessary re-renders
 const PrivacySection = memo(({ id, titleKey, children }: { id: string, titleKey: string, children: React.ReactNode }) => {

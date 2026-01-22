@@ -1,6 +1,7 @@
 'use client'
 
 import { ReactNode, useState, useRef, useEffect } from 'react'
+import Image from 'next/image'
 import AdminProtected from '@/components/AdminProtected'
 import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -247,9 +248,9 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                     onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                     className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                   >
-                    <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-sm">
+                    <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-sm overflow-hidden">
                       {user?.avatar ? (
-                        <img src={user.avatar} alt={user.name} className="w-full h-full rounded-full object-cover" />
+                        <Image src={user.avatar} alt={user.name || 'User'} width={32} height={32} className="w-full h-full rounded-full object-cover" />
                       ) : (
                         <span>{getInitials(user?.name)}</span>
                       )}

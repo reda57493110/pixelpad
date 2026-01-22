@@ -1,10 +1,8 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
-
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState, useEffect, useRef, useMemo, Suspense } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import ProductCard from '@/components/ProductCard'
 import { Product } from '@/types'
@@ -317,7 +315,7 @@ function UserReviewSection({ user, token, t, isRTL }: { user: any, token: string
   )
 }
 
-function HomePageContent() {
+export default function HomeClient() {
   const { t, isRTL } = useLanguage()
   const { addItem } = useCart()
   const { user, isLoggedIn, token } = useAuth()
@@ -1718,26 +1716,9 @@ function HomePageContent() {
         </div>
       </section>
 
-      {/* SEO Structured Data - Lazy loaded */}
-      <Suspense fallback={null}>
-        <OrganizationSchema />
-        <LocalBusinessSchema />
-      </Suspense>
+      {/* SEO Structured Data */}
+      <OrganizationSchema />
+      <LocalBusinessSchema />
     </div>
-  )
-}
-
-export default function HomePage() {
-  const { t } = useLanguage()
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="text-center py-12">
-          <p className="text-gray-600 dark:text-gray-400">{t('common.loading') || 'Loading...'}</p>
-        </div>
-      </div>
-    }>
-      <HomePageContent />
-    </Suspense>
   )
 }

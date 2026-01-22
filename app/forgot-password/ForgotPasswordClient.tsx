@@ -1,7 +1,5 @@
 "use client"
 
-export const dynamic = 'force-dynamic'
-
 import { useState } from 'react'
 import { CheckCircleIcon, InformationCircleIcon } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/navigation'

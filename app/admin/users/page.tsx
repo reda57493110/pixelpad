@@ -1,5 +1,7 @@
 'use client'
 
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -18,12 +20,19 @@ export default function UsersListPage() {
   const router = useRouter()
   const { t } = useLanguage()
   const { can } = usePermissions()
+  const [users, setUsers] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     if (!can('users.view')) {
       router.replace('/admin/orders')
     }
   }, [can, router])
+
+  useEffect(() => {
+    loadUsers()
+  }, [])
 
   if (!can('users.view')) {
     return (
@@ -32,13 +41,6 @@ export default function UsersListPage() {
       </div>
     )
   }
-  const [users, setUsers] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-
-  useEffect(() => {
-    loadUsers()
-  }, [])
 
   const loadUsers = async () => {
     try {

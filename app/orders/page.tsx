@@ -6,7 +6,7 @@ import RefreshButton from '@/components/RefreshButton'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { getUserOrders, updateOrder, cancelOrder, Order } from '@/lib/orders'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -14,7 +14,7 @@ function formatDate(iso: string) {
   try { return new Date(iso).toLocaleString() } catch { return iso }
 }
 
-export default function OrdersPage() {
+function OrdersPageContent() {
   const { user, updateProfile } = useAuth()
   const { t, isRTL } = useLanguage()
   const router = useRouter()
@@ -50,7 +50,7 @@ export default function OrdersPage() {
         setOrders([])
       }
     }
-  }, [isMounted, user?.email, user, updateProfile])
+  }, [isMounted, user, updateProfile])
 
   useEffect(() => {
     loadOrders()
@@ -234,6 +234,25 @@ export default function OrdersPage() {
         )}
       </div>
     </Protected>
+  )
+}
+
+export default function OrdersPage() {
+  const { t } = useLanguage()
+  return (
+    <Suspense fallback={
+      <Protected>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pt-24 pb-12">
+          <div className="max-w-6xl mx-auto px-4">
+            <div className="text-center">
+              <p className="text-gray-600 dark:text-gray-400">{t('orders.loading') || 'Loading...'}</p>
+            </div>
+          </div>
+        </div>
+      </Protected>
+    }>
+      <OrdersPageContent />
+    </Suspense>
   )
 }
 
