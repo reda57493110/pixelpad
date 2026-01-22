@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { CheckCircleIcon, InformationCircleIcon } from '@heroicons/react/24/outline'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function ForgotPasswordPage() {
@@ -118,12 +119,12 @@ export default function ForgotPasswordPage() {
         </button>
 
         <div className="text-center">
-          <a 
+          <Link 
             href="/" 
             className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
           >
             {t('forgotPassword.backToHome')}
-          </a>
+          </Link>
         </div>
       </form>
     </div>

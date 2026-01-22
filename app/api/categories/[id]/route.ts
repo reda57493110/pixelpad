@@ -3,13 +3,17 @@ import connectDB from '@/lib/mongodb'
 import Category from '@/models/Category'
 import { requireAdminOrTeam, requireAdmin } from '@/lib/auth-middleware'
 
+// Force dynamic rendering to prevent build-time execution
+export const dynamic = 'force-dynamic'
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     await connectDB()
-    const category = await Category.findById(params.id).select('-__v')
+    const category = await Category.findById(id).select('-__v')
     
     if (!category) {
       return NextResponse.json(
@@ -36,9 +40,10 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     const { user, error } = await requireAdminOrTeam(request)
     if (error) return error
 
@@ -49,7 +54,7 @@ export async function PATCH(
     if (body.slug) {
       const existingCategory = await Category.findOne({
         slug: body.slug,
-        _id: { $ne: params.id }
+        _id: { $ne: id }
       })
       if (existingCategory) {
         return NextResponse.json(
@@ -60,7 +65,7 @@ export async function PATCH(
     }
 
     const category = await Category.findByIdAndUpdate(
-      params.id,
+      id,
       body,
       { new: true, runValidators: true }
     ).select('-__v')
@@ -96,9 +101,10 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     const { user, error } = await requireAdmin(request)
     if (error) return error
 
@@ -106,7 +112,7 @@ export async function DELETE(
     
     // Check if category is used by any products
     const Product = (await import('@/models/Product')).default
-    const productsUsingCategory = await Product.countDocuments({ category: params.id })
+    const productsUsingCategory = await Product.countDocuments({ category: id })
     
     if (productsUsingCategory > 0) {
       return NextResponse.json(
@@ -115,7 +121,7 @@ export async function DELETE(
       )
     }
 
-    const category = await Category.findByIdAndDelete(params.id)
+    const category = await Category.findByIdAndDelete(id)
     
     if (!category) {
       return NextResponse.json(
