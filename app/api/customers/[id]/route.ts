@@ -43,9 +43,10 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     const { user, error } = await requireAuth(request)
     if (error) return error
 
@@ -54,12 +55,12 @@ export async function PATCH(
     const { password, ...updateData } = body
 
     // Users can only update their own profile unless admin
-    if (user?.type === 'customer' && user.id !== params.id) {
+    if (user?.type === 'customer' && user.id !== id) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
     const customer = await Customer.findByIdAndUpdate(
-      params.id,
+      id,
       updateData,
       { new: true, runValidators: true }
     ).select('-password')
