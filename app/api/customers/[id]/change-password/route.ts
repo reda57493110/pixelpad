@@ -4,16 +4,20 @@ import Customer from '@/models/Customer'
 import { requireAuth } from '@/lib/auth-middleware'
 import bcrypt from 'bcryptjs'
 
+// Force dynamic rendering to prevent build-time execution
+export const dynamic = 'force-dynamic'
+
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     const { user, error } = await requireAuth(request)
     if (error) return error
 
     // Users can only change their own password unless admin
-    if (user?.type === 'customer' && user.id !== params.id) {
+    if (user?.type === 'customer' && user.id !== id) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
@@ -34,7 +38,7 @@ export async function POST(
       )
     }
 
-    const customer = await Customer.findById(params.id)
+    const customer = await Customer.findById(id)
     if (!customer) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
     }
