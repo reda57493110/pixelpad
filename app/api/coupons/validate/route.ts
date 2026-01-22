@@ -4,6 +4,9 @@ import Coupon from '@/models/Coupon'
 import type { ICoupon } from '@/models/Coupon'
 import type { Document } from 'mongoose'
 
+// Force dynamic rendering to prevent build-time execution
+export const dynamic = 'force-dynamic'
+
 type LeanCoupon = Omit<ICoupon, keyof Document> & { _id: string }
 
 export async function POST(request: NextRequest) {
