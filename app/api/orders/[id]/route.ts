@@ -90,8 +90,8 @@ export async function PUT(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params
   try {
-    const { id } = await context.params
     await connectDB()
     
     // Parse request body with error handling for aborted requests

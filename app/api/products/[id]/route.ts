@@ -67,7 +67,7 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching product:', error)
     // Return cached data even if stale on error
-    const productId = params.id?.trim()
+    // productId is already defined in outer scope
     if (productId) {
       const cached = productCache.get(productId)
       if (cached) {
