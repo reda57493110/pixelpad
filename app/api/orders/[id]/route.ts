@@ -4,39 +4,43 @@ import connectDB from '@/lib/mongodb'
 import Order, { IOrder, IOrderItem } from '@/models/Order'
 import Product from '@/models/Product'
 
+// Force dynamic rendering to prevent build-time execution
+export const dynamic = 'force-dynamic'
+
 // Type for lean order (plain object without Document methods)
 type LeanOrder = Omit<IOrder, keyof Document> & { _id: string; id?: string }
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     await connectDB()
     
     // Validate ObjectId format if it looks like one
-    const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(params.id)
+    const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(id)
     let order
     if (isValidObjectId) {
       // Try both _id and custom id
       order = await Order.findOne({
         $or: [
-          { _id: params.id },
-          { id: params.id }
+          { _id: id },
+          { id: id }
         ]
       })
         .select('id _id date items total status customerName customerPhone city email paymentSessionId paymentMethod paymentStatus returnNotes createdAt updatedAt')
         .lean()
     } else {
       // Custom ID search
-      order = await Order.findOne({ id: params.id })
+      order = await Order.findOne({ id: id })
         .select('id _id date items total status customerName customerPhone city email paymentSessionId paymentMethod paymentStatus returnNotes createdAt updatedAt')
         .lean()
     }
     
     if (!order && isValidObjectId) {
       // Fallback to findById for backward compatibility
-      order = await Order.findById(params.id)
+      order = await Order.findById(id)
         .select('id _id date items total status customerName customerPhone city email paymentSessionId paymentMethod paymentStatus returnNotes createdAt updatedAt')
         .lean()
     }
@@ -84,9 +88,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     await connectDB()
     
     // Parse request body with error handling for aborted requests
@@ -105,7 +110,7 @@ export async function PUT(
     
     if (process.env.NODE_ENV === 'development') {
       console.log('PUT /api/orders/[id] - Request:', {
-        id: params.id,
+        id: id,
         body,
         status: body.status
       })
@@ -197,7 +202,7 @@ export async function PUT(
         console.error('Status update mismatch:', {
           requested: updateData.status,
           actual: updatedOrder.status,
-          orderId: params.id
+          orderId: id
         })
       }
     }
@@ -492,11 +497,12 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     await connectDB()
-    const order = await Order.findByIdAndDelete(params.id)
+    const order = await Order.findByIdAndDelete(id)
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
