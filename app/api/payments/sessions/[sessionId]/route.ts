@@ -2,13 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import PaymentSession from '@/models/PaymentSession'
 
+// Force dynamic rendering to prevent build-time execution
+export const dynamic = 'force-dynamic'
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { sessionId: string } }
+  context: { params: Promise<{ sessionId: string }> }
 ) {
   try {
+    const { sessionId } = await context.params
     await connectDB()
-    const session = await PaymentSession.findOne({ sessionId: params.sessionId })
+    const session = await PaymentSession.findOne({ sessionId: sessionId })
     
     if (!session) {
       return NextResponse.json(
@@ -29,13 +33,14 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { sessionId: string } }
+  context: { params: Promise<{ sessionId: string }> }
 ) {
   try {
+    const { sessionId } = await context.params
     await connectDB()
     const body = await request.json()
     
-    const session = await PaymentSession.findOne({ sessionId: params.sessionId })
+    const session = await PaymentSession.findOne({ sessionId: sessionId })
     
     if (!session) {
       return NextResponse.json(
