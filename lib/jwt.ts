@@ -1,15 +1,8 @@
 import jwt from 'jsonwebtoken'
 
-const JWT_SECRET = process.env.JWT_SECRET
+// Get JWT_SECRET at runtime (not at module load time) to allow builds without it
+const getJWTSecret = () => process.env.JWT_SECRET
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
-
-// Validate JWT_SECRET is set and not using default
-if (!JWT_SECRET || JWT_SECRET === 'your-secret-key-change-in-production') {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('JWT_SECRET must be set in production environment variables')
-  }
-  console.warn('⚠️  WARNING: JWT_SECRET is not set or using default value. This is insecure in production!')
-}
 
 export interface JWTPayload {
   id: string
@@ -19,9 +12,19 @@ export interface JWTPayload {
 }
 
 export function signToken(payload: JWTPayload): string {
-  if (!JWT_SECRET) {
+  const JWT_SECRET = getJWTSecret()
+  
+  // Validate JWT_SECRET at runtime (not at module load time)
+  if (!JWT_SECRET || JWT_SECRET === 'your-secret-key-change-in-production') {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('JWT_SECRET must be set in production environment variables')
+    }
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('⚠️  WARNING: JWT_SECRET is not set or using default value. This is insecure in production!')
+    }
     throw new Error('JWT_SECRET is not defined')
   }
+  
   return jwt.sign(payload, JWT_SECRET, {
     expiresIn: JWT_EXPIRES_IN,
   } as jwt.SignOptions)
@@ -29,6 +32,7 @@ export function signToken(payload: JWTPayload): string {
 
 export function verifyToken(token: string): JWTPayload | null {
   try {
+    const JWT_SECRET = getJWTSecret()
     if (!JWT_SECRET) {
       return null
     }
