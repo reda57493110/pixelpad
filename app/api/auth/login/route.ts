@@ -7,6 +7,9 @@ import { signToken } from '@/lib/jwt'
 import { loginRateLimit } from '@/lib/rate-limit'
 import { defaultCors } from '@/lib/cors'
 
+// Force dynamic rendering to prevent build-time execution
+export const dynamic = 'force-dynamic'
+
 async function handleLogin(request: NextRequest) {
   try {
     await connectDB()

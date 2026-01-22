@@ -5,6 +5,9 @@ import User from '@/models/User'
 import Customer from '@/models/Customer'
 import bcrypt from 'bcryptjs'
 
+// Force dynamic rendering to prevent build-time execution
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     const { token, newPassword } = await request.json()
