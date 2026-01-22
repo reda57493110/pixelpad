@@ -19,9 +19,9 @@ export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await context.params
+  const productId = id?.trim()
   try {
-    const { id } = await context.params
-    const productId = id?.trim()
     if (!productId) {
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
     }
@@ -132,7 +132,7 @@ export async function PUT(
     }
     
     // Clear cache when product is updated
-    productCache.delete(params.id)
+    productCache.delete(id)
     
     // Clear global caches if they exist
     if (global.__productsCache) {
