@@ -3,16 +3,20 @@ import connectDB from '@/lib/mongodb'
 import User from '@/models/User'
 import { requireAdminOrTeam, requireAdmin } from '@/lib/auth-middleware'
 
+// Force dynamic rendering to prevent build-time execution
+export const dynamic = 'force-dynamic'
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     const { user, error } = await requireAdminOrTeam(request)
     if (error) return error
 
     await connectDB()
-    const userData = await User.findById(params.id).select('-password')
+    const userData = await User.findById(id).select('-password')
     if (!userData) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
@@ -32,14 +36,15 @@ export async function GET(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     const { user, error } = await requireAdminOrTeam(request)
     if (error) return error
 
     // Only admins can update other users
-    if (user?.id !== params.id && user?.role !== 'admin') {
+    if (user?.id !== id && user?.role !== 'admin') {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
@@ -49,7 +54,7 @@ export async function PATCH(
     delete body.password
     
     const userData = await User.findByIdAndUpdate(
-      params.id, 
+      id, 
       body, 
       { new: true, runValidators: true }
     ).select('-password')
@@ -73,14 +78,15 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     const { user, error } = await requireAdmin(request)
     if (error) return error
 
     await connectDB()
-    const userData = await User.findByIdAndDelete(params.id)
+    const userData = await User.findByIdAndDelete(id)
     if (!userData) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
