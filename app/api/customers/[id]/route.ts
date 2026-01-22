@@ -4,23 +4,27 @@ import Customer from '@/models/Customer'
 import { requireAuth } from '@/lib/auth-middleware'
 import bcrypt from 'bcryptjs'
 
+// Force dynamic rendering to prevent build-time execution
+export const dynamic = 'force-dynamic'
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     const { user, error } = await requireAuth(request)
     if (error) return error
 
     await connectDB()
-    const customer = await Customer.findById(params.id).select('-password')
+    const customer = await Customer.findById(id).select('-password')
     
     if (!customer) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
     }
 
     // Users can only view their own profile unless admin
-    if (user?.type === 'customer' && user.id !== params.id) {
+    if (user?.type === 'customer' && user.id !== id) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
@@ -79,9 +83,10 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     const { user, error } = await requireAuth(request)
     if (error) return error
 
@@ -91,7 +96,7 @@ export async function DELETE(
     }
 
     await connectDB()
-    const customer = await Customer.findByIdAndDelete(params.id)
+    const customer = await Customer.findByIdAndDelete(id)
 
     if (!customer) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
