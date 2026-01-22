@@ -5,6 +5,9 @@ import { requireAdmin } from '@/lib/auth-middleware'
 import bcrypt from 'bcryptjs'
 import { PERMISSION_GROUPS } from '@/lib/permissions'
 
+// Force dynamic rendering to prevent build-time execution
+export const dynamic = 'force-dynamic'
+
 /**
  * POST /api/admin/create-example-users
  * 
