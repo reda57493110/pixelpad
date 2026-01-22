@@ -32,11 +32,6 @@ const nextConfig = {
   reactStrictMode: true,
   // Enable aggressive caching
   generateEtags: true,
-  // Optimize static generation
-  swcMinify: true,
-  
-  // Enable output file tracing for better tree shaking
-  outputFileTracing: true,
   
   // Optimize webpack for faster builds and navigation
   webpack: (config, { dev, isServer }) => {
@@ -117,10 +112,6 @@ const nextConfig = {
   
   // Experimental features for performance
   experimental: {
-    esmExternals: false,
-    // CSS optimization disabled to suppress informational messages
-    // The message "Merging inline stylesheets..." is informational, not a warning
-    // optimizeCss: true,
     // Enable faster navigation and reduce bundle size
     optimizePackageImports: [
       '@heroicons/react',
@@ -140,8 +131,7 @@ const nextConfig = {
   
   // Development server configuration
   devIndicators: {
-    buildActivity: true,
-    buildActivityPosition: 'bottom-right',
+    position: 'bottom-right',
   },
   
   // Suppress informational warnings about client-side rendering
