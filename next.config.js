@@ -145,6 +145,9 @@ const nextConfig = {
   async rewrites() {
     return []
   },
+  
+  // Set output file tracing root to avoid lockfile warnings
+  outputFileTracingRoot: process.cwd(),
 }
 
 module.exports = nextConfig
