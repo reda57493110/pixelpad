@@ -34,6 +34,7 @@
     "tailwindcss": "^3.3.0",
     "typescript": "^5"
   },
+  "_comment": "Note: ESLint 8.57.1 deprecation warning is expected with Next.js 14.2.14. It's harmless and will be resolved when upgrading to Next.js 15.",
   "overrides": {
     "rimraf": "^4.0.0",
     "glob": "^9.0.0",
