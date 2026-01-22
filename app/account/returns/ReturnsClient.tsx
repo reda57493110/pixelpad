@@ -1,8 +1,42 @@
-import ReturnsClient from './ReturnsClient'
+'use client'
 
-export default function ReturnsPage() {
-  return <ReturnsClient />
+import Protected from '@/components/Protected'
+import AccountLayout from '@/components/AccountLayout'
+import RefreshButton from '@/components/RefreshButton'
+import { useAuth } from '@/contexts/AuthContext'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { getUserOrders } from '@/lib/orders'
+import { getAllProducts } from '@/lib/products'
+import { Product } from '@/types'
+import { Order } from '@/lib/orders'
+import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { 
+  ArrowPathIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  XCircleIcon,
+  CalendarIcon,
+  CurrencyDollarIcon,
+  CubeIcon,
+  PhotoIcon,
+  PencilIcon
+} from '@heroicons/react/24/outline'
+
+function formatDate(iso: string) {
+  try { 
+    return new Date(iso).toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: '2-digit', 
+      day: '2-digit' 
+    })
+  } catch { 
+    return iso 
+  }
 }
+
+export default function ReturnsClient() {
   const { user } = useAuth()
   const { t } = useLanguage()
   const [orders, setOrders] = useState<Order[]>([])
@@ -445,4 +479,3 @@ export default function ReturnsPage() {
     </Protected>
   )
 }
-

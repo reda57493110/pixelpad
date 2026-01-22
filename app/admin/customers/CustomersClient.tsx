@@ -1,8 +1,19 @@
-import CustomersClient from './CustomersClient'
+'use client'
 
-export default function CustomersListPage() {
-  return <CustomersClient />
-}
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { usePermissions } from '@/hooks/usePermissions'
+import { getAllCustomers } from '@/lib/admin'
+import {
+  UserIcon,
+  UserGroupIcon,
+  MagnifyingGlassIcon,
+  ArrowPathIcon,
+} from '@heroicons/react/24/outline'
+
+export default function CustomersClient() {
   const router = useRouter()
   const { t } = useLanguage()
   const { can } = usePermissions()
@@ -397,4 +408,3 @@ export default function CustomersListPage() {
     </div>
   )
 }
-

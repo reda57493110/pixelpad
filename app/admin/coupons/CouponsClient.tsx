@@ -1,8 +1,21 @@
-import CouponsClient from './CouponsClient'
+'use client'
 
-export default function CouponsListPage() {
-  return <CouponsClient />
-}
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { usePermissions } from '@/hooks/usePermissions'
+import { getAllCoupons, deleteCoupon } from '@/lib/coupons'
+import { Coupon } from '@/lib/coupons'
+import {
+  PlusIcon,
+  EyeIcon,
+  PencilIcon,
+  TrashIcon,
+  MagnifyingGlassIcon,
+} from '@heroicons/react/24/outline'
+
+export default function CouponsClient() {
   const router = useRouter()
   const { t } = useLanguage()
   const { can } = usePermissions()
@@ -263,4 +276,3 @@ export default function CouponsListPage() {
     </div>
   )
 }
-

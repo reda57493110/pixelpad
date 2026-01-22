@@ -1,8 +1,59 @@
-import MessagesClient from './MessagesClient'
+'use client'
 
-export default function MessagesPage() {
-  return <MessagesClient />
+import Protected from '@/components/Protected'
+import AccountLayout from '@/components/AccountLayout'
+import RefreshButton from '@/components/RefreshButton'
+import { useAuth } from '@/contexts/AuthContext'
+import { useLanguage } from '@/contexts/LanguageContext'
+import { getUserMessages, getAllMessages, deleteMessage, updateMessage, findMessageOwner, ContactMessage } from '@/lib/messages'
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { 
+  EnvelopeIcon, 
+  PhoneIcon, 
+  TrashIcon,
+  ChatBubbleLeftRightIcon,
+  ClockIcon,
+  ShieldCheckIcon,
+  PencilIcon,
+  CheckIcon,
+  XMarkIcon
+} from '@heroicons/react/24/outline'
+
+function formatDate(iso: string) {
+  try { 
+    const date = new Date(iso)
+    const now = new Date()
+    const diffTime = now.getTime() - date.getTime()
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+    
+    // Format time
+    const time = date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    })
+    
+    // Format date based on how recent it is
+    if (diffDays === 0) {
+      return `Today at ${time}`
+    } else if (diffDays === 1) {
+      return `Yesterday at ${time}`
+    } else if (diffDays < 7) {
+      return date.toLocaleDateString('en-US', { weekday: 'short' }) + ` at ${time}`
+    } else {
+      return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+      }) + ` at ${time}`
+    }
+  } catch { 
+    return iso 
+  }
 }
+
+export default function MessagesClient() {
   const { user } = useAuth()
   const { t } = useLanguage()
   const [messages, setMessages] = useState<ContactMessage[]>([])
@@ -350,5 +401,3 @@ export default function MessagesPage() {
     </Protected>
   )
 }
-
-

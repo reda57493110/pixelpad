@@ -1,8 +1,13 @@
-import ProfileClient from './ProfileClient'
+'use client'
 
-export default function ProfilePage() {
-  return <ProfileClient />
-}
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/AuthContext'
+import { useLanguage } from '@/contexts/LanguageContext'
+import AccountLayout from '@/components/AccountLayout'
+import Protected from '@/components/Protected'
+
+export default function ProfileClient() {
   const router = useRouter()
   const { user, isLoggedIn, isLoading, updateProfile, changePassword, logout } = useAuth()
   const { t } = useLanguage()
@@ -136,18 +141,3 @@ export default function ProfilePage() {
     </Protected>
   )
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
