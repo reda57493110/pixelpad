@@ -3,6 +3,9 @@ import connectDB from '@/lib/mongodb'
 import Category from '@/models/Category'
 import { requireAdminOrTeam } from '@/lib/auth-middleware'
 
+// Force dynamic rendering to prevent build-time execution
+export const dynamic = 'force-dynamic'
+
 // Cache in memory for faster responses
 let cachedCategories: any[] | null = null
 let cachedActiveCategories: any[] | null = null
