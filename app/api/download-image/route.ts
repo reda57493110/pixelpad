@@ -4,6 +4,9 @@ import { join } from 'path'
 import { existsSync } from 'fs'
 import { requireAdminOrTeam } from '@/lib/auth-middleware'
 
+// Force dynamic rendering to prevent build-time execution
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     // Require authentication - only admin/team users can download images
