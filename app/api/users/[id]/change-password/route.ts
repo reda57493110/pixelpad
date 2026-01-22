@@ -4,16 +4,20 @@ import User from '@/models/User'
 import { requireAdminOrTeam } from '@/lib/auth-middleware'
 import bcrypt from 'bcryptjs'
 
+// Force dynamic rendering to prevent build-time execution
+export const dynamic = 'force-dynamic'
+
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     const { user, error } = await requireAdminOrTeam(request)
     if (error) return error
 
     // Users can only change their own password unless admin
-    if (user?.role !== 'admin' && user?.id !== params.id) {
+    if (user?.role !== 'admin' && user?.id !== id) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 
@@ -34,13 +38,13 @@ export async function POST(
       )
     }
 
-    const userData = await User.findById(params.id)
+    const userData = await User.findById(id)
     if (!userData) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
     // Verify old password (unless admin changing someone else's password)
-    if (user?.role !== 'admin' || user.id === params.id) {
+    if (user?.role !== 'admin' || user.id === id) {
       const isPasswordValid = await bcrypt.compare(oldPassword, userData.password)
       if (!isPasswordValid) {
         return NextResponse.json(
