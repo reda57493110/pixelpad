@@ -1,11 +1,5 @@
 import mongoose from 'mongoose'
 
-const MONGODB_URI = process.env.MONGODB_URI || ''
-
-if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env.local')
-}
-
 interface MongooseCache {
   conn: typeof mongoose | null
   promise: Promise<typeof mongoose> | null
@@ -29,6 +23,13 @@ let errorLogCount = 0
 const ERROR_LOG_THROTTLE = 5 // Only log every 5th repeated error
 
 async function connectDB(): Promise<typeof mongoose> {
+  // Check MONGODB_URI at runtime (not at module load time) to allow builds without it
+  const MONGODB_URI = process.env.MONGODB_URI || ''
+  
+  if (!MONGODB_URI) {
+    throw new Error('Please define the MONGODB_URI environment variable inside .env.local')
+  }
+  
   // Check if connection is already established and healthy
   if (cached.conn) {
     const state = cached.conn.connection.readyState
