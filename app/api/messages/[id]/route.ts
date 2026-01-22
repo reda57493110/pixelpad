@@ -2,13 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import Message from '@/models/Message'
 
+// Force dynamic rendering to prevent build-time execution
+export const dynamic = 'force-dynamic'
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     await connectDB()
-    const message = await Message.findById(params.id)
+    const message = await Message.findById(id)
     if (!message) {
       return NextResponse.json({ error: 'Message not found' }, { status: 404 })
     }
@@ -21,12 +25,13 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     await connectDB()
     const body = await request.json()
-    const message = await Message.findByIdAndUpdate(params.id, body, { new: true })
+    const message = await Message.findByIdAndUpdate(id, body, { new: true })
     if (!message) {
       return NextResponse.json({ error: 'Message not found' }, { status: 404 })
     }
@@ -39,11 +44,12 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     await connectDB()
-    const message = await Message.findByIdAndDelete(params.id)
+    const message = await Message.findByIdAndDelete(id)
     if (!message) {
       return NextResponse.json({ error: 'Message not found' }, { status: 404 })
     }
