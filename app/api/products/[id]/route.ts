@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import Product from '@/models/Product'
 
+// Force dynamic rendering to prevent build-time execution
+export const dynamic = 'force-dynamic'
+
 // Cache in memory for faster responses
 const productCache = new Map<string, { data: any; timestamp: number }>()
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes - faster updates
@@ -14,10 +17,11 @@ declare global {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const productId = params.id?.trim()
+    const { id } = await context.params
+    const productId = id?.trim()
     if (!productId) {
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
     }
@@ -83,9 +87,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     await connectDB()
     const body = await request.json()
     
@@ -118,7 +123,7 @@ export async function PUT(
     updateOps.$unset = { showOnLanding: '', isFeatured: '' }
     
     const product = await Product.findByIdAndUpdate(
-      params.id, 
+      id, 
       updateOps, 
       { new: true, runValidators: true }
     )
@@ -148,12 +153,13 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params
     await connectDB()
     
-    const productId = params.id?.trim()
+    const productId = id?.trim()
     if (!productId) {
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 })
     }
