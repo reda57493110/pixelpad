@@ -140,11 +140,11 @@ export async function PUT(
     }
     
     // Try to find the order by MongoDB _id (ObjectId) or custom id
-    // Only check _id if params.id looks like a valid ObjectId
-    const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(params.id)
+    // Only check _id if id looks like a valid ObjectId
+    const isValidObjectId = /^[0-9a-fA-F]{24}$/.test(id)
     const query: any = isValidObjectId 
-      ? { $or: [{ _id: params.id }, { id: params.id }] }
-      : { id: params.id }
+      ? { $or: [{ _id: id }, { id: id }] }
+      : { id: id }
     
     let order = await Order.findOne(query)
       .select('id _id date items total status customerName customerPhone city email paymentSessionId paymentMethod paymentStatus returnNotes createdAt updatedAt')
@@ -152,11 +152,11 @@ export async function PUT(
     
     if (!order) {
       if (process.env.NODE_ENV === 'development') {
-        console.error('Order not found with ID:', params.id)
+        console.error('Order not found with ID:', id)
       }
       return NextResponse.json({ 
         error: 'Order not found',
-        id: params.id
+        id: id
       }, { status: 404 })
     }
     
@@ -478,7 +478,7 @@ export async function PUT(
     // Handle connection abort errors gracefully
     if (error.name === 'AbortError' || error.code === 'ECONNRESET') {
       if (process.env.NODE_ENV === 'development') {
-        console.warn('Request aborted during order update:', params.id)
+        console.warn('Request aborted during order update:', id)
       }
       return NextResponse.json({ error: 'Request aborted' }, { status: 499 })
     }
