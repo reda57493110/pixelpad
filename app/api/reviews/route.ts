@@ -3,6 +3,8 @@ import connectDB from '@/lib/mongodb'
 import Review from '@/models/Review'
 import { authenticateRequest } from '@/lib/auth-middleware'
 
+export const dynamic = 'force-dynamic'
+
 // GET user's own review
 export async function GET(request: NextRequest) {
   try {

@@ -12,6 +12,8 @@ if (typeof global !== 'undefined') {
   global.__productsCache = { cachedAllProducts, cacheTimestamp }
 }
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: NextRequest) {
   try {
     // Check if we only need max order and cache-busting parameter

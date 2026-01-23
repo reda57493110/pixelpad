@@ -127,22 +127,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Dynamic product pages - access database directly during build
   let productPages: MetadataRoute.Sitemap = []
   try {
-    await connectDB()
-    const products = await Product.find({
-      $or: [
-        { showOnProductPage: { $ne: false } },
-        { showOnProductPage: { $exists: false } }
-      ]
-    }).select('_id').lean()
-    
-    productPages = products.map((product: any) => ({
-      url: `${baseUrl}/products/${product._id.toString()}`,
-      lastModified: new Date(),
-      changeFrequency: 'weekly' as const,
-      priority: 0.8,
-    }))
-  } catch (error) {
-    console.error('Error generating product sitemap:', error)
+    // Check if MONGODB_URI is available before attempting connection
+    const MONGODB_URI = process.env.MONGODB_URI
+    if (!MONGODB_URI) {
+      console.warn('MONGODB_URI not set during build, skipping product pages in sitemap')
+    } else {
+      await connectDB()
+      const products = await Product.find({
+        $or: [
+          { showOnProductPage: { $ne: false } },
+          { showOnProductPage: { $exists: false } }
+        ]
+      }).select('_id').lean()
+      
+      productPages = products.map((product: any) => ({
+        url: `${baseUrl}/products/${product._id.toString()}`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly' as const,
+        priority: 0.8,
+      }))
+    }
+  } catch (error: any) {
+    // Log error but don't fail the build - sitemap will work without product pages
+    console.error('Error generating product sitemap:', error?.message || error)
   }
 
   return [...staticPages, ...productPages]
