@@ -54,10 +54,18 @@ export async function POST(request: NextRequest) {
       admin.name = ADMIN_NAME
       await admin.save()
 
+      // Verify the password was set correctly by testing it
+      const testCompare = await bcrypt.compare(password, admin.password)
+      if (!testCompare) {
+        console.error('Warning: Password hash verification failed after update')
+      }
+
       return NextResponse.json({
         success: true,
         message: 'Admin password updated successfully',
         email: ADMIN_EMAIL,
+        userId: admin._id.toString(),
+        verified: testCompare,
       })
     } else {
       // Create new admin
@@ -69,10 +77,18 @@ export async function POST(request: NextRequest) {
         isActive: true,
       })
 
+      // Verify the password was set correctly by testing it
+      const testCompare = await bcrypt.compare(password, admin.password)
+      if (!testCompare) {
+        console.error('Warning: Password hash verification failed after creation')
+      }
+
       return NextResponse.json({
         success: true,
         message: 'Admin user created successfully',
         email: ADMIN_EMAIL,
+        userId: admin._id.toString(),
+        verified: testCompare,
       })
     }
   } catch (error: any) {

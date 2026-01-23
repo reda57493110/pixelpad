@@ -49,11 +49,50 @@ fetch('/api/admin/setup-admin', {
 }
 ```
 
+## Verify Admin User Exists
+
+After setting up, you can verify the admin user exists:
+
+```javascript
+fetch('/api/admin/check-admin')
+  .then(res => res.json())
+  .then(data => console.log('Admin status:', data))
+```
+
 ## After Setup
 
 Once the password is set, you can login with:
 - **Email:** `admin@pixelpad.com`
 - **Password:** `123456789` (or whatever password you set)
+
+## Troubleshooting
+
+If login still doesn't work after setup:
+
+1. **Check if admin exists:**
+   ```javascript
+   fetch('/api/admin/check-admin')
+     .then(res => res.json())
+     .then(data => console.log(data))
+   ```
+
+2. **Reset the password again:**
+   ```javascript
+   fetch('/api/admin/setup-admin', {
+     method: 'POST',
+     headers: { 'Content-Type': 'application/json' },
+     body: JSON.stringify({ password: '123456789' })
+   })
+     .then(res => res.json())
+     .then(data => {
+       console.log('Setup result:', data);
+       if (data.verified === false) {
+         console.error('⚠️ Password verification failed!');
+       }
+     })
+   ```
+
+3. **Check Vercel logs** for any errors during login attempts
 
 ## Security Note
 

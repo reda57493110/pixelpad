@@ -57,8 +57,8 @@ async function handleLogin(request: NextRequest) {
     }
 
     if (!user) {
-      // Don't log email to prevent information disclosure
-      // Generic error message to prevent user enumeration
+      // Log for debugging (email is already normalized, safe to log)
+      console.error('Login attempt: User not found', { email: normalizedEmail })
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
@@ -66,10 +66,24 @@ async function handleLogin(request: NextRequest) {
     }
 
     // Verify password
+    // Check if user has a password hash
+    if (!user.password) {
+      console.error('Login attempt: User has no password hash', { email: normalizedEmail, userId: user._id })
+      return NextResponse.json(
+        { error: 'Invalid email or password' },
+        { status: 401 }
+      )
+    }
+    
     const isPasswordValid = await bcrypt.compare(password, user.password)
     if (!isPasswordValid) {
-      // Don't log email to prevent information disclosure
-      // Generic error message to prevent user enumeration
+      // Log for debugging in production (without sensitive data)
+      console.error('Login attempt: Password mismatch', { 
+        email: normalizedEmail, 
+        userId: user._id,
+        hasPassword: !!user.password,
+        passwordLength: user.password?.length 
+      })
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
