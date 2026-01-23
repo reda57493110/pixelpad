@@ -12,7 +12,22 @@ export const dynamic = 'force-dynamic'
 
 async function handleLogin(request: NextRequest) {
   try {
-    await connectDB()
+    // Try to connect to database with better error handling
+    try {
+      await connectDB()
+    } catch (dbError: any) {
+      console.error('MongoDB connection error in login:', {
+        message: dbError?.message,
+        name: dbError?.name,
+        code: dbError?.code,
+        hasMongoDB: !!process.env.MONGODB_URI,
+        mongoDBLength: process.env.MONGODB_URI?.length || 0
+      })
+      return NextResponse.json(
+        { error: 'Database connection failed. Please check server configuration.' },
+        { status: 500 }
+      )
+    }
     
     // Parse request body with error handling for aborted requests
     let body
@@ -91,12 +106,26 @@ async function handleLogin(request: NextRequest) {
     }
 
     // Generate JWT token
-    const token = signToken({
-      id: user._id.toString(),
-      email: user.email,
-      role: userType === 'user' ? (user as any).role : 'customer',
-      type: userType,
-    })
+    let token
+    try {
+      token = signToken({
+        id: user._id.toString(),
+        email: user.email,
+        role: userType === 'user' ? (user as any).role : 'customer',
+        type: userType,
+      })
+    } catch (jwtError: any) {
+      console.error('JWT token generation error:', {
+        message: jwtError?.message,
+        name: jwtError?.name,
+        hasJWTSecret: !!process.env.JWT_SECRET,
+        jwtSecretLength: process.env.JWT_SECRET?.length || 0
+      })
+      return NextResponse.json(
+        { error: 'Server configuration error. Please contact administrator.' },
+        { status: 500 }
+      )
+    }
 
     // Return user data without password
     const userWithoutPassword = user.toObject()
@@ -119,36 +148,16 @@ async function handleLogin(request: NextRequest) {
       return NextResponse.json({ error: 'Request aborted' }, { status: 499 })
     }
     
-    // Log detailed error for debugging
-    const errorMessage = error.message || 'An error occurred during login'
-    const errorName = error.name || 'UnknownError'
-    
-    console.error('Login error:', {
-      name: errorName,
-      message: errorMessage,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-      // Check for common issues
-      hasMongoDB: !!process.env.MONGODB_URI,
-      hasJWTSecret: !!process.env.JWT_SECRET,
-    })
-    
-    // Provide more helpful error messages for common issues
-    if (errorMessage.includes('MONGODB_URI') || errorMessage.includes('MongoDB')) {
-      return NextResponse.json(
-        { error: 'Database connection failed. Please check server configuration.' },
-        { status: 500 }
-      )
-    }
-    
-    if (errorMessage.includes('JWT_SECRET')) {
-      return NextResponse.json(
-        { error: 'Server configuration error. Please contact administrator.' },
-        { status: 500 }
-      )
+    // Log other errors only in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Login error:', error)
+    } else {
+      // In production, only log error message without stack trace
+      console.error('Login error:', error.message || 'An error occurred during login')
     }
     
     return NextResponse.json(
-      { error: 'Failed to login', details: process.env.NODE_ENV === 'development' ? errorMessage : undefined },
+      { error: 'Failed to login' },
       { status: 500 }
     )
   }
