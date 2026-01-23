@@ -60,7 +60,7 @@ export default function QuickOrderModal({ product, onClose }: QuickOrderModalPro
     loadCoupon()
   }, [baseTotal])
 
-  // Lock body scroll and ensure modal is visible when it opens
+  // Lock body scroll and keep modal visible in viewport when it opens
   useEffect(() => {
     // Save current scroll position
     const scrollY = window.scrollY
@@ -71,10 +71,8 @@ export default function QuickOrderModal({ product, onClose }: QuickOrderModalPro
     document.body.style.width = '100%'
     document.body.style.overflow = 'hidden'
     
-    // Ensure modal container is at viewport top
-    if (typeof window !== 'undefined') {
-      window.scrollTo(0, 0)
-    }
+    // Don't scroll to top - keep user's current viewport position
+    // The modal is fixed, so it will appear centered in the current viewport
     
     // Cleanup: restore scroll position when modal closes
     return () => {
@@ -214,7 +212,7 @@ export default function QuickOrderModal({ product, onClose }: QuickOrderModalPro
 
   const modal = (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[10000] p-4 overflow-y-auto" onClick={onClose} style={{ top: 0, left: 0, right: 0, bottom: 0 }}>
-      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden my-auto" onClick={(e)=>e.stopPropagation()}>
+      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden" onClick={(e)=>e.stopPropagation()}>
         <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
           <h3 className="text-base font-semibold">{t('quickOrder.title')}</h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-sm">✕</button>
