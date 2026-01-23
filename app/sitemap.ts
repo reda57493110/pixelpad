@@ -154,6 +154,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }))
     } catch (dbError: any) {
       // If database connection fails, return static pages only
+      // Suppress build-time MongoDB errors (they're expected)
+      if (dbError?.isBuildTimeError || dbError?.message?.includes('MONGODB_URI')) {
+        // Silently skip - this is expected during build
+        return staticPages
+      }
       // Don't log error during build to avoid noise
       if (process.env.NODE_ENV === 'development') {
         console.warn('Could not connect to database for sitemap:', dbError?.message)
@@ -161,7 +166,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   } catch (error: any) {
     // Catch any other errors and return static pages only
-    // This ensures the build never fails due to sitemap generation
+    // Suppress all MongoDB-related errors during build (they're expected)
+    if (error?.isBuildTimeError || error?.message?.includes('MONGODB_URI') || error?.message?.includes('Please define')) {
+      // Silently return static pages - this is expected during build
+      return staticPages
+    }
+    // Only log non-MongoDB errors in development
     if (process.env.NODE_ENV === 'development') {
       console.error('Error generating product sitemap:', error?.message || error)
     }

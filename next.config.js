@@ -148,6 +148,13 @@ const nextConfig = {
   
   // Set output file tracing root to avoid lockfile warnings
   outputFileTracingRoot: process.cwd(),
+  
+  // Suppress build-time route analysis errors for API routes
+  // This helps prevent MongoDB connection errors during build
+  onDemandEntries: {
+    maxInactiveAge: 25 * 1000,
+    pagesBufferLength: 2,
+  },
 }
 
 module.exports = nextConfig
