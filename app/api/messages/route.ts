@@ -1,22 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-export const dynamic = 'force-dynamic'
+import connectDB from '@/lib/mongodb'
+import Message from '@/models/Message'
 
 export async function GET(request: NextRequest) {
   try {
-    // Use dynamic import to prevent MongoDB modules from loading during build analysis
-    const { default: connectDB } = await import('@/lib/mongodb')
-    const { default: Message } = await import('@/models/Message')
-    
-    try {
-      await connectDB()
-    } catch (dbError: any) {
-      // During build, MongoDB connection errors are expected and should be ignored
-      if (dbError?.isBuildTimeError) {
-        return NextResponse.json({ error: 'Database not available during build' }, { status: 503 })
-      }
-      throw dbError
-    }
+    await connectDB()
     const { searchParams } = new URL(request.url)
     const email = searchParams.get('email')
     const userId = searchParams.get('userId')
@@ -35,19 +23,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Use dynamic import to prevent MongoDB modules from loading during build analysis
-    const { default: connectDB } = await import('@/lib/mongodb')
-    const { default: Message } = await import('@/models/Message')
-    
-    try {
-      await connectDB()
-    } catch (dbError: any) {
-      // During build, MongoDB connection errors are expected and should be ignored
-      if (dbError?.isBuildTimeError) {
-        return NextResponse.json({ error: 'Database not available during build' }, { status: 503 })
-      }
-      throw dbError
-    }
+    await connectDB()
     const body = await request.json()
     const message = await Message.create(body)
     return NextResponse.json(message, { status: 201 })

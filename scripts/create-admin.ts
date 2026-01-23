@@ -54,28 +54,15 @@ async function createAdmin() {
     if (existingAdmin) {
       console.log(`⚠️  Admin user with email ${ADMIN_EMAIL} already exists`)
       
-      // Ask if user wants to update password
-      console.log('\n💡 To update the password, run this script with ADMIN_PASSWORD set in .env.local')
-      console.log('   Or use the API endpoint: POST /api/admin/setup-admin')
-      
-      // Update password if provided
-      if (ADMIN_PASSWORD && ADMIN_PASSWORD !== 'admin123') {
-        console.log('\n🔄 Updating admin password...')
-        const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, 10)
-        ;(existingAdmin as any).password = hashedPassword
-        console.log('✅ Password updated')
-      }
-      
       // Update to ensure it's an admin
       if ((existingAdmin as any).role !== 'admin') {
-        ;(existingAdmin as any).role = 'admin'
+        (existingAdmin as any).role = 'admin'
         ;(existingAdmin as any).isActive = true
+        await existingAdmin.save()
         console.log('✅ Updated existing user to admin role')
       } else {
         console.log('✅ User is already an admin')
       }
-      
-      await existingAdmin.save()
       
       console.log(`\n📋 Admin Details:`)
       console.log(`   Email: ${(existingAdmin as any).email}`)

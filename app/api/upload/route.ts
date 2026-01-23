@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
+import { put } from '@vercel/blob'
 import { requireAdminOrTeam } from '@/lib/auth-middleware'
 import { strictRateLimit } from '@/lib/rate-limit'
 import { defaultCors } from '@/lib/cors'
@@ -38,12 +36,6 @@ async function handleUpload(request: NextRequest) {
       return NextResponse.json({ error: 'File too large. Maximum size is 20MB.' }, { status: 400 })
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'products')
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true })
-    }
-
     // Generate unique filename with proper extension validation
     const timestamp = Date.now()
     const randomString = Math.random().toString(36).substring(2, 15)
@@ -61,22 +53,18 @@ async function handleUpload(request: NextRequest) {
     }
     
     const filename = `product-${timestamp}-${randomString}.${extension}`
-    const filepath = join(uploadsDir, filename)
-    
-    // Ensure no path traversal (double check)
-    if (!filepath.startsWith(uploadsDir)) {
-      return NextResponse.json({ error: 'Invalid file path' }, { status: 400 })
-    }
+    const blobPath = `products/${filename}`
 
-    // Convert file to buffer and save
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    await writeFile(filepath, buffer)
+    // Upload to Vercel Blob
+    const blob = await put(blobPath, file, {
+      access: 'public',
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+    })
 
-    // Return the public URL
-    const publicUrl = `/uploads/products/${filename}`
+    // Return the public URL from Vercel Blob
+    const publicUrl = blob.url
     if (process.env.NODE_ENV === 'development') {
-      console.log('File uploaded successfully:', publicUrl)
+      console.log('File uploaded successfully to Vercel Blob:', publicUrl)
     }
     return NextResponse.json({ url: publicUrl, filename })
   } catch (error: any) {

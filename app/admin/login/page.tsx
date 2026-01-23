@@ -200,4 +200,3 @@ export default function AdminLoginPage() {
     </Suspense>
   )
 }
-

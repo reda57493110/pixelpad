@@ -27,14 +27,6 @@ async function connectDB(): Promise<typeof mongoose> {
   const MONGODB_URI = process.env.MONGODB_URI || ''
   
   if (!MONGODB_URI) {
-    // During build time (Next.js static generation), allow missing MONGODB_URI
-    // This prevents build failures when MongoDB is not configured
-    if (process.env.NEXT_PHASE === 'phase-production-build' || process.env.NODE_ENV === 'production' && !process.env.VERCEL_ENV) {
-      // In build context, throw a more specific error that can be caught
-      const error = new Error('MONGODB_URI not available during build - this is expected')
-      ;(error as any).isBuildTimeError = true
-      throw error
-    }
     throw new Error('Please define the MONGODB_URI environment variable inside .env.local')
   }
   

@@ -12,22 +12,7 @@ export const dynamic = 'force-dynamic'
 
 async function handleLogin(request: NextRequest) {
   try {
-    // Try to connect to database with better error handling
-    try {
-      await connectDB()
-    } catch (dbError: any) {
-      console.error('MongoDB connection error in login:', {
-        message: dbError?.message,
-        name: dbError?.name,
-        code: dbError?.code,
-        hasMongoDB: !!process.env.MONGODB_URI,
-        mongoDBLength: process.env.MONGODB_URI?.length || 0
-      })
-      return NextResponse.json(
-        { error: 'Database connection failed. Please check server configuration.' },
-        { status: 500 }
-      )
-    }
+    await connectDB()
     
     // Parse request body with error handling for aborted requests
     let body
@@ -72,8 +57,8 @@ async function handleLogin(request: NextRequest) {
     }
 
     if (!user) {
-      // Log for debugging (email is already normalized, safe to log)
-      console.error('Login attempt: User not found', { email: normalizedEmail })
+      // Don't log email to prevent information disclosure
+      // Generic error message to prevent user enumeration
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
@@ -81,24 +66,10 @@ async function handleLogin(request: NextRequest) {
     }
 
     // Verify password
-    // Check if user has a password hash
-    if (!user.password) {
-      console.error('Login attempt: User has no password hash', { email: normalizedEmail, userId: user._id })
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      )
-    }
-    
     const isPasswordValid = await bcrypt.compare(password, user.password)
     if (!isPasswordValid) {
-      // Log for debugging in production (without sensitive data)
-      console.error('Login attempt: Password mismatch', { 
-        email: normalizedEmail, 
-        userId: user._id,
-        hasPassword: !!user.password,
-        passwordLength: user.password?.length 
-      })
+      // Don't log email to prevent information disclosure
+      // Generic error message to prevent user enumeration
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
@@ -106,26 +77,12 @@ async function handleLogin(request: NextRequest) {
     }
 
     // Generate JWT token
-    let token
-    try {
-      token = signToken({
-        id: user._id.toString(),
-        email: user.email,
-        role: userType === 'user' ? (user as any).role : 'customer',
-        type: userType,
-      })
-    } catch (jwtError: any) {
-      console.error('JWT token generation error:', {
-        message: jwtError?.message,
-        name: jwtError?.name,
-        hasJWTSecret: !!process.env.JWT_SECRET,
-        jwtSecretLength: process.env.JWT_SECRET?.length || 0
-      })
-      return NextResponse.json(
-        { error: 'Server configuration error. Please contact administrator.' },
-        { status: 500 }
-      )
-    }
+    const token = signToken({
+      id: user._id.toString(),
+      email: user.email,
+      role: userType === 'user' ? (user as any).role : 'customer',
+      type: userType,
+    })
 
     // Return user data without password
     const userWithoutPassword = user.toObject()

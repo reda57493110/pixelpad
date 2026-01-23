@@ -1478,4 +1478,3 @@ export default function CheckoutPage() {
     </Suspense>
   )
 }
-
