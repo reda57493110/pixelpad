@@ -190,6 +190,40 @@ export default function EditProductPage() {
     }
   }
 
+  const handleImageUrlAdd = async (url: string) => {
+    setUploadingImage(true)
+    try {
+      // Download the image and upload to Vercel Blob
+      const response = await fetch('/api/download-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: url }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || errorData.message || 'Failed to download and upload image')
+      }
+
+      const data = await response.json()
+      const newImages = [...productImages, data.url]
+      setProductImages(newImages)
+      setFormData({ 
+        ...formData, 
+        image: newImages[0] || data.url, // Set first image as main image
+        images: newImages 
+      })
+      setImageUrl('')
+      setNotification({ message: t('admin.imageUploaded') || 'Image downloaded and uploaded successfully', type: 'success' })
+      setTimeout(() => setNotification(null), 3000)
+    } catch (error: any) {
+      setNotification({ message: error?.message || 'Failed to download and upload image', type: 'error' })
+      setTimeout(() => setNotification(null), 5000)
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -675,43 +709,31 @@ export default function EditProductPage() {
                         type="url"
                         value={imageUrl}
                         onChange={(e) => setImageUrl(e.target.value)}
-                        onKeyPress={(e) => {
+                        onKeyPress={async (e) => {
                           if (e.key === 'Enter' && imageUrl.trim()) {
                             e.preventDefault()
-                            const newImages = [...productImages, imageUrl.trim()]
-                            setProductImages(newImages)
-                            setFormData({ 
-                              ...formData, 
-                              image: newImages[0] || imageUrl.trim(),
-                              images: newImages 
-                            })
-                            setImageUrl('')
+                            await handleImageUrlAdd(imageUrl.trim())
                           }
                         }}
                         placeholder="https://jpm.ma/cdn/shop/files/image.webp"
                         className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        disabled={uploadingImage}
                       />
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={async () => {
                           if (imageUrl.trim()) {
-                            const newImages = [...productImages, imageUrl.trim()]
-                            setProductImages(newImages)
-                            setFormData({ 
-                              ...formData, 
-                              image: newImages[0] || imageUrl.trim(),
-                              images: newImages 
-                            })
-                            setImageUrl('')
+                            await handleImageUrlAdd(imageUrl.trim())
                           }
                         }}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        disabled={uploadingImage || !imageUrl.trim()}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        Add
+                        {uploadingImage ? 'Uploading...' : 'Add'}
                       </button>
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Right-click on an image and select &quot;Copy image address&quot; or copy the URL from your browser
+                      Right-click on an image and select &quot;Copy image address&quot; or copy the URL from your browser. The image will be downloaded and uploaded to Vercel Blob.
                     </p>
                   </div>
                 ) : (

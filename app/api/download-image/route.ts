@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFile, mkdir } from 'fs/promises'
-import { join } from 'path'
-import { existsSync } from 'fs'
+import { put } from '@vercel/blob'
 import { requireAdminOrTeam } from '@/lib/auth-middleware'
 
 // Force dynamic rendering to prevent build-time execution
@@ -74,27 +72,27 @@ export async function POST(request: NextRequest) {
       else if (urlPath.endsWith('.jpeg')) extension = 'jpg'
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'products')
-    if (!existsSync(uploadsDir)) {
-      await mkdir(uploadsDir, { recursive: true })
-    }
-
     // Generate unique filename
     const timestamp = Date.now()
     const randomString = Math.random().toString(36).substring(2, 15)
     const filename = `product-${timestamp}-${randomString}.${extension}`
-    const filepath = join(uploadsDir, filename)
+    const blobPath = `products/${filename}`
 
-    // Save the image
-    await writeFile(filepath, buffer)
+    // Convert buffer to Blob for Vercel Blob upload
+    const blob = new Blob([buffer], { type: contentType })
 
-    // Return the public URL
-    const publicUrl = `/uploads/products/${filename}`
+    // Upload to Vercel Blob
+    const uploadedBlob = await put(blobPath, blob, {
+      access: 'public',
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+      contentType: contentType,
+    })
+
+    // Return the public URL from Vercel Blob
     return NextResponse.json({ 
-      url: publicUrl, 
+      url: uploadedBlob.url, 
       filename,
-      message: 'Image downloaded and saved successfully'
+      message: 'Image downloaded and uploaded to Vercel Blob successfully'
     })
   } catch (error: any) {
     console.error('Error downloading image:', error)
