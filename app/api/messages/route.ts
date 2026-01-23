@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import connectDB from '@/lib/mongodb'
-import Message from '@/models/Message'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
+    // Use dynamic import to prevent MongoDB modules from loading during build analysis
+    const { default: connectDB } = await import('@/lib/mongodb')
+    const { default: Message } = await import('@/models/Message')
+    
     await connectDB()
     const { searchParams } = new URL(request.url)
     const email = searchParams.get('email')
@@ -25,6 +27,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Use dynamic import to prevent MongoDB modules from loading during build analysis
+    const { default: connectDB } = await import('@/lib/mongodb')
+    const { default: Message } = await import('@/models/Message')
+    
     await connectDB()
     const body = await request.json()
     const message = await Message.create(body)

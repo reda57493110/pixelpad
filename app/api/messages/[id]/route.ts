@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import connectDB from '@/lib/mongodb'
-import Message from '@/models/Message'
 
 // Force dynamic rendering to prevent build-time execution
 export const dynamic = 'force-dynamic'
@@ -10,6 +8,10 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Use dynamic import to prevent MongoDB modules from loading during build analysis
+    const { default: connectDB } = await import('@/lib/mongodb')
+    const { default: Message } = await import('@/models/Message')
+    
     const { id } = await context.params
     await connectDB()
     const message = await Message.findById(id)
@@ -28,6 +30,10 @@ export async function PUT(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Use dynamic import to prevent MongoDB modules from loading during build analysis
+    const { default: connectDB } = await import('@/lib/mongodb')
+    const { default: Message } = await import('@/models/Message')
+    
     const { id } = await context.params
     await connectDB()
     const body = await request.json()
@@ -47,6 +53,10 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Use dynamic import to prevent MongoDB modules from loading during build analysis
+    const { default: connectDB } = await import('@/lib/mongodb')
+    const { default: Message } = await import('@/models/Message')
+    
     const { id } = await context.params
     await connectDB()
     const message = await Message.findByIdAndDelete(id)
