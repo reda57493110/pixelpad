@@ -9,6 +9,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import { addProduct, getAllProducts } from '@/lib/products'
 import { getAllCategories, Category } from '@/lib/categories'
 import { Product } from '@/types'
+import { authenticatedFetch } from '@/lib/api-client'
 import {
   ArrowLeftIcon,
   PhotoIcon,
@@ -163,14 +164,15 @@ export default function CreateProductPage() {
     setUploadingImage(true)
     try {
       // Download the image and upload to Vercel Blob
-      const response = await fetch('/api/download-image', {
+      // Use authenticatedFetch to include authentication token
+      const response = await authenticatedFetch('/api/download-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ imageUrl: url }),
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = await response.json().catch(() => ({ error: 'Authentication required' }))
         throw new Error(errorData.error || errorData.message || 'Failed to download and upload image')
       }
 
