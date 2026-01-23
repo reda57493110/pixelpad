@@ -41,19 +41,21 @@ export async function GET(request: NextRequest) {
     await connectDB()
     
     // Public endpoint - no auth required for reading categories
+    // If activeOnly is true, filter by isActive: true, otherwise get all
     const query = activeOnly ? { isActive: true } : {}
     const categories = await Category.find(query)
       .sort({ order: 1, name: 1 })
       .select('-__v')
-          .lean()
-          .maxTimeMS(2000) // 2 second timeout for faster queries
+      .lean()
+      .maxTimeMS(5000) // Increased timeout to 5 seconds for reliability
     
     const categoriesWithId = categories.map((cat: any) => {
-      if (cat._id) {
-        cat.id = cat._id.toString()
-        delete cat._id
+      const categoryObj = { ...cat }
+      if (categoryObj._id) {
+        categoryObj.id = categoryObj._id.toString()
+        delete categoryObj._id
       }
-      return cat
+      return categoryObj
     })
     
     // Cache the result

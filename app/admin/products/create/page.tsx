@@ -73,15 +73,32 @@ export default function CreateProductPage() {
     const loadData = async () => {
       try {
         setCategoriesLoading(true)
-        const [categoriesData, allProducts] = await Promise.all([
-          getAllCategories(true), // Only active categories
-          getAllProducts()
-        ])
+        
+        // Try active categories first, fallback to all categories if none found
+        let categoriesData = await getAllCategories(true) // Only active categories
+        
+        // If no active categories found, try getting all categories
+        if (categoriesData.length === 0) {
+          console.log('No active categories found, trying all categories...')
+          categoriesData = await getAllCategories(false)
+        }
+        
+        const allProducts = await getAllProducts()
+        
         setCategories(categoriesData)
+        
         // Set default category if available
         if (categoriesData.length > 0) {
           setFormData(prev => ({ ...prev, category: categoriesData[0].id as Product['category'] }))
+        } else {
+          // Show error notification if no categories found
+          setNotification({ 
+            message: 'No categories found. Please create a category first.', 
+            type: 'error' 
+          })
+          setTimeout(() => setNotification(null), 5000)
         }
+        
         // Calculate product counts
         setProductCounts({
           hero: allProducts.filter(p => p.showInHero).length,
@@ -93,6 +110,11 @@ export default function CreateProductPage() {
         })
       } catch (error) {
         console.error('Error loading data:', error)
+        setNotification({ 
+          message: 'Failed to load categories. Please refresh the page.', 
+          type: 'error' 
+        })
+        setTimeout(() => setNotification(null), 5000)
       } finally {
         setCategoriesLoading(false)
       }

@@ -18,15 +18,36 @@ export async function getAllCategories(activeOnly: boolean = false): Promise<Cat
   try {
     const url = activeOnly ? '/api/categories?active=true' : '/api/categories'
     // Use regular fetch for categories (public endpoint, no auth needed)
+    // Remove Next.js-specific options for client-side usage
     const response = await fetch(url, {
-      cache: 'force-cache',
-      next: { revalidate: 600 } // 10 minutes cache for faster loading
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // Add cache-busting for client-side to avoid stale data
+      cache: 'no-store',
     })
+    
     if (!response.ok) {
       console.error('Failed to fetch categories:', response.status, response.statusText)
+      // Try to get error details
+      try {
+        const errorData = await response.json()
+        console.error('Error details:', errorData)
+      } catch {
+        // Ignore JSON parse errors
+      }
       return []
     }
+    
     const data = await response.json()
+    
+    // Handle both array and error object responses
+    if (!Array.isArray(data)) {
+      console.error('Invalid categories response:', data)
+      return []
+    }
+    
     return data.map((cat: any) => ({
       ...cat,
       id: cat.id || cat._id?.toString()
