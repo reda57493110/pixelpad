@@ -1,7 +1,4 @@
 import { MetadataRoute } from 'next'
-import connectDB from '@/lib/mongodb'
-import Product from '@/models/Product'
-import { Product as ProductType } from '@/types'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
@@ -124,14 +121,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ]
 
-  // Dynamic product pages - access database directly during build
+  // Dynamic product pages - use dynamic import to avoid loading MongoDB during build
   let productPages: MetadataRoute.Sitemap = []
   try {
-    // Check if MONGODB_URI is available before attempting connection
+    // Check if MONGODB_URI is available before attempting to import MongoDB modules
     const MONGODB_URI = process.env.MONGODB_URI
     if (!MONGODB_URI) {
-      console.warn('MONGODB_URI not set during build, skipping product pages in sitemap')
-    } else {
+      // Silently skip product pages during build if MONGODB_URI is not set
+      // This is expected during Vercel builds before env vars are configured
+      return staticPages
+    }
+    
+    // Use dynamic import to only load MongoDB modules when needed
+    // This prevents module evaluation during build analysis
+    try {
+      const { default: connectDB } = await import('@/lib/mongodb')
+      const { default: Product } = await import('@/models/Product')
+      
       await connectDB()
       const products = await Product.find({
         $or: [
@@ -146,10 +152,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: 'weekly' as const,
         priority: 0.8,
       }))
+    } catch (dbError: any) {
+      // If database connection fails, return static pages only
+      // Don't log error during build to avoid noise
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Could not connect to database for sitemap:', dbError?.message)
+      }
     }
   } catch (error: any) {
-    // Log error but don't fail the build - sitemap will work without product pages
-    console.error('Error generating product sitemap:', error?.message || error)
+    // Catch any other errors and return static pages only
+    // This ensures the build never fails due to sitemap generation
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error generating product sitemap:', error?.message || error)
+    }
   }
 
   return [...staticPages, ...productPages]
