@@ -25,8 +25,17 @@ async function handleUpload(request: NextRequest) {
     }
 
     // Validate file type
+    // Note: some JPEGs may come as .jfif but still have type image/jpeg
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
-    if (!validTypes.includes(file.type)) {
+    const imageExtensions = ['jpg', 'jpeg', 'jfif', 'png', 'webp', 'gif']
+    const fileExtension = (file.name || '').split('.').pop()?.toLowerCase() || ''
+    
+    // Validate: must have valid MIME type OR valid image extension
+    // This handles cases where MIME type might be missing or incorrect
+    if (file.type && !validTypes.includes(file.type) && !imageExtensions.includes(fileExtension)) {
+      return NextResponse.json({ error: 'Invalid file type. Only images are allowed.' }, { status: 400 })
+    }
+    if (!file.type && !imageExtensions.includes(fileExtension)) {
       return NextResponse.json({ error: 'Invalid file type. Only images are allowed.' }, { status: 400 })
     }
 
@@ -40,17 +49,32 @@ async function handleUpload(request: NextRequest) {
     const timestamp = Date.now()
     const randomString = Math.random().toString(36).substring(2, 15)
     
-    // Sanitize filename and validate extension
-    const sanitized = file.name.replace(/[^a-zA-Z0-9.-]/g, '')
+    // Sanitize filename and validate / infer extension
+    const sanitized = (file.name || '').replace(/[^a-zA-Z0-9.-]/g, '')
     const parts = sanitized.split('.')
-    if (parts.length < 2) {
-      return NextResponse.json({ error: 'Invalid filename' }, { status: 400 })
+    const rawExtension = parts.length >= 2 ? parts[parts.length - 1].toLowerCase() : ''
+
+    // Some devices/browsers provide odd extensions (e.g. .jfif) or no extension at all.
+    // Fall back to MIME type mapping when needed.
+    const mimeToExt: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/jpg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp',
+      'image/gif': 'gif',
     }
-    const extension = parts[parts.length - 1].toLowerCase()
-    const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif']
-    if (!allowedExtensions.includes(extension)) {
+
+    const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'jfif']
+    let extension = rawExtension
+    if (!extension || !allowedExtensions.includes(extension)) {
+      extension = mimeToExt[file.type] || ''
+    }
+
+    if (!extension) {
       return NextResponse.json({ error: 'Invalid file extension' }, { status: 400 })
     }
+    // Normalize to canonical extension
+    if (extension === 'jpeg' || extension === 'jfif') extension = 'jpg'
     
     const filename = `product-${timestamp}-${randomString}.${extension}`
     const blobPath = `products/${filename}`
