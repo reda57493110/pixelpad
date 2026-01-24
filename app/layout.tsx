@@ -8,7 +8,6 @@ import { AuthProvider } from '@/contexts/AuthContext'
 import { CartProvider } from '@/contexts/CartContext'
 import { Suspense } from 'react'
 import { NavigationLoadingProvider } from '@/contexts/NavigationLoadingContext'
-import PageTransitionLoader from '@/components/PageTransitionLoader'
 import GoogleAnalytics from '@/components/GoogleAnalytics'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -116,7 +115,6 @@ export default function RootLayout({
             <AuthProvider>
               <CartProvider>
                 <NavigationLoadingProvider>
-                  <PageTransitionLoader />
                   <ConditionalLayout>
                     {children}
                   </ConditionalLayout>

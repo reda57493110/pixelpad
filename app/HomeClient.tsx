@@ -18,8 +18,9 @@ import {
   StarIcon,
   CheckCircleIcon,
 } from '@heroicons/react/24/solid'
-import { CheckCircleIcon as CheckCircleIconOutline, ArrowPathIcon } from '@heroicons/react/24/outline'
+import { CheckCircleIcon as CheckCircleIconOutline } from '@heroicons/react/24/outline'
 import { ArrowRightIcon } from '@heroicons/react/24/outline'
+import HeroLoadingSpinner from '@/components/HeroLoadingSpinner'
 
 // Custom hook for scroll animations
 const useScrollAnimation = () => {
@@ -338,6 +339,7 @@ export default function HomeClient() {
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
   const [isLoaded, setIsLoaded] = useState(false)
   const [heroImageLoaded, setHeroImageLoaded] = useState(false)
+  const [productsLoading, setProductsLoading] = useState(true)
   const [newArrivalsScroll, setNewArrivalsScroll] = useState(0)
   const [isNewArrivalsPaused, setIsNewArrivalsPaused] = useState(false)
   const [bestSellersScroll, setBestSellersScroll] = useState(0)
@@ -367,8 +369,6 @@ export default function HomeClient() {
 
   // Preload hero product image and track when it's loaded
   useEffect(() => {
-    setHeroImageLoaded(false) // Reset on hero product change
-    
     if (heroFlagged.length > 0 && heroFlagged[0]?.image) {
       const link = document.createElement('link')
       link.rel = 'preload'
@@ -381,19 +381,10 @@ export default function HomeClient() {
       const img = new window.Image()
       img.src = heroFlagged[0].image
       if (img.complete) {
-        // Small delay to ensure spinner is visible
-        setTimeout(() => {
-          setHeroImageLoaded(true)
-        }, 200)
+        setHeroImageLoaded(true)
       } else {
-        img.onload = () => {
-          setTimeout(() => {
-            setHeroImageLoaded(true)
-          }, 200)
-        }
-        img.onerror = () => {
-          setHeroImageLoaded(true) // Continue even if image fails
-        }
+        img.onload = () => setHeroImageLoaded(true)
+        img.onerror = () => setHeroImageLoaded(true) // Continue even if image fails
       }
     } else {
       setHeroImageLoaded(true) // No hero product, consider it "loaded"
@@ -513,6 +504,7 @@ export default function HomeClient() {
       if (!isMounted) return
       
       setAllProducts(products)
+      setProductsLoading(false)
       
       // Use flagged products, but fallback to all products if no flags are set
       const carouselProducts = products.filter(p => p.showOnHomeCarousel === true)
@@ -836,6 +828,9 @@ export default function HomeClient() {
 
   return (
     <div className={`relative acid-surface overflow-x-hidden overflow-y-visible ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'} style={{ touchAction: 'pan-y', minHeight: '100vh' }}>
+      {/* Full-page loading spinner - shows until products and hero images are loaded */}
+      <HeroLoadingSpinner isLoading={productsLoading || !isLoaded || !heroImageLoaded} />
+      
       {/* Order Success Message for Guests */}
       {showOrderSuccess && orderId && (
         <div className="fixed top-24 left-1/2 transform -translate-x-1/2 z-[200] bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 border border-green-300 dark:border-green-700 rounded-lg shadow-xl p-4 max-w-md w-full mx-4">
@@ -881,42 +876,6 @@ export default function HomeClient() {
             className="relative min-h-[60vh] sm:min-h-[calc(100vh-200px)]"
             style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch', position: 'relative', zIndex: 1 }}
           >
-            {/* Loading Spinner - Shows until both background and product image are loaded */}
-            {(isInitialLoad || !isLoaded || !heroImageLoaded) && (
-              <div className="absolute inset-0 flex items-center justify-center z-20 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm transition-opacity duration-300">
-                <div className="flex flex-col items-center gap-4">
-                  <div className="relative w-16 h-16">
-                    {/* Glowing background circle */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary-500 via-blue-500 to-primary-600 rounded-full blur-xl opacity-50 animate-pulse"></div>
-                    
-                    {/* Spinner container */}
-                    <div className="relative w-16 h-16 rounded-full flex items-center justify-center bg-gradient-to-br from-primary-600 via-blue-600 to-primary-700 shadow-2xl">
-                      {/* Rotating border */}
-                      <div 
-                        className="absolute inset-0 rounded-full"
-                        style={{
-                          background: 'conic-gradient(from 0deg, transparent, rgba(59, 130, 246, 0.8), rgba(37, 99, 235, 0.8), transparent)',
-                          animation: 'spin 1.5s linear infinite',
-                          mask: 'radial-gradient(circle, transparent 70%, black 75%)',
-                          WebkitMask: 'radial-gradient(circle, transparent 70%, black 75%)',
-                        }}
-                      ></div>
-                      
-                      {/* Refresh Icon */}
-                      <ArrowPathIcon 
-                        className="w-8 h-8 text-white relative z-10 animate-spin"
-                        style={{ 
-                          animationDuration: '0.8s',
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
-                    Loading...
-                  </p>
-                </div>
-              </div>
-            )}
             {/* Background Image - Full Width Behind Everything */}
             <div className="absolute inset-0 w-full h-full pointer-events-none" style={{ touchAction: 'none' }}>
               {/* Background image for light mode */}
