@@ -6,8 +6,6 @@ import { useRouter } from 'next/navigation'
 import { Product } from '@/types'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useCart } from '@/contexts/CartContext'
-import QuickOrderModal from './QuickOrderModal'
-import { useState } from 'react'
 import {
   XMarkIcon,
   StarIcon,
@@ -27,7 +25,6 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
   const router = useRouter()
   const { t, formatCurrency, language } = useLanguage()
   const { addItem } = useCart()
-  const [showQuickOrder, setShowQuickOrder] = useState(false)
 
   const productName = language === 'ar' 
     ? (product.nameFr || product.name)
@@ -52,10 +49,6 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
       }, 1)
       onClose()
     }
-  }
-
-  const handleQuickOrder = () => {
-    setShowQuickOrder(true)
   }
 
   const modal = (
@@ -252,12 +245,6 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
             <ShoppingCartIcon className="h-5 w-5" />
             {t('product.addToCart') || 'Add to Cart'}
           </button>
-          <button
-            onClick={handleQuickOrder}
-            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors"
-          >
-            {t('product.quickOrder') || 'Quick Order'}
-          </button>
         </div>
       </div>
     </div>
@@ -265,20 +252,7 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
 
   if (typeof document === 'undefined') return null
   
-  return (
-    <>
-      {createPortal(modal, document.body)}
-      {showQuickOrder && (
-        <QuickOrderModal
-          product={{ id: product.id, name: product.name, price: product.price }}
-          onClose={() => {
-            setShowQuickOrder(false)
-            onClose()
-          }}
-        />
-      )}
-    </>
-  )
+  return createPortal(modal, document.body)
 }
 
 

@@ -7,7 +7,6 @@ import { Product } from '@/types'
 import { memo, useState } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useCart } from '@/contexts/CartContext'
-import QuickOrderModal from './QuickOrderModal'
 import { StarIcon } from '@heroicons/react/24/outline'
 
 interface ProductCardProps {
@@ -20,7 +19,6 @@ function ProductCard({ product, variant = 'default', hideIds = false }: ProductC
   const router = useRouter()
   const { t, formatCurrency, isRTL } = useLanguage()
   const { addItem } = useCart()
-  const [showQuickOrder, setShowQuickOrder] = useState(false)
   
   const looksLikeId = (value?: string) => typeof value === 'string' && /^[0-9a-f]{24}$/i.test(value.trim())
   const displayName = hideIds && product.name && looksLikeId(product.name)
@@ -237,12 +235,6 @@ function ProductCard({ product, variant = 'default', hideIds = false }: ProductC
           </div>
         </div>
       </div>
-      {showQuickOrder && (
-        <QuickOrderModal 
-          product={{ id: product.id, name: product.name, price: product.price }}
-          onClose={() => setShowQuickOrder(false)}
-        />
-      )}
     </div>
   )
 }

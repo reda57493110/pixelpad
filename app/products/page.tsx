@@ -366,8 +366,6 @@ export default function ProductsPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [highlightedProduct, setHighlightedProduct] = useState<string | null>(null)
   const [showProductNotification, setShowProductNotification] = useState(false)
-  const [showQuickOrder, setShowQuickOrder] = useState(false)
-  const [quickProduct, setQuickProduct] = useState<{ id: string; name: string; price: number } | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 15
 
@@ -1053,18 +1051,6 @@ export default function ProductsPage() {
                   </button>
                 </div>
               </div>
-            )}
-
-            {showQuickOrder && quickProduct && (
-              <Suspense fallback={
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[10000]">
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl p-6">
-                    <div className="animate-pulse text-gray-600 dark:text-gray-400">Loading...</div>
-                  </div>
-                </div>
-              }>
-                <QuickOrderModal product={quickProduct} onClose={() => setShowQuickOrder(false)} />
-              </Suspense>
             )}
 
         {/* No Results */}

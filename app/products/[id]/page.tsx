@@ -22,7 +22,6 @@ import {
 } from '@heroicons/react/24/outline'
 
 // Lazy load components that are not needed for initial render
-const QuickOrderModal = lazy(() => import('@/components/QuickOrderModal'))
 const ProductSchema = lazy(() => import('@/components/ProductSchema'))
 const BreadcrumbSchema = lazy(() => import('@/components/BreadcrumbSchema'))
 
@@ -292,7 +291,6 @@ export default function ProductDetailPage() {
   const { user, isLoggedIn, token } = useAuth()
   const [product, setProduct] = useState<Product | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [showQuickOrder, setShowQuickOrder] = useState(false)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [selectedVariant, setSelectedVariant] = useState<{ ram: string; storage: string; storageType: string; price: number; originalPrice?: number } | null>(null)
 
@@ -751,13 +749,6 @@ export default function ProductDetailPage() {
                     </span>
                   </div>
                 </button>
-                
-                <button
-                  onClick={() => setShowQuickOrder(true)}
-                  className="w-full py-2.5 sm:py-3 px-6 rounded-xl font-semibold text-sm sm:text-base transition-all duration-200 border-2 border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                >
-                  {t('product.quickOrder') || 'Quick Order'}
-                </button>
               </div>
 
               {/* Trust Indicators */}
@@ -796,25 +787,6 @@ export default function ProductDetailPage() {
           </div>
         )}
       </div>
-
-      {showQuickOrder && (
-        <Suspense fallback={
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[10000]">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6">
-              <div className="animate-pulse text-gray-600 dark:text-gray-400">Loading...</div>
-            </div>
-          </div>
-        }>
-          <QuickOrderModal
-            product={{ 
-              id: product.id, 
-              name: productName || product.name, 
-              price: displayPrice 
-            }}
-            onClose={() => setShowQuickOrder(false)}
-          />
-        </Suspense>
-      )}
 
       {/* SEO Structured Data */}
       {product && (
