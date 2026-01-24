@@ -367,6 +367,8 @@ export default function HomeClient() {
 
   // Preload hero product image and track when it's loaded
   useEffect(() => {
+    setHeroImageLoaded(false) // Reset on hero product change
+    
     if (heroFlagged.length > 0 && heroFlagged[0]?.image) {
       const link = document.createElement('link')
       link.rel = 'preload'
@@ -379,10 +381,19 @@ export default function HomeClient() {
       const img = new window.Image()
       img.src = heroFlagged[0].image
       if (img.complete) {
-        setHeroImageLoaded(true)
+        // Small delay to ensure spinner is visible
+        setTimeout(() => {
+          setHeroImageLoaded(true)
+        }, 200)
       } else {
-        img.onload = () => setHeroImageLoaded(true)
-        img.onerror = () => setHeroImageLoaded(true) // Continue even if image fails
+        img.onload = () => {
+          setTimeout(() => {
+            setHeroImageLoaded(true)
+          }, 200)
+        }
+        img.onerror = () => {
+          setHeroImageLoaded(true) // Continue even if image fails
+        }
       }
     } else {
       setHeroImageLoaded(true) // No hero product, consider it "loaded"
@@ -871,8 +882,8 @@ export default function HomeClient() {
             style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch', position: 'relative', zIndex: 1 }}
           >
             {/* Loading Spinner - Shows until both background and product image are loaded */}
-            {(!isLoaded || !heroImageLoaded) && (
-              <div className="absolute inset-0 flex items-center justify-center z-20 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+            {(isInitialLoad || !isLoaded || !heroImageLoaded) && (
+              <div className="absolute inset-0 flex items-center justify-center z-20 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm transition-opacity duration-300">
                 <div className="flex flex-col items-center gap-4">
                   <div className="relative w-16 h-16">
                     {/* Glowing background circle */}
