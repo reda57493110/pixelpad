@@ -499,14 +499,14 @@ export default function ProductDetailPage() {
             {/* Left: Image Gallery */}
             <div className="relative space-y-3 sm:space-y-4">
               {/* Main Image */}
-              <div className="relative w-full aspect-[4/3] lg:aspect-square bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-none sm:rounded-xl overflow-hidden">
+              <div className="relative w-full aspect-[4/3] lg:aspect-square rounded-none sm:rounded-xl overflow-hidden shadow-lg">
                 {productImages.length > 0 && productImages[selectedImageIndex] ? (
                   <>
                     <Image
                       src={productImages[selectedImageIndex]}
                       alt={`${productName || product.name} - Image ${selectedImageIndex + 1}`}
                       fill
-                      className="object-contain"
+                      className="object-cover"
                       priority
                     />
                     {/* Navigation arrows (only show if more than 1 image) */}

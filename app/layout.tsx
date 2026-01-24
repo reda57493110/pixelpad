@@ -87,11 +87,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         {/* Preload critical resources */}
-        <link rel="preload" href="/images/hero-background.jpg" as="image" fetchPriority="high" />
+        <link rel="preload" href="/images/hero-background-light.jpg" as="image" fetchPriority="high" />
+        <link rel="preload" href="/images/hero-background-dark.jpg" as="image" fetchPriority="high" />
         <link rel="dns-prefetch" href="//fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* Aggressive caching for hero background */}
-        <link rel="prefetch" href="/images/hero-background.jpg" />
         <script
           dangerouslySetInnerHTML={{
             __html: `

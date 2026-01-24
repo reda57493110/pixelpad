@@ -54,62 +54,7 @@
   }
 }
 
-@keyframes slideInUp {
-  0% {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slide-in-from-right {
-  0% {
-    opacity: 0;
-    transform: translateX(100%);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes slide-in-from-left {
-  0% {
-    opacity: 0;
-    transform: translateX(-100%);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes slide-in-from-left-rtl {
-  0% {
-    opacity: 0;
-    transform: translateX(-100%);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes slide-in-from-left {
-  0% {
-    opacity: 0;
-    transform: translateX(-100%);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes slide-in-from-right-rtl {
+@keyframes slideInFromRight {
   from {
     opacity: 0;
     transform: translateX(100%);
@@ -120,124 +65,122 @@
   }
 }
 
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-    opacity: 0;
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(300%);
-    opacity: 0;
-  }
-}
-
-@keyframes glow {
-  0%, 100% {
-    box-shadow: 0 0 5px rgba(59, 130, 246, 0.5);
-  }
-  50% {
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 30px rgba(59, 130, 246, 0.6);
-  }
-}
-
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-@keyframes rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@keyframes loading {
-  0% {
-    transform: translateX(-100%);
-  }
-  50% {
-    transform: translateX(400%);
-  }
-  100% {
-    transform: translateX(-100%);
-  }
-}
-
-@keyframes progress {
-  0% {
-    width: 0%;
-  }
-  50% {
-    width: 70%;
-  }
-  100% {
-    width: 100%;
-  }
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes fadeIn {
+@keyframes slideInFromLeft {
   from {
     opacity: 0;
+    transform: translateX(-100%);
   }
   to {
     opacity: 1;
+    transform: translateX(0);
   }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInFromRight 0.3s ease-out;
+}
+
+.animate-slide-in-left {
+  animation: slideInFromLeft 0.3s ease-out;
+}
+
+/* Smooth transitions */
+.transition-smooth {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #3b82f6, #2563eb);
+  border-radius: 10px;
+  border: 1px solid #f1f5f9;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #2563eb, #1d4ed8);
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #2563eb, #1d4ed8);
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #1d4ed8, #1e40af);
 }
 
 @layer base {
   html {
     font-family: system-ui, sans-serif;
-    /* Improve scroll performance */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Default to instant scroll; enable smooth only when allowed */
     scroll-behavior: auto;
-    /* Ensure html is the ONLY scrollable element - no height constraint */
-    overflow-y: auto;
-    overflow-x: hidden;
+    /* CRITICAL: html must scroll on all devices */
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    height: 100% !important;
+    touch-action: pan-y !important;
+    position: relative !important;
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    /* Smooth scrolling only when users have not asked to reduce motion */
     html {
       scroll-behavior: smooth;
-      scroll-padding-top: 80px; /* Account for fixed header */
+      scroll-padding-top: 80px;
     }
   }
   
   body {
     @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100;
-    /* Prevent body from creating its own scrollbar - let html handle scrolling */
-    overflow-x: hidden;
-    overflow-y: hidden;
-    /* Don't constrain body height - let it grow naturally */
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
     margin: 0;
     padding: 0;
-    /* Enhanced scrolling performance */
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
-    scroll-snap-type: y proximity;
-    /* Hardware acceleration for smooth scrolling */
+    overscroll-behavior-y: auto;
+    scroll-snap-type: none;
     transform: translateZ(0);
     -webkit-transform: translateZ(0);
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     perspective: 1000px;
     -webkit-perspective: 1000px;
+    position: relative !important;
+    height: auto !important;
+    min-height: 100% !important;
+    touch-action: pan-y !important;
   }
 
-  /* Enhanced scrollbar styling - only apply to html element to prevent double scrollbars */
+  @media (min-width: 768px) {
+    body {
+      scroll-snap-type: y proximity;
+      overscroll-behavior-y: contain;
+    }
+  }
+
+  /* Enhanced scrollbar styling */
   :root {
     scrollbar-color: #3b82f6 #e5e7eb;
   }
@@ -246,7 +189,6 @@
     scrollbar-color: #2563eb #111827;
   }
 
-  /* Only style scrollbar on html element, not all elements */
   html::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -283,7 +225,6 @@
     background: linear-gradient(180deg, #1d4ed8, #1e40af);
   }
 
-  /* Hide scrollbar on body and all other elements EXCEPT html to prevent double scrollbars */
   body::-webkit-scrollbar,
   body > *::-webkit-scrollbar,
   *:not(html)::-webkit-scrollbar {
@@ -298,7 +239,6 @@
     scrollbar-width: none !important;
   }
   
-  /* But allow scrollbars for specific components that need them (modals, sidebars) */
   [class*="overflow-y-auto"]::-webkit-scrollbar,
   [class*="overflow-y-scroll"]::-webkit-scrollbar,
   [class*="modal"]::-webkit-scrollbar,
@@ -308,27 +248,25 @@
     display: block !important;
   }
 
-  /* Soft "acid" themed background that stays clean in light mode and deep in dark mode */
-.acid-surface {
-  background-color: #ffffff;
-  background-image: none;
-}
+  .acid-surface {
+    background-color: #ffffff;
+    background-image: none;
+  }
 
-.dark .acid-surface {
-  background-color: #0b1224;
-  background-image: none;
-}
+  .dark .acid-surface {
+    background-color: #0b1224;
+    background-image: none;
+  }
 
-  /* Floating glow overlay for a subtle, premium “thank you” vibe */
   .acid-surface {
     position: relative;
     isolation: isolate;
   }
 
-.acid-surface::before,
-.acid-surface::after {
-  content: none;
-}
+  .acid-surface::before,
+  .acid-surface::after {
+    content: none;
+  }
 
   @keyframes acidDrift {
     0% {
@@ -342,7 +280,6 @@
     }
   }
   
-  /* Optimized smooth theme transitions - only for essential elements */
   html,
   body,
   [class*="bg-"],
@@ -353,7 +290,6 @@
                 border-color 0.25s ease-out;
   }
   
-  /* Respect user's motion preferences */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -364,7 +300,6 @@
     }
   }
   
-  /* Exclude elements that shouldn't transition */
   [class*="animate"],
   [class*="transition-none"],
   svg,
@@ -374,7 +309,6 @@
     transition-property: none !important;
   }
   
-  /* Optimize sticky navbar for smooth scrolling */
   nav[class*="sticky"] {
     transform: translateZ(0);
     backface-visibility: hidden;
@@ -383,48 +317,79 @@
     -webkit-perspective: 1000px;
   }
 
-  /* Smooth scrolling optimizations for all sections */
   section {
     will-change: scroll-position;
     transform: translateZ(0);
     -webkit-transform: translateZ(0);
   }
 
-  /* Smooth transitions for all interactive elements */
   * {
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Enhanced smooth scrolling for main container - but don't create scrollbars */
   main, #__next, [role="main"] {
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
-    overflow-y: visible;
-    overflow-x: hidden;
-  }
-  
-  /* CRITICAL: Ensure ONLY html scrolls - hide scrollbars on everything else */
-  /* Only html should scroll, all other containers should be visible */
-  html {
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow-y: visible !important;
+    overflow-x: hidden !important;
+    touch-action: pan-y !important;
+    position: relative !important;
+    height: auto !important;
   }
   
   body,
   body > div,
-  body > div > div,
-  main,
-  [role="main"] {
+  body > div > div {
     overflow-y: visible !important;
     overflow-x: hidden !important;
+    touch-action: pan-y !important;
+    position: relative !important;
+    height: auto !important;
+  }
+
+  /* MOBILE: Critical scroll fixes */
+  @media (max-width: 767px) {
+    html {
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      height: 100% !important;
+      position: relative !important;
+      touch-action: pan-y !important;
+    }
+    
+    body {
+      overflow-y: visible !important;
+      height: auto !important;
+      min-height: 100% !important;
+      position: relative !important;
+      touch-action: pan-y !important;
+      overscroll-behavior-y: auto !important;
+      scroll-snap-type: none !important;
+    }
+
+    main {
+      overflow-y: visible !important;
+      overflow-x: hidden !important;
+      touch-action: pan-y !important;
+      position: relative !important;
+      height: auto !important;
+    }
+
+    section {
+      position: relative !important;
+      touch-action: pan-y !important;
+    }
+
+    .absolute.inset-0[class*="pointer-events-none"] {
+      touch-action: none !important;
+      pointer-events: none !important;
+    }
   }
   
-  /* Prevent double scrollbars when body is fixed (cart open) */
   body[style*="position: fixed"] {
     overflow: hidden !important;
   }
   
-  /* But allow specific components that need scrolling (modals, sidebars, etc.) */
   [class*="overflow-y-auto"]:not(body):not(html),
   [class*="overflow-y-scroll"]:not(body):not(html),
   [class*="modal"],
@@ -436,7 +401,6 @@
     overflow-y: auto !important;
   }
   
-  /* Optimize scrollable containers for smooth scrolling */
   [class*="overflow-y-auto"] {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
@@ -446,388 +410,59 @@
     scroll-behavior: smooth;
   }
   
-  /* Reduce repaints during scroll */
   [class*="overflow-y-auto"] > * {
     transform: translateZ(0);
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
   }
   
-  /* Ensure hero section always has dark background */
   .hero-section {
     background: linear-gradient(135deg, #1f2937 0%, #1e3a8a 50%, #1f2937 100%) !important;
     color: white !important;
   }
   
-  /* Optimize hero background image loading */
   .hero-background {
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
-    content-visibility: auto;
-    contain-intrinsic-size: 100vw 75vh;
-    /* Aggressive caching and faster rendering */
-    will-change: transform;
-    transform: translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    /* Force GPU acceleration */
-    -webkit-transform: translateZ(0);
-    /* Cache the background image */
-    background-attachment: scroll;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-  }
-  
-  .hero-section h1,
-  .hero-section h2,
-  .hero-section h3,
-  .hero-section p,
-  .hero-section span {
-    color: white !important;
-  }
-  
-  .hero-section .text-gray-300 {
-    color: #d1d5db !important;
-  }
-  
-  .hero-section .text-blue-300 {
-    color: #93c5fd !important;
-  }
-  
-  /* Mobile touch improvements */
-  * {
-    -webkit-tap-highlight-color: transparent;
-  }
-  
-  /* Only apply user-select: none to specific elements, not all buttons and links */
-  .no-select {
-    -webkit-touch-callout: none;
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-  }
-  
-  /* Better touch targets for mobile */
-  @media (max-width: 768px) {
-    button, a {
-      min-height: 44px;
-      min-width: 44px;
-    }
-    
-    
-    /* Ensure proper mobile spacing */
-    .hero-section {
-      padding-top: 2rem;
-      padding-bottom: 2rem;
-    }
-    
-    /* Better mobile text sizing */
-    h1 {
-      font-size: 2.5rem;
-      line-height: 1.1;
-    }
-    
-    /* Mobile countdown timer */
-    .countdown-timer {
-      padding: 1rem;
-      margin: 1rem 0;
-    }
-  }
-  
-  /* Desktop-specific enhancements */
-  @media (min-width: 1024px) {
-    /* Enhanced desktop spacing */
-    .max-w-7xl {
-      max-width: 80rem;
-    }
-    
-    /* Better desktop typography */
-    h1 {
-      font-size: 3.5rem;
-      line-height: 1.1;
-    }
-    
-    h2 {
-      font-size: 2.5rem;
-      line-height: 1.2;
-    }
-    
-    /* Desktop navigation improvements */
-    nav a, nav button {
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    
-    /* Enhanced desktop hover effects */
-    .group:hover {
-      transition: all 0.3s ease;
-    }
-    
-    /* Better desktop product cards */
-    .product-card-desktop {
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    
-    .product-card-desktop:hover {
-      transform: translateY(-8px);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-    }
-  }
-  
-  /* Large desktop (2xl) enhancements */
-  @media (min-width: 1536px) {
-    /* Even larger spacing for ultra-wide screens */
-    .max-w-7xl {
-      max-width: 90rem;
-    }
-    
-    /* Enhanced typography for large screens */
-    h1 {
-      font-size: 4rem;
-    }
-    
-    h2 {
-      font-size: 3rem;
-    }
-    
-    /* Better product grid for large screens */
-    .product-grid-2xl {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-  }
-}
-
-@layer components {
-  .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
   }
 
-  .btn-secondary {
-    @apply bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-lg transition-colors duration-200;
-  }
-
-  /* Language Switcher Animations */
-  .animate-in {
-    animation: slideIn 0.2s ease-out;
-  }
-
-  .slide-in-from-top-2 {
-    animation: slideInFromTop 0.2s ease-out;
-  }
-
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateY(-8px) scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-  }
-
-  @keyframes slideInFromTop {
-    from {
-      opacity: 0;
-      transform: translateY(-8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  /* Flag hover effects */
-  .flag-hover {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .flag-hover:hover {
-    transform: scale(1.1) rotate(2deg);
-    filter: brightness(1.1);
-  }
-}
-
-@layer utilities {
-  /* Custom Dynamic Animations */
-  @keyframes float {
-    0%, 100% { 
-      transform: translate(0px, 0px) scale(1);
-      opacity: 0.15;
-    }
-    25% { 
-      transform: translate(5px, -8px) scale(1.05);
-      opacity: 0.2;
-    }
-    50% { 
-      transform: translate(-3px, -12px) scale(1);
-      opacity: 0.25;
-    }
-    75% { 
-      transform: translate(-5px, -8px) scale(0.95);
-      opacity: 0.2;
-    }
-  }
-  
-  @keyframes glow {
-    0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
-    50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.8); }
-  }
-  
-  @keyframes shimmer {
-    0% { background-position: -200% 0; }
-    100% { background-position: 200% 0; }
-  }
-  
-  @keyframes pulse-glow {
-    0%, 100% { 
-      box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
-      transform: scale(1);
-    }
-    50% { 
-      box-shadow: 0 0 40px rgba(239, 68, 68, 0.8);
-      transform: scale(1.05);
-    }
-  }
-  
-  .animate-float { animation: float 3s ease-in-out infinite; }
-  .animate-glow { animation: glow 2s ease-in-out infinite; }
-  .animate-shimmer { 
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-    background-size: 200% 100%;
-    animation: shimmer 2s infinite;
-  }
-  .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
-  .animate-gradient {
-    background-size: 200% 200%;
-    animation: gradientShift 3s ease infinite;
-  }
-  
-  /* Professional Logo Animations */
-  @keyframes floatGentle {
-    0%, 100% { 
-      transform: translateY(0px) rotate(0deg);
-    }
-    50% { 
-      transform: translateY(-4px) rotate(1deg);
-    }
-  }
-  
-  @keyframes pulseSlow {
-    0%, 100% { 
-      opacity: 0.5;
-      transform: scale(1);
-    }
-    50% { 
-      opacity: 0.7;
-      transform: scale(1.02);
-    }
-  }
-  
-  @keyframes shimmerSlow {
-    0% {
-      transform: translateX(-200%) skewX(-12deg);
-    }
-    100% {
-      transform: translateX(200%) skewX(-12deg);
-    }
-  }
-  
-  .animate-float-gentle {
-    animation: floatGentle 4s ease-in-out infinite;
-  }
-  
-  .animate-pulse-slow {
-    animation: pulseSlow 3s ease-in-out infinite;
-  }
-  
-  .animate-shimmer-slow {
-    animation: shimmerSlow 2s ease-in-out;
-  }
-  
-  /* Logo hover shimmer effect */
-  .group:hover .logo-shimmer {
-    animation: shimmerSlow 1.5s ease-in-out;
-  }
-  
-  /* Footer Logo Dynamic Animation */
-  @keyframes logoFloat {
-    0%, 100% { 
-      transform: translateY(0px) rotate(0deg) scale(1);
-      filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.4));
-    }
-    25% { 
-      transform: translateY(-6px) rotate(2deg) scale(1.03);
-      filter: drop-shadow(0 0 12px rgba(251, 146, 60, 0.5));
-    }
-    50% { 
-      transform: translateY(-10px) rotate(0deg) scale(1.06);
-      filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0.6));
-    }
-    75% { 
-      transform: translateY(-6px) rotate(-2deg) scale(1.03);
-      filter: drop-shadow(0 0 12px rgba(251, 146, 60, 0.5));
-    }
-  }
-  
-  .animate-logo-float {
-    animation: logoFloat 4s ease-in-out infinite;
-  }
-  
-  /* Enhanced Shadows */
-  .shadow-3xl { box-shadow: 0 35px 60px -12px rgba(0, 0, 0, 0.25); }
-  .shadow-red-500\/50 { box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.5); }
-  .shadow-blue-500\/50 { box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.5); }
-  
-  /* RTL (Arabic) Optimizations */
+  /* RTL Support */
   html[dir="rtl"] {
-    /* Prevent white screen flashes */
-    background-color: white;
+    direction: rtl;
   }
-  
+
   html[dir="rtl"].dark {
-    background-color: #111827;
+    direction: rtl;
   }
-  
-  /* Optimize mobile menu for RTL */
+
   html[dir="rtl"] .lg\:hidden {
-    /* Prevent layout shifts */
-    contain: layout style paint;
+    display: none;
   }
-  
-  /* Fix flexbox spacing for RTL */
+
   html[dir="rtl"] .space-x-reverse > * + * {
     margin-right: 0.5rem;
     margin-left: 0;
   }
   
-  /* Optimize animations for RTL */
   html[dir="rtl"] * {
-    /* Reduce animation complexity for better performance */
     will-change: auto;
   }
   
   html[dir="rtl"] .group:hover * {
-    /* Only animate on hover, not on load */
     will-change: transform, opacity;
   }
   
-  /* Prevent white screen on menu open/close */
   html[dir="rtl"] .fixed {
     backface-visibility: hidden;
     perspective: 1000px;
   }
   
-  /* Fix loading overlay positioning in RTL */
   html[dir="rtl"] .fixed[style*="direction: ltr"] {
     left: 0 !important;
     right: 0 !important;
     transform: none !important;
   }
   
-  /* Fix icons in RTL - prevent flipping and ensure correct orientation */
   html[dir="rtl"] [dir="ltr"] svg {
     direction: ltr;
     unicode-bidi: isolate;
@@ -844,24 +479,8 @@
     transform: none !important;
   }
   
-  /* Ensure all icons in LTR containers render correctly */
   [dir="ltr"] svg {
     direction: ltr !important;
     unicode-bidi: isolate;
   }
-
-  /* Scroll snap utilities */
-  .scroll-snap-align-start {
-    scroll-snap-align: start;
-  }
-
-  .scroll-snap-align-center {
-    scroll-snap-align: center;
-  }
-
-  .scroll-snap-align-end {
-    scroll-snap-align: end;
-  }
 }
-
-

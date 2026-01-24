@@ -74,13 +74,13 @@ export default function ProductDetailsModal({ product, onClose }: ProductDetails
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Left: Image */}
             <div className="relative">
-              <div className="relative w-full aspect-square bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-xl overflow-hidden">
+              <div className="relative w-full aspect-square rounded-xl overflow-hidden shadow-lg">
                 {product.image ? (
                   <Image
                     src={product.image}
                     alt={productName}
                     fill
-                    className="object-contain"
+                    className="object-cover"
                     priority
                   />
                 ) : (

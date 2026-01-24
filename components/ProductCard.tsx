@@ -49,7 +49,7 @@ function ProductCard({ product, variant = 'default', hideIds = false }: ProductC
       <div className="relative">
         <Link href={`/products/${product.id}`} prefetch={true}>
           <div 
-            className={`relative w-full ${isHero ? 'h-56 sm:h-96 md:h-80 lg:h-96' : 'h-80'} ${isHero ? 'bg-white dark:bg-gray-900/60' : 'bg-gray-50 dark:bg-gray-900/50'} overflow-hidden`}
+            className={`relative w-full ${isHero ? 'h-80 sm:h-96 md:h-80 lg:h-96' : 'h-80'} overflow-hidden rounded-lg`}
           >
             {product.image ? (
               <Image 

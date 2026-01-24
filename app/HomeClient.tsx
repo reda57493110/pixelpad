@@ -18,7 +18,7 @@ import {
   StarIcon,
   CheckCircleIcon,
 } from '@heroicons/react/24/solid'
-import { CheckCircleIcon as CheckCircleIconOutline } from '@heroicons/react/24/outline'
+import { CheckCircleIcon as CheckCircleIconOutline, ArrowPathIcon } from '@heroicons/react/24/outline'
 import { ArrowRightIcon } from '@heroicons/react/24/outline'
 
 // Custom hook for scroll animations
@@ -337,6 +337,7 @@ export default function HomeClient() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [heroImageLoaded, setHeroImageLoaded] = useState(false)
   const [newArrivalsScroll, setNewArrivalsScroll] = useState(0)
   const [isNewArrivalsPaused, setIsNewArrivalsPaused] = useState(false)
   const [bestSellersScroll, setBestSellersScroll] = useState(0)
@@ -364,7 +365,7 @@ export default function HomeClient() {
     }
   }, [featuredProducts])
 
-  // Preload hero product image
+  // Preload hero product image and track when it's loaded
   useEffect(() => {
     if (heroFlagged.length > 0 && heroFlagged[0]?.image) {
       const link = document.createElement('link')
@@ -373,8 +374,79 @@ export default function HomeClient() {
       link.href = heroFlagged[0].image
       link.setAttribute('fetchpriority', 'high')
       document.head.appendChild(link)
+      
+      // Track when the hero product image is loaded
+      const img = new window.Image()
+      img.src = heroFlagged[0].image
+      if (img.complete) {
+        setHeroImageLoaded(true)
+      } else {
+        img.onload = () => setHeroImageLoaded(true)
+        img.onerror = () => setHeroImageLoaded(true) // Continue even if image fails
+      }
+    } else {
+      setHeroImageLoaded(true) // No hero product, consider it "loaded"
     }
   }, [heroFlagged])
+
+  // Preload hero background images for smooth appearance - optimized
+  useEffect(() => {
+    // Start with loaded state if images are already cached
+    const checkCache = () => {
+      const lightImg = new window.Image()
+      const darkImg = new window.Image()
+      
+      // Check if images are already cached
+      lightImg.src = '/images/hero-background-light.jpg'
+      darkImg.src = '/images/hero-background-dark.jpg'
+      
+      if (lightImg.complete && darkImg.complete) {
+        setIsLoaded(true)
+        return
+      }
+      
+      // Otherwise, wait for both to load
+      let lightLoaded = lightImg.complete
+      let darkLoaded = darkImg.complete
+      
+      const checkComplete = () => {
+        if (lightLoaded && darkLoaded) {
+          setIsLoaded(true)
+        }
+      }
+      
+      if (!lightLoaded) {
+        lightImg.onload = () => {
+          lightLoaded = true
+          checkComplete()
+        }
+        lightImg.onerror = () => {
+          lightLoaded = true // Continue even if one fails
+          checkComplete()
+        }
+      }
+      
+      if (!darkLoaded) {
+        darkImg.onload = () => {
+          darkLoaded = true
+          checkComplete()
+        }
+        darkImg.onerror = () => {
+          darkLoaded = true // Continue even if one fails
+          checkComplete()
+        }
+      }
+      
+      checkComplete()
+    }
+    
+    // Use requestIdleCallback for non-blocking preload
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(checkCache, { timeout: 100 })
+    } else {
+      setTimeout(checkCache, 50)
+    }
+  }, [])
 
   // Load products from database - Optimized with caching
   useEffect(() => {
@@ -752,7 +824,7 @@ export default function HomeClient() {
   }, [searchParams])
 
   return (
-    <div className={`relative acid-surface overflow-x-hidden ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div className={`relative acid-surface overflow-x-hidden overflow-y-visible ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'} style={{ touchAction: 'pan-y', minHeight: '100vh' }}>
       {/* Order Success Message for Guests */}
       {showOrderSuccess && orderId && (
         <div className="fixed top-24 left-1/2 transform -translate-x-1/2 z-[200] bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 border border-green-300 dark:border-green-700 rounded-lg shadow-xl p-4 max-w-md w-full mx-4">
@@ -789,42 +861,94 @@ export default function HomeClient() {
 
       {/* Loading Animation - Removed to show page immediately */}
 
-      {/* Hero Section with Carousel - Single Background */}
-      <div
-        className="relative overflow-x-hidden scroll-snap-align-start w-full hero-background bg-white dark:bg-cover dark:bg-center dark:bg-no-repeat"
-        style={{
-          backgroundImage: 'none',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          willChange: 'transform',
-          // Force immediate rendering
-          transform: 'translateZ(0)',
-          WebkitTransform: 'translateZ(0)',
-        }}
-      >
-        {/* Background image only in dark mode */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat dark:opacity-100 opacity-0 pointer-events-none"
-          style={{
-            backgroundImage: `url('/images/hero-background.jpg')`,
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-primary-500/8 to-primary-600/12 dark:pointer-events-none pointer-events-none opacity-0 dark:opacity-100" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/15 via-transparent to-white/25 dark:to-gray-900/25 pointer-events-none opacity-0 dark:opacity-100" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.15),transparent_60%),radial-gradient(circle_at_70%_70%,rgba(34,197,94,0.12),transparent_60%)] pointer-events-none opacity-0 dark:opacity-100" />
-        <div className="absolute inset-0 bg-gradient-to-t from-primary-500/5 via-transparent to-transparent pointer-events-none opacity-0 dark:opacity-100" />
-        
-        {/* Hero Section - Featured Product */}
+      {/* Hero Section with Background Image Extending Full Width */}
+      <div className="relative overflow-x-hidden w-full" style={{ touchAction: 'pan-y' }}>
+        {/* Hero Section - Featured Product with Background Image */}
         {heroProduct && (
           <section
             ref={heroRef}
-            className="relative pt-20 sm:pt-20 md:pt-24 lg:pt-16 pb-4 sm:pb-0 min-h-[40vh] sm:min-h-[50vh] md:min-h-[60vh] lg:min-h-[75vh]"
+            className="relative min-h-[60vh] sm:min-h-[calc(100vh-200px)]"
+            style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch', position: 'relative', zIndex: 1 }}
           >
-            <div className="relative max-w-7xl mx-auto px-2 sm:px-4 md:px-6 lg:px-8 py-3 sm:py-4 md:py-6 lg:py-8">
-              <div className={`flex ${isRTL ? 'justify-center lg:justify-start' : 'justify-center sm:justify-center lg:justify-end'}`}>
-                <div className="w-full max-w-[320px] sm:max-w-sm md:max-w-md lg:max-w-md">
-                  <ProductCard product={heroProduct} variant="hero" hideIds />
+            {/* Loading Spinner - Shows until both background and product image are loaded */}
+            {(!isLoaded || !heroImageLoaded) && (
+              <div className="absolute inset-0 flex items-center justify-center z-20 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="relative w-16 h-16">
+                    {/* Glowing background circle */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary-500 via-blue-500 to-primary-600 rounded-full blur-xl opacity-50 animate-pulse"></div>
+                    
+                    {/* Spinner container */}
+                    <div className="relative w-16 h-16 rounded-full flex items-center justify-center bg-gradient-to-br from-primary-600 via-blue-600 to-primary-700 shadow-2xl">
+                      {/* Rotating border */}
+                      <div 
+                        className="absolute inset-0 rounded-full"
+                        style={{
+                          background: 'conic-gradient(from 0deg, transparent, rgba(59, 130, 246, 0.8), rgba(37, 99, 235, 0.8), transparent)',
+                          animation: 'spin 1.5s linear infinite',
+                          mask: 'radial-gradient(circle, transparent 70%, black 75%)',
+                          WebkitMask: 'radial-gradient(circle, transparent 70%, black 75%)',
+                        }}
+                      ></div>
+                      
+                      {/* Refresh Icon */}
+                      <ArrowPathIcon 
+                        className="w-8 h-8 text-white relative z-10 animate-spin"
+                        style={{ 
+                          animationDuration: '0.8s',
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 animate-pulse">
+                    Loading...
+                  </p>
+                </div>
+              </div>
+            )}
+            {/* Background Image - Full Width Behind Everything */}
+            <div className="absolute inset-0 w-full h-full pointer-events-none" style={{ touchAction: 'none' }}>
+              {/* Background image for light mode */}
+              <div 
+                className={`absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat transition-opacity duration-300 ease-out ${
+                  isLoaded ? 'opacity-100 dark:opacity-0' : 'opacity-0'
+                }`}
+                style={{
+                  backgroundImage: `url('/images/hero-background-light.jpg')`,
+                  imageRendering: 'auto',
+                  backfaceVisibility: 'hidden',
+                  transform: 'translateZ(0)',
+                }}
+              />
+              {/* Background image for dark mode */}
+              <div 
+                className={`absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat transition-opacity duration-300 ease-out ${
+                  isLoaded ? 'opacity-0 dark:opacity-100' : 'opacity-0'
+                }`}
+                style={{
+                  backgroundImage: `url('/images/hero-background-dark.jpg')`,
+                  imageRendering: 'auto',
+                  backfaceVisibility: 'hidden',
+                  transform: 'translateZ(0)',
+                }}
+              />
+              {/* Subtle overlay for better visual balance */}
+              <div className={`absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-white/10 dark:from-black/20 dark:via-transparent dark:to-gray-900/20 transition-opacity duration-300 ${
+                isLoaded ? 'opacity-100' : 'opacity-0'
+              }`} />
+            </div>
+            
+            {/* Content Container */}
+            <div className="relative z-10 min-h-[60vh] lg:min-h-[75vh] pt-28 sm:pt-20 md:pt-24 lg:pt-28">
+              <div className={`grid grid-cols-1 lg:grid-cols-2 gap-0 items-stretch ${isRTL ? 'rtl' : 'ltr'}`}>
+                {/* Left Side - Empty/Spacer (or can add content here) */}
+                <div className={`hidden lg:block ${isRTL ? 'lg:order-2' : 'lg:order-1'}`}></div>
+                
+                {/* Product Card Section - Right Side */}
+                <div className={`flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-12 ${isRTL ? 'lg:order-1' : 'lg:order-2'}`}>
+                  <div className="w-full max-w-[280px] sm:max-w-[320px] md:max-w-sm lg:max-w-md">
+                    <ProductCard product={heroProduct} variant="hero" hideIds />
+                  </div>
                 </div>
               </div>
             </div>
@@ -876,19 +1000,21 @@ export default function HomeClient() {
                         <div className={`grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-2.5 md:gap-3 lg:gap-4 items-center ${isRTL ? 'rtl' : 'ltr'}`}>
                             {/* Product Image */}
                             <div className="relative">
-                              <div className="aspect-square bg-gray-50 dark:bg-gray-800 rounded-md sm:rounded-lg lg:rounded-xl p-2 sm:p-2.5 md:p-3 lg:p-3 flex items-center justify-center relative overflow-hidden">
+                              <div className="aspect-square rounded-md sm:rounded-lg lg:rounded-xl overflow-hidden shadow-lg">
                                 {product.image ? (
                                   <Image
                                     src={product.image}
                                     alt={displayName}
                                     fill
-                                    className="object-contain rounded-xl"
+                                    className="object-cover"
                                     priority
                                     loading="eager"
                                     fetchPriority="high"
                                   />
                                 ) : (
-                                  <div className="text-8xl">💻</div>
+                                  <div className="w-full h-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                    <div className="text-8xl">💻</div>
+                                  </div>
                                 )}
                               </div>
                               
