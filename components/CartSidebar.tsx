@@ -139,9 +139,7 @@ export default function CartSidebar() {
 
         {/* Cart Items - Scrollable */}
         <div
-          className={`flex-1 min-h-0 overflow-y-auto px-2 sm:px-4 pt-4 sm:pt-5 ${
-            items.length > 0 ? 'pb-28 sm:pb-32' : 'pb-24 sm:pb-28'
-          }`}
+          className="flex-1 min-h-0 overflow-y-auto px-2 sm:px-4 pt-4 sm:pt-5 pb-4"
         >
           {items.length === 0 ? (
             <div className="flex flex-col items-center text-center py-8 sm:py-12">
@@ -234,7 +232,7 @@ export default function CartSidebar() {
         </div>
 
         {/* Footer - Summary & Checkout */}
-        <div className="mt-auto sticky bottom-0 border-t border-gray-200 dark:border-gray-700 p-2 sm:p-4 space-y-2 sm:space-y-3 flex-shrink-0 bg-white dark:bg-gray-800">
+        <div className="mt-auto border-t border-gray-200 dark:border-gray-700 p-2 sm:p-4 space-y-2 sm:space-y-3 flex-shrink-0 bg-white dark:bg-gray-800">
           {items.length > 0 ? (
             <>
               <div className="flex items-center justify-between">
