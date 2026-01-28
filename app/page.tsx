@@ -915,13 +915,13 @@ function HomePageContent() {
             {/* Content Container */}
             <div className="relative z-10 min-h-[60vh] lg:min-h-[75vh] pt-28 sm:pt-20 md:pt-24 lg:pt-28">
               <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-                <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 items-stretch ${isRTL ? 'rtl' : 'ltr'}`}>
+                <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-12 items-stretch ${isRTL ? 'rtl' : 'ltr'}`}>
                   {heroProductsToShow.map((product) => (
                     <div
                       key={product.id}
-                      className="flex items-center justify-center"
+                      className="flex items-stretch justify-center"
                     >
-                      <div className="w-full max-w-[280px] sm:max-w-[320px] md:max-w-sm lg:max-w-md">
+                      <div className="w-full max-w-[280px] sm:max-w-[320px] md:max-w-sm lg:w-full lg:max-w-none">
                         <ProductCard product={product} variant="hero" hideIds />
                       </div>
                     </div>
