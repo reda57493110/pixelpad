@@ -49,8 +49,8 @@ export default function HeroLoadingSpinner({ isLoading }: HeroLoadingSpinnerProp
       {/* Backdrop blur effect */}
       <div className="absolute inset-0 backdrop-blur-sm" />
       
-      {/* Subtle gradient overlay */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-50/50 via-transparent to-blue-50/50 dark:from-primary-900/20 dark:via-transparent dark:to-blue-900/20" />
+      {/* Subtle gradient overlay - removed in dark mode to prevent white streaks */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary-50/50 via-transparent to-blue-50/50 dark:hidden" />
       
       {/* Main content - centered in viewport */}
       <div className="relative z-10 flex flex-col items-center justify-center gap-6" style={{ 
@@ -84,14 +84,6 @@ export default function HeroLoadingSpinner({ isLoading }: HeroLoadingSpinnerProp
               priority
             />
           </div>
-          
-          {/* Shimmer effect */}
-          <div 
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-lg animate-shimmer"
-            style={{
-              transform: 'skewX(-20deg)',
-            }}
-          />
         </div>
         
         {/* Loading text */}
