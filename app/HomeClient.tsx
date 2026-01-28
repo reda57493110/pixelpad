@@ -912,7 +912,20 @@ export default function HomeClient() {
             {/* Content Container */}
             <div className="relative z-10 min-h-[60vh] lg:min-h-[75vh] pt-28 sm:pt-20 md:pt-24 lg:pt-28">
               <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
-                <div className={`grid grid-cols-3 gap-2 sm:gap-4 md:gap-6 lg:gap-12 items-stretch ${isRTL ? 'rtl' : 'ltr'}`}>
+                {/* Mobile: Horizontal scrollable flex container */}
+                <div className={`flex overflow-x-auto gap-3 pb-2 sm:hidden ${isRTL ? 'rtl' : 'ltr'}`} style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}>
+                  {heroProductsToShow.map((product) => (
+                    <div
+                      key={product.id}
+                      className="flex-shrink-0 w-[280px]"
+                      style={{ scrollSnapAlign: 'start' }}
+                    >
+                      <ProductCard product={product} variant="hero" hideIds />
+                    </div>
+                  ))}
+                </div>
+                {/* Tablet and Desktop: Grid layout */}
+                <div className={`hidden sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-12 items-stretch ${isRTL ? 'rtl' : 'ltr'}`}>
                   {heroProductsToShow.map((product) => (
                     <div
                       key={product.id}
