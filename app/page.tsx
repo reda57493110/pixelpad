@@ -1847,7 +1847,7 @@ export default function HomePage() {
     <Suspense fallback={
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="text-center py-12">
-          <p className="text-gray-600 dark:text-gray-400">{t('common.loading') || 'Loading...'}</p>
+          <p className="text-gray-600 dark:text-gray-400">{t('common.loading') !== 'common.loading' ? t('common.loading') : 'Loading...'}</p>
         </div>
       </div>
     }>

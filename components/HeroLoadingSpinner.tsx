@@ -34,7 +34,6 @@ export default function HeroLoadingSpinner({ isLoading }: HeroLoadingSpinnerProp
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
       style={{
-        background: 'rgba(255, 255, 255, 0.95)',
         position: 'fixed',
         top: 0,
         left: 0,
@@ -44,8 +43,8 @@ export default function HeroLoadingSpinner({ isLoading }: HeroLoadingSpinnerProp
         height: '100vh',
       }}
     >
-      {/* Dark mode background */}
-      <div className="absolute inset-0 bg-white dark:bg-gray-900 transition-colors duration-300" />
+      {/* Background with dark mode support */}
+      <div className="absolute inset-0 bg-white/95 dark:bg-gray-900/95 transition-colors duration-300" />
       
       {/* Backdrop blur effect */}
       <div className="absolute inset-0 backdrop-blur-sm" />
