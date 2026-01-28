@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useCart } from '@/contexts/CartContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import {
   XMarkIcon,
   TrashIcon,
@@ -34,51 +35,43 @@ export default function CartSidebar() {
       const scrollY = window.scrollY
       setScrollTop(scrollY)
       
-      // Prevent body scroll when cart is open
+      // Prevent body scroll when cart is open - use padding instead of fixed position to avoid top cut
+      document.documentElement.style.scrollBehavior = 'auto'
       document.body.style.overflow = 'hidden'
-      document.body.style.position = 'fixed'
-      document.body.style.top = `-${scrollY}px`
-      document.body.style.width = '100%'
-      document.body.style.left = '0'
-      document.body.style.right = '0'
+      document.body.style.paddingRight = `${window.innerWidth - document.documentElement.clientWidth}px`
     } else if (typeof window !== 'undefined') {
       // Restore body scroll when cart is closed
-      const scrollY = document.body.style.top
+      document.documentElement.style.scrollBehavior = ''
       document.body.style.overflow = ''
-      document.body.style.position = ''
-      document.body.style.top = ''
-      document.body.style.width = ''
-      document.body.style.left = ''
-      document.body.style.right = ''
+      document.body.style.paddingRight = ''
       
       // Restore scroll position
-      if (scrollY) {
-        const scrollPosition = parseInt(scrollY.replace('px', '') || '0') * -1
-        window.scrollTo(0, scrollPosition)
+      if (scrollTop > 0) {
+        window.scrollTo(0, scrollTop)
       }
     }
     
     return () => {
       // Cleanup: restore body scroll on unmount
       if (typeof window !== 'undefined') {
-        const scrollY = document.body.style.top
+        document.documentElement.style.scrollBehavior = ''
         document.body.style.overflow = ''
-        document.body.style.position = ''
-        document.body.style.top = ''
-        document.body.style.width = ''
-        document.body.style.left = ''
-        document.body.style.right = ''
-        if (scrollY) {
-          const scrollPosition = parseInt(scrollY.replace('px', '') || '0') * -1
-          window.scrollTo(0, scrollPosition)
+        document.body.style.paddingRight = ''
+        if (scrollTop > 0) {
+          window.scrollTo(0, scrollTop)
         }
       }
     }
-  }, [isOpen, mounted])
+  }, [isOpen, mounted, scrollTop])
+
+
 
   // Fixed Sidebar - Positioned at current viewport position when opened, then scrolls with page
   // Cart visibility is controlled by isOpen state (auto-opens when items are added via CartContext)
-  return (
+  // Use portal to ensure cart is positioned relative to viewport, not parent container
+  if (!mounted) return null
+
+  const cartContent = (
     <>
       {/* Backdrop overlay - only shown when cart is open */}
       {isOpen && (
@@ -97,21 +90,29 @@ export default function CartSidebar() {
         />
       )}
       <div
-        className={`fixed ${isRTL ? 'left-0' : 'right-0'} w-[85%] max-w-[320px] sm:w-full sm:max-w-md bg-white dark:bg-gray-800 shadow-2xl z-[10000] flex flex-col transition-transform duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : (isRTL ? '-translate-x-full' : 'translate-x-full')
+        data-cart-sidebar
+        className={`${isRTL ? 'left-0' : 'right-0'} w-[85%] max-w-[320px] sm:w-full sm:max-w-md bg-white dark:bg-gray-800 shadow-2xl z-[10000] flex flex-col transition-[transform,opacity] duration-300 ease-in-out ${
+          isOpen ? 'translate-x-0 opacity-100' : (isRTL ? '-translate-x-full opacity-0' : 'translate-x-full opacity-0')
         }`}
         style={{
-          top: isOpen ? `${scrollTop}px` : (isRTL ? '-100%' : '100%'),
-          height: '100vh',
-          maxHeight: '100vh',
+          position: 'fixed',
+          top: 0,
+          bottom: 0,
+          left: isRTL ? 0 : 'auto',
+          right: isRTL ? 'auto' : 0,
+          // Keep the drawer always fully inside the viewport
+          height: '100dvh',
+          minHeight: '100vh',
+          maxHeight: '100dvh',
           pointerEvents: isOpen ? 'auto' : 'none',
-          visibility: isOpen ? 'visible' : 'hidden',
-          display: isOpen ? 'flex' : 'none'
-        }}
+          display: 'flex',
+          margin: 0,
+          padding: 0
+        } as React.CSSProperties}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-3 sm:px-6 py-2 sm:py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0 bg-white dark:bg-gray-800 sticky top-0 z-10">
+        <div className="px-3 sm:px-6 py-2 sm:py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between flex-shrink-0 bg-white dark:bg-gray-800 z-10">
           <div className="flex items-center gap-1.5 sm:gap-3">
             <ShoppingBagIcon className="h-4 w-4 sm:h-6 sm:w-6 text-primary-600 dark:text-primary-400" />
             <h2 className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white truncate">
@@ -137,9 +138,13 @@ export default function CartSidebar() {
         </div>
 
         {/* Cart Items - Scrollable */}
-        <div className="flex-1 overflow-y-auto p-2 sm:p-4">
+        <div
+          className={`flex-1 min-h-0 overflow-y-auto px-2 sm:px-4 pt-4 sm:pt-5 ${
+            items.length > 0 ? 'pb-28 sm:pb-32' : 'pb-24 sm:pb-28'
+          }`}
+        >
           {items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center py-6 sm:py-12">
+            <div className="flex flex-col items-center text-center py-8 sm:py-12">
               <ShoppingBagIcon className="h-10 w-10 sm:h-16 sm:w-16 text-gray-300 dark:text-gray-600 mb-2 sm:mb-4" />
               <h3 className="text-sm sm:text-lg font-semibold text-gray-900 dark:text-white mb-1 sm:mb-2">
                 {t('cart.empty') || 'Your cart is empty'}
@@ -229,41 +234,69 @@ export default function CartSidebar() {
         </div>
 
         {/* Footer - Summary & Checkout */}
-        {items.length > 0 && (
-          <div className="border-t border-gray-200 dark:border-gray-700 p-2 sm:p-4 space-y-2 sm:space-y-3 flex-shrink-0 bg-white dark:bg-gray-800">
-            <div className="flex items-center justify-between">
-              <span className="text-xs sm:text-base font-semibold text-gray-900 dark:text-white">
-                {t('cart.subtotal') || 'Subtotal'}
-              </span>
-              <span className="text-sm sm:text-lg font-bold text-primary-600 dark:text-primary-400">
-                {formatCurrency(total)}
-              </span>
+        <div className="mt-auto sticky bottom-0 border-t border-gray-200 dark:border-gray-700 p-2 sm:p-4 space-y-2 sm:space-y-3 flex-shrink-0 bg-white dark:bg-gray-800">
+          {items.length > 0 ? (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-xs sm:text-base font-semibold text-gray-900 dark:text-white">
+                  {t('cart.subtotal') || 'Subtotal'}
+                </span>
+                <span className="text-sm sm:text-lg font-bold text-primary-600 dark:text-primary-400">
+                  {formatCurrency(total)}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  router.push('/checkout?step=auth')
+                  closeCart()
+                }}
+                className="w-full bg-gradient-to-r from-primary-600 to-blue-600 hover:from-primary-700 hover:to-blue-700 text-white py-2.5 sm:py-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 touch-manipulation active:scale-95"
+                type="button"
+              >
+                <span>{t('cart.checkout') || 'Proceed to Checkout'}</span>
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  closeCart()
+                }}
+                className="w-full py-2 sm:py-2 text-[10px] sm:text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors touch-manipulation active:scale-95"
+                type="button"
+              >
+                {t('cart.continueShopping') || 'Continue Shopping'}
+              </button>
+            </>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  closeCart()
+                }}
+                className="w-full py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white transition-colors"
+                type="button"
+              >
+                {t('cart.continueShopping') || 'Continue Shopping'}
+              </button>
+              <button
+                onClick={() => {
+                  router.push('/products')
+                  closeCart()
+                }}
+                className="w-full py-2.5 rounded-xl font-bold text-xs sm:text-sm bg-gradient-to-r from-primary-600 to-blue-600 hover:from-primary-700 hover:to-blue-700 text-white transition-all duration-300 shadow-lg hover:shadow-xl"
+                type="button"
+              >
+                {t('nav.products') || t('nav.shop') || 'Products'}
+              </button>
             </div>
-            <button
-              onClick={() => {
-                router.push('/checkout?step=auth')
-                closeCart()
-              }}
-              className="w-full bg-gradient-to-r from-primary-600 to-blue-600 hover:from-primary-700 hover:to-blue-700 text-white py-2.5 sm:py-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 touch-manipulation active:scale-95"
-              type="button"
-            >
-              <span>{t('cart.checkout') || 'Proceed to Checkout'}</span>
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                closeCart()
-              }}
-              className="w-full py-2 sm:py-2 text-[10px] sm:text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors touch-manipulation active:scale-95"
-              type="button"
-            >
-              {t('cart.continueShopping') || 'Continue Shopping'}
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-
     </>
   )
+
+  // Render cart using portal to document.body to ensure proper positioning
+  const portalResult = typeof window !== 'undefined' ? createPortal(cartContent, document.body) : null
+  return portalResult
 }
 
