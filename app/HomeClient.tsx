@@ -547,6 +547,7 @@ export default function HomeClient() {
 
   // Hero: ONLY use products explicitly flagged with showInHero
   const heroProduct = heroFlagged.length > 0 ? heroFlagged[0] : null
+  const heroProductsToShow = heroFlagged.slice(0, 3)
   
   // Auto-play functionality
   useEffect(() => {
@@ -869,8 +870,8 @@ export default function HomeClient() {
 
       {/* Hero Section with Background Image Extending Full Width */}
       <div className="relative overflow-x-hidden w-full" style={{ touchAction: 'pan-y' }}>
-        {/* Hero Section - Featured Product with Background Image */}
-        {heroProduct && (
+        {/* Hero Section - Featured Products with Background Image */}
+        {heroProductsToShow.length > 0 && (
           <section
             ref={heroRef}
             className="relative min-h-[60vh] sm:min-h-[calc(100vh-200px)]"
@@ -910,15 +911,18 @@ export default function HomeClient() {
             
             {/* Content Container */}
             <div className="relative z-10 min-h-[60vh] lg:min-h-[75vh] pt-28 sm:pt-20 md:pt-24 lg:pt-28">
-              <div className={`grid grid-cols-1 lg:grid-cols-2 gap-0 items-stretch ${isRTL ? 'rtl' : 'ltr'}`}>
-                {/* Left Side - Empty/Spacer (or can add content here) */}
-                <div className={`hidden lg:block ${isRTL ? 'lg:order-2' : 'lg:order-1'}`}></div>
-                
-                {/* Product Card Section - Right Side */}
-                <div className={`flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-12 ${isRTL ? 'lg:order-1' : 'lg:order-2'}`}>
-                  <div className="w-full max-w-[280px] sm:max-w-[320px] md:max-w-sm lg:max-w-md">
-                    <ProductCard product={heroProduct} variant="hero" hideIds />
-                  </div>
+              <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+                <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 items-stretch ${isRTL ? 'rtl' : 'ltr'}`}>
+                  {heroProductsToShow.map((product) => (
+                    <div
+                      key={product.id}
+                      className="flex items-center justify-center"
+                    >
+                      <div className="w-full max-w-[280px] sm:max-w-[320px] md:max-w-sm lg:max-w-md">
+                        <ProductCard product={product} variant="hero" hideIds />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
