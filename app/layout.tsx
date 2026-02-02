@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { cookies } from 'next/headers'
 import './globals.css'
 import ConditionalLayout from '@/components/ConditionalLayout'
 import { ThemeProvider } from '@/contexts/ThemeContext'
@@ -77,11 +78,15 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const cookieStore = await cookies()
+  const langCookie = cookieStore.get('language')?.value
+  const initialLanguage = langCookie === 'en' || langCookie === 'fr' || langCookie === 'ar' ? langCookie : undefined
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -111,7 +116,7 @@ export default function RootLayout({
           <GoogleAnalytics />
         </Suspense>
         <ThemeProvider>
-          <LanguageProvider>
+          <LanguageProvider initialLanguage={initialLanguage}>
             <AuthProvider>
               <CartProvider>
                 <NavigationLoadingProvider>
@@ -123,6 +128,23 @@ export default function RootLayout({
             </AuthProvider>
           </LanguageProvider>
         </ThemeProvider>
+        {/* Portal root for cart so it renders at top-right of viewport, outside layout flow */}
+        <div
+          id="cart-portal-root"
+          style={{
+            position: 'fixed',
+            top: 0,
+            right: 0,
+            left: 'auto',
+            bottom: 'auto',
+            width: 0,
+            height: 0,
+            overflow: 'visible',
+            zIndex: 99999,
+            pointerEvents: 'none',
+          }}
+          aria-hidden="true"
+        />
       </body>
     </html>
   )

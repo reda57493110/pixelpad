@@ -35,6 +35,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { fr as frTranslations } from '@/translations/fr'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCart } from '@/contexts/CartContext'
 import { useNavigationLoading } from '@/contexts/NavigationLoadingContext'
@@ -164,12 +165,25 @@ export default function NavBar() {
     setLanguage(next)
   }
 
+  // Use default (fr) labels until mounted so server and client match (avoids hydration mismatch)
+  const homeLabel = mounted ? translate('nav.home') : (frTranslations['nav.home'] ?? 'Accueil')
+  const shopLabel = mounted ? (translate('nav.shop') || translate('nav.products') || 'Shop') : (frTranslations['nav.shop'] ?? frTranslations['nav.products'] ?? 'Boutique')
+  const aboutLabel = mounted ? translate('nav.about') : (frTranslations['nav.about'] ?? 'À propos')
+  const contactsLabel = mounted ? translate('nav.contacts') : (frTranslations['nav.contacts'] ?? 'Contacts')
+  const servicesLabel = mounted ? (translate('nav.services') || 'Our services') : (frTranslations['nav.services'] ?? 'Nos services')
+  // #region agent log
+  if (typeof window !== 'undefined') {
+    fetch('http://127.0.0.1:7242/ingest/9b81b5dc-55fb-4298-9644-d969223c4b35',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NavBar.tsx:desktopLinks',message:'NavBar computing nav label (client)',data:{language,homeLabel,mounted},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3',runId:'post-fix'})}).catch(()=>{});
+  } else {
+    fetch('http://127.0.0.1:7242/ingest/9b81b5dc-55fb-4298-9644-d969223c4b35',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NavBar.tsx:desktopLinks',message:'NavBar computing nav label (server)',data:{language,homeLabel},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3',runId:'post-fix'})}).catch(()=>{});
+  }
+  // #endregion
   const desktopLinks = [
-    { href: '/', label: translate('nav.home'), icon: HomeIcon },
-    { href: '/products', label: translate('nav.shop') || translate('nav.products') || 'Shop', icon: ShoppingBagIcon },
-    { href: '/more/about', label: translate('nav.about'), icon: HeartIcon },
-    { href: '/contacts', label: translate('nav.contacts'), icon: EnvelopeIcon },
-    { href: '/services', label: translate('nav.services') || 'Our services', icon: WrenchScrewdriverIcon, accent: true }
+    { href: '/', label: homeLabel, icon: HomeIcon },
+    { href: '/products', label: shopLabel, icon: ShoppingBagIcon },
+    { href: '/more/about', label: aboutLabel, icon: HeartIcon },
+    { href: '/contacts', label: contactsLabel, icon: EnvelopeIcon },
+    { href: '/services', label: servicesLabel, icon: WrenchScrewdriverIcon, accent: true }
   ]
   
   const userMenuRef = useRef<HTMLDivElement>(null)

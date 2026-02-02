@@ -38,9 +38,26 @@ const formatCurrency = (amount: number, language: Language): string => {
   }
 }
 
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  // Initialize with French as default (will be overridden by detection or saved preference)
-  const [language, setLanguage] = useState<Language>('fr')
+const VALID_LANGUAGES: Language[] = ['en', 'fr', 'ar']
+
+function setLanguageCookie(lang: Language) {
+  if (typeof document === 'undefined') return
+  document.cookie = `language=${lang}; path=/; max-age=31536000; SameSite=Lax`
+}
+
+export function LanguageProvider({ children, initialLanguage }: { children: React.ReactNode; initialLanguage?: string }) {
+  // Use server-provided cookie so server and client match on first paint (avoids hydration mismatch)
+  const [language, setLanguage] = useState<Language>(
+    initialLanguage && VALID_LANGUAGES.includes(initialLanguage as Language) ? (initialLanguage as Language) : 'fr'
+  )
+
+  // #region agent log
+  if (typeof window !== 'undefined') {
+    fetch('http://127.0.0.1:7242/ingest/9b81b5dc-55fb-4298-9644-d969223c4b35',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LanguageContext.tsx:initial-render',message:'LanguageProvider render',data:{language,initialLanguage,hasWindow:true},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1',runId:'post-fix'})}).catch(()=>{});
+  } else {
+    fetch('http://127.0.0.1:7242/ingest/9b81b5dc-55fb-4298-9644-d969223c4b35',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LanguageContext.tsx:initial-render',message:'LanguageProvider render',data:{language,initialLanguage,hasWindow:false},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1',runId:'post-fix'})}).catch(()=>{});
+  }
+  // #endregion
 
   // Auto-detect browser language preference
   const detectBrowserLanguage = (): Language => {
@@ -82,34 +99,38 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   const handleSetLanguage = (newLanguage: Language) => {
     setLanguage(newLanguage)
-    // Save user's manual preference to localStorage
-    // This marks it as a user preference, so browser language changes won't override it
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('language', newLanguage)
+        setLanguageCookie(newLanguage)
       } catch (e) {
-        // Ignore localStorage errors
+        // Ignore storage errors
       }
     }
   }
 
   useEffect(() => {
-    // Only run in browser environment
     if (typeof window === 'undefined') return
-    
-    // Check for saved language preference first (user manually selected)
+    // When server sent initialLanguage (cookie), state already matches; don't overwrite from localStorage
     const savedLanguage = localStorage.getItem('language') as Language
-    if (savedLanguage && ['en', 'fr', 'ar'].includes(savedLanguage)) {
-      setLanguage(savedLanguage)
+    if (savedLanguage && VALID_LANGUAGES.includes(savedLanguage)) {
+      if (!initialLanguage) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/9b81b5dc-55fb-4298-9644-d969223c4b35',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LanguageContext.tsx:useEffect',message:'Setting language from localStorage',data:{savedLanguage},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4',runId:'post-fix'})}).catch(()=>{});
+        // #endregion
+        setLanguage(savedLanguage)
+        setLanguageCookie(savedLanguage)
+      }
       return
     }
-    
-    // No saved preference - auto-detect from browser
-    const detectedLanguage = detectBrowserLanguage()
-    setLanguage(detectedLanguage)
-    // Don't save to localStorage - keep it as auto-detected
-    // so it can continue to update with browser language changes
-  }, [])
+    if (!initialLanguage) {
+      const detectedLanguage = detectBrowserLanguage()
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/9b81b5dc-55fb-4298-9644-d969223c4b35',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LanguageContext.tsx:useEffect',message:'Setting language from detectBrowserLanguage',data:{detectedLanguage},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4',runId:'post-fix'})}).catch(()=>{});
+      // #endregion
+      setLanguage(detectedLanguage)
+    }
+  }, [initialLanguage])
 
   useEffect(() => {
     // Apply language to document

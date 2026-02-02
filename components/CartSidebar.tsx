@@ -71,12 +71,33 @@ export default function CartSidebar() {
   // Use portal to ensure cart is positioned relative to viewport, not parent container
   if (!mounted) return null
 
+  // Wrapper fixed to viewport so cart is always top-right regardless of layout/scroll
   const cartContent = (
-    <>
+    <div
+      aria-hidden={!isOpen}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100dvh',
+        pointerEvents: 'none',
+        zIndex: 9998
+      } as React.CSSProperties}
+    >
       {/* Backdrop overlay - only shown when cart is open */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-[9999] transition-opacity duration-300"
+          className="bg-black/50 transition-opacity duration-300"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            pointerEvents: 'auto'
+          } as React.CSSProperties}
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
@@ -91,23 +112,23 @@ export default function CartSidebar() {
       )}
       <div
         data-cart-sidebar
-        className={`${isRTL ? 'left-0' : 'right-0'} w-[85%] max-w-[320px] sm:w-full sm:max-w-md bg-white dark:bg-gray-800 shadow-2xl z-[10000] flex flex-col transition-[transform,opacity] duration-300 ease-in-out ${
+        className={`w-[85%] max-w-[320px] sm:w-full sm:max-w-md bg-white dark:bg-gray-800 shadow-2xl flex flex-col transition-[transform,opacity] duration-300 ease-in-out ${
           isOpen ? 'translate-x-0 opacity-100' : (isRTL ? '-translate-x-full opacity-0' : 'translate-x-full opacity-0')
         }`}
         style={{
           position: 'fixed',
           top: 0,
           bottom: 0,
-          left: isRTL ? 0 : 'auto',
-          right: isRTL ? 'auto' : 0,
-          // Keep the drawer always fully inside the viewport
+          left: isRTL ? 0 : undefined,
+          right: isRTL ? undefined : 0,
           height: '100dvh',
           minHeight: '100vh',
           maxHeight: '100dvh',
           pointerEvents: isOpen ? 'auto' : 'none',
           display: 'flex',
           margin: 0,
-          padding: 0
+          padding: 0,
+          zIndex: 10000
         } as React.CSSProperties}
         onClick={(e) => e.stopPropagation()}
       >
@@ -290,11 +311,14 @@ export default function CartSidebar() {
           )}
         </div>
       </div>
-    </>
+    </div>
   )
 
-  // Render cart using portal to document.body to ensure proper positioning
-  const portalResult = typeof window !== 'undefined' ? createPortal(cartContent, document.body) : null
-  return portalResult
+  // Portal into #cart-portal-root (last child of body, fixed top-right) so cart is never under footer
+  const portalTarget =
+    typeof document !== 'undefined'
+      ? document.getElementById('cart-portal-root') || document.body
+      : null
+  return portalTarget ? createPortal(cartContent, portalTarget) : null
 }
 
