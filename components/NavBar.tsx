@@ -171,13 +171,6 @@ export default function NavBar() {
   const aboutLabel = mounted ? translate('nav.about') : (frTranslations['nav.about'] ?? 'À propos')
   const contactsLabel = mounted ? translate('nav.contacts') : (frTranslations['nav.contacts'] ?? 'Contacts')
   const servicesLabel = mounted ? (translate('nav.services') || 'Our services') : (frTranslations['nav.services'] ?? 'Nos services')
-  // #region agent log
-  if (typeof window !== 'undefined') {
-    fetch('http://127.0.0.1:7242/ingest/9b81b5dc-55fb-4298-9644-d969223c4b35',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NavBar.tsx:desktopLinks',message:'NavBar computing nav label (client)',data:{language,homeLabel,mounted},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3',runId:'post-fix'})}).catch(()=>{});
-  } else {
-    fetch('http://127.0.0.1:7242/ingest/9b81b5dc-55fb-4298-9644-d969223c4b35',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'NavBar.tsx:desktopLinks',message:'NavBar computing nav label (server)',data:{language,homeLabel},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3',runId:'post-fix'})}).catch(()=>{});
-  }
-  // #endregion
   const desktopLinks = [
     { href: '/', label: homeLabel, icon: HomeIcon },
     { href: '/products', label: shopLabel, icon: ShoppingBagIcon },

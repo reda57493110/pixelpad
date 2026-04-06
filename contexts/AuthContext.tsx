@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { migrateGuestOrders } from '@/lib/orders'
+import { parseJsonSafe, responseJsonSafe } from '@/lib/safe-json'
 
 interface User {
   id: string
@@ -54,26 +55,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             
             if (response.ok) {
               // Get fresh user data from server (includes permissions)
-              const serverUserData = await response.json()
-              const savedUserData = JSON.parse(savedUser)
-              
-              // Merge server data with saved data, prioritizing server data
-              const userData: User = {
-                id: serverUserData._id?.toString() || serverUserData.id || savedUserData.id || Date.now().toString(),
-                name: serverUserData.name || savedUserData.name || '',
-                email: serverUserData.email || savedUserData.email || '',
-                avatar: serverUserData.avatar || savedUserData.avatar,
-                orders: serverUserData.orders || savedUserData.orders || 0,
-                role: serverUserData.role || savedUserData.role || 'customer',
-                type: serverUserData.type || savedUserData.type || 'customer',
-                permissions: serverUserData.permissions || savedUserData.permissions || [],
-                createdAt: serverUserData.createdAt || savedUserData.createdAt || new Date().toISOString()
+              const serverUserData = await responseJsonSafe<Record<string, unknown>>(response)
+              const savedUserData = parseJsonSafe<Record<string, unknown>>(savedUser)
+              if (!serverUserData || !savedUserData) {
+                localStorage.removeItem('pixelpad_token')
+                localStorage.removeItem('pixelpad_user')
+              } else {
+                const su = serverUserData as Record<string, unknown> & { _id?: { toString?: () => string } }
+                const saved = savedUserData as Record<string, unknown>
+                // Merge server data with saved data, prioritizing server data
+                const userData: User = {
+                  id: su._id?.toString?.() || String(su.id ?? saved.id ?? Date.now()),
+                  name: (su.name as string) || (saved.name as string) || '',
+                  email: (su.email as string) || (saved.email as string) || '',
+                  avatar: (su.avatar as string | undefined) || (saved.avatar as string | undefined),
+                  orders: (su.orders as number) || (saved.orders as number) || 0,
+                  role: (su.role as User['role']) || (saved.role as User['role']) || 'customer',
+                  type: (su.type as User['type']) || (saved.type as User['type']) || 'customer',
+                  permissions: (su.permissions as string[]) || (saved.permissions as string[]) || [],
+                  createdAt: (su.createdAt as string) || (saved.createdAt as string) || new Date().toISOString()
+                }
+
+                setToken(savedToken)
+                setUser(userData)
+                setIsLoggedIn(true)
+                try { migrateGuestOrders(userData.email) } catch {}
               }
-              
-              setToken(savedToken)
-              setUser(userData)
-              setIsLoggedIn(true)
-              try { migrateGuestOrders(userData.email) } catch {}
             } else {
               // Token invalid, clear storage
               localStorage.removeItem('pixelpad_token')
@@ -121,20 +128,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false
       }
 
-      const data = await response.json()
+      const data = await responseJsonSafe<{
+        user: Record<string, unknown> & { _id?: { toString?: () => string } }
+        token: string
+        type: string
+      }>(response)
+      if (!data?.user || !data.token) return false
       const { user: userData, token: authToken, type } = data
       
       // Convert to User format
       const newUser: User = {
-        id: userData._id?.toString() || userData.id || Date.now().toString(),
-        name: userData.name,
-        email: userData.email,
-        avatar: userData.avatar,
-        orders: userData.orders || 0,
-        role: type === 'user' ? (userData.role || 'team') : 'customer',
-        type: type,
-        permissions: userData.permissions || [],
-        createdAt: userData.createdAt || new Date().toISOString()
+        id: userData._id?.toString?.() || String(userData.id ?? Date.now()),
+        name: userData.name as string,
+        email: userData.email as string,
+        avatar: userData.avatar as string | undefined,
+        orders: (userData.orders as number) || 0,
+        role: type === 'user' ? ((userData.role as User['role']) || 'team') : 'customer',
+        type: type as User['type'],
+        permissions: (userData.permissions as string[]) || [],
+        createdAt: (userData.createdAt as string) || new Date().toISOString()
       }
       
       setUser(newUser)
@@ -166,19 +178,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false
       }
 
-      const data = await response.json()
+      const data = await responseJsonSafe<{
+        user: Record<string, unknown> & { _id?: { toString?: () => string } }
+        token: string
+        type: string
+      }>(response)
+      if (!data?.user || !data.token) return false
       const { user: userData, token: authToken, type } = data
       
       // Convert to User format
       const newUser: User = {
-        id: userData._id?.toString() || userData.id || Date.now().toString(),
-        name: userData.name,
-        email: userData.email,
-        avatar: userData.avatar,
-        orders: userData.orders || 0,
+        id: userData._id?.toString?.() || String(userData.id ?? Date.now()),
+        name: userData.name as string,
+        email: userData.email as string,
+        avatar: userData.avatar as string | undefined,
+        orders: (userData.orders as number) || 0,
         role: 'customer',
         type: 'customer',
-        createdAt: userData.createdAt || new Date().toISOString()
+        createdAt: (userData.createdAt as string) || new Date().toISOString()
       }
       
       setUser(newUser)
@@ -222,7 +239,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return false
       }
 
-      const updatedUserData = await response.json()
+      const updatedUserData = await responseJsonSafe<Partial<User>>(response)
+      if (!updatedUserData) return false
       const updatedUser = { ...user, ...updatedUserData }
       setUser(updatedUser)
       return true
@@ -268,18 +286,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
       
       if (response.ok) {
-        const userData = await response.json()
+        const userData = await responseJsonSafe<Record<string, unknown>>(response)
+        if (!userData) {
+          logout()
+          return
+        }
+        const u = userData as Record<string, unknown> & { _id?: { toString?: () => string } }
         // Ensure permissions are included
         const updatedUser: User = {
-          id: userData._id?.toString() || userData.id || user?.id || Date.now().toString(),
-          name: userData.name || user?.name || '',
-          email: userData.email || user?.email || '',
-          avatar: userData.avatar || user?.avatar,
-          orders: userData.orders || user?.orders || 0,
-          role: userData.role || user?.role || 'customer',
-          type: userData.type || user?.type || 'customer',
-          permissions: userData.permissions || user?.permissions || [],
-          createdAt: userData.createdAt || user?.createdAt || new Date().toISOString()
+          id: u._id?.toString?.() || String(u.id ?? user?.id ?? Date.now()),
+          name: (u.name as string) || user?.name || '',
+          email: (u.email as string) || user?.email || '',
+          avatar: (u.avatar as string | undefined) || user?.avatar,
+          orders: (u.orders as number) || user?.orders || 0,
+          role: (u.role as User['role']) || user?.role || 'customer',
+          type: (u.type as User['type']) || user?.type || 'customer',
+          permissions: (u.permissions as string[]) || user?.permissions || [],
+          createdAt: (u.createdAt as string) || user?.createdAt || new Date().toISOString()
         }
         setUser(updatedUser)
       } else {

@@ -48,53 +48,23 @@ function setLanguageCookie(lang: Language) {
 export function LanguageProvider({ children, initialLanguage }: { children: React.ReactNode; initialLanguage?: string }) {
   // Use server-provided cookie so server and client match on first paint (avoids hydration mismatch)
   const [language, setLanguage] = useState<Language>(
-    initialLanguage && VALID_LANGUAGES.includes(initialLanguage as Language) ? (initialLanguage as Language) : 'fr'
+    initialLanguage && VALID_LANGUAGES.includes(initialLanguage as Language) ? (initialLanguage as Language) : 'en'
   )
 
-  // #region agent log
-  if (typeof window !== 'undefined') {
-    fetch('http://127.0.0.1:7242/ingest/9b81b5dc-55fb-4298-9644-d969223c4b35',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LanguageContext.tsx:initial-render',message:'LanguageProvider render',data:{language,initialLanguage,hasWindow:true},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1',runId:'post-fix'})}).catch(()=>{});
-  } else {
-    fetch('http://127.0.0.1:7242/ingest/9b81b5dc-55fb-4298-9644-d969223c4b35',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LanguageContext.tsx:initial-render',message:'LanguageProvider render',data:{language,initialLanguage,hasWindow:false},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1',runId:'post-fix'})}).catch(()=>{});
-  }
-  // #endregion
-
-  // Auto-detect browser language preference
+  /** Match device/browser locale list in order: first supported en/fr/ar wins; anything else → en */
   const detectBrowserLanguage = (): Language => {
-    // Only run in browser environment
-    if (typeof window === 'undefined') return 'fr'
-    
-    // Check all preferred languages in order of preference
-    const browserLanguages = navigator.languages || [navigator.language || 'fr']
-    
-    // Map browser language to supported languages
-    // Priority: Arabic → English → French (default for all other languages like German, Dutch, Chinese, etc.)
-    let detectedLanguage: Language = 'fr' // Default to French for any unsupported language
-    
-    // Check each language in the user's preference list
-    for (const browserLang of browserLanguages) {
-      const langCode = browserLang.toLowerCase().split('-')[0] // Get base language code (e.g., 'en' from 'en-US', 'de' from 'de-DE')
-      
-      // Priority 1: Arabic (highest priority)
-      if (langCode === 'ar') {
-        detectedLanguage = 'ar'
-        break // Found Arabic, use it immediately
-      }
-      // Priority 2: English
-      else if (langCode === 'en') {
-        detectedLanguage = 'en'
-        // Don't break, continue checking in case Arabic comes later in the list
-      }
-      // Priority 3: French (only if we haven't found Arabic or English yet)
-      else if (langCode === 'fr' && detectedLanguage === 'fr') {
-        detectedLanguage = 'fr'
-        // Don't break, continue checking in case Arabic or English comes later
-      }
-      // For all other languages (German 'de', Dutch 'nl', Chinese 'zh', Spanish 'es', etc.)
-      // Keep default 'fr' (French)
+    if (typeof window === 'undefined') return 'en'
+
+    const list =
+      navigator.languages?.length ? navigator.languages : [navigator.language || 'en']
+
+    for (const raw of list) {
+      const code = raw.toLowerCase().split('-')[0]
+      if (code === 'ar') return 'ar'
+      if (code === 'fr') return 'fr'
+      if (code === 'en') return 'en'
     }
-    
-    return detectedLanguage
+    return 'en'
   }
 
   const handleSetLanguage = (newLanguage: Language) => {
@@ -115,9 +85,6 @@ export function LanguageProvider({ children, initialLanguage }: { children: Reac
     const savedLanguage = localStorage.getItem('language') as Language
     if (savedLanguage && VALID_LANGUAGES.includes(savedLanguage)) {
       if (!initialLanguage) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/9b81b5dc-55fb-4298-9644-d969223c4b35',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LanguageContext.tsx:useEffect',message:'Setting language from localStorage',data:{savedLanguage},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4',runId:'post-fix'})}).catch(()=>{});
-        // #endregion
         setLanguage(savedLanguage)
         setLanguageCookie(savedLanguage)
       }
@@ -125,10 +92,8 @@ export function LanguageProvider({ children, initialLanguage }: { children: Reac
     }
     if (!initialLanguage) {
       const detectedLanguage = detectBrowserLanguage()
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/9b81b5dc-55fb-4298-9644-d969223c4b35',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'LanguageContext.tsx:useEffect',message:'Setting language from detectBrowserLanguage',data:{detectedLanguage},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4',runId:'post-fix'})}).catch(()=>{});
-      // #endregion
       setLanguage(detectedLanguage)
+      setLanguageCookie(detectedLanguage)
     }
   }, [initialLanguage])
 

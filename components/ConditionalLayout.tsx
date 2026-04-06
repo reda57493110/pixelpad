@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import NavBar from '@/components/NavBar'
 import Footer from '@/components/Footer'
 import CartSidebar from '@/components/CartSidebar'
+import PageTransitionLoader from '@/components/PageTransitionLoader'
 
 export default function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -18,6 +19,7 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
   // Public routes: include NavBar and Footer
   return (
     <div className="min-h-screen flex flex-col overflow-x-hidden w-full relative" style={{ touchAction: 'pan-y', minHeight: 'auto' }}>
+      <PageTransitionLoader />
       <CartSidebar />
       <Suspense fallback={
         <nav className="fixed top-0 left-0 right-0 z-[100] bg-transparent">

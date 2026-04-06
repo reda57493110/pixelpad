@@ -1,4 +1,5 @@
 import { Product } from '@/types'
+import { responseJsonSafe } from '@/lib/safe-json'
 
 // Use MongoDB API instead of localStorage
 const API_BASE = '/api/products'
@@ -91,12 +92,12 @@ export async function getAllProducts(bypassCache: boolean = false): Promise<Prod
       }
       throw new Error(`Failed to fetch products: ${response.status}`)
     }
-    const data = await response.json()
-    if (!Array.isArray(data)) {
+    const data = await responseJsonSafe<unknown>(response)
+    if (!data || !Array.isArray(data)) {
       console.error('Invalid products data format - expected array, got:', typeof data, data)
       // If it's an error object, log it
-      if (data && typeof data === 'object' && data.error) {
-        console.error('API returned error:', data.error)
+      if (data && typeof data === 'object' && (data as { error?: string }).error) {
+        console.error('API returned error:', (data as { error?: string }).error)
       }
       return []
     }
@@ -137,7 +138,8 @@ export async function getProductById(id: string): Promise<Product | undefined> {
       next: { revalidate: 60 } // 1 minute revalidation for faster reloads
     })
     if (!response.ok) return undefined
-    const data = await response.json()
+    const data = await responseJsonSafe<unknown>(response)
+    if (!data || typeof data !== 'object') return undefined
     const product = toProduct(data)
     
     // Cache the result
@@ -226,7 +228,10 @@ export async function addProduct(product: Omit<Product, 'id'>): Promise<Product>
       ;(error as any).errorData = errorData
       throw error
     }
-    const data = await response.json()
+    const data = await responseJsonSafe<unknown>(response)
+    if (!data || typeof data !== 'object') {
+      throw new Error('Empty or invalid response from server')
+    }
     return toProduct(data)
   } catch (error) {
     console.error('Error creating product:', error)
@@ -275,7 +280,8 @@ export async function getFeaturedProducts(limit: number = 4): Promise<Product[]>
   try {
     const response = await fetch(`${API_BASE}/featured?limit=${limit}`)
     if (!response.ok) throw new Error('Failed to fetch featured products')
-    const data = await response.json()
+    const data = await responseJsonSafe<unknown[]>(response)
+    if (!Array.isArray(data)) return []
     return data.map(toProduct)
   } catch (error) {
     console.error('Error fetching featured products:', error)
@@ -310,12 +316,13 @@ export async function getProductPageProducts(bypassCache: boolean = false): Prom
       }
       throw new Error(`Failed to fetch products: ${response.status}`)
     }
-    const data = await response.json()
-    if (!Array.isArray(data)) {
+    const data = await responseJsonSafe<unknown>(response)
+    if (!data || !Array.isArray(data)) {
       console.error('Invalid product page data format - expected array, got:', typeof data, data)
       // If it's an error object, log it
-      if (data && typeof data === 'object' && data.error) {
-        console.error('API returned error:', data.error)
+      const errObj = data && typeof data === 'object' ? (data as { error?: string }) : null
+      if (errObj?.error) {
+        console.error('API returned error:', errObj.error)
       }
       return []
     }

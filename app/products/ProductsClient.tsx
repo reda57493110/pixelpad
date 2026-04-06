@@ -35,7 +35,8 @@ import {
   EnvelopeIcon,
   ChatBubbleLeftRightIcon,
   ChevronLeftIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline'
 
 // Legacy product data - removed to reduce bundle size and improve load time
@@ -366,11 +367,12 @@ export default function ProductsClient() {
   const [showProductNotification, setShowProductNotification] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 15
+  /** False until cached or fresh fetch finishes; avoids "no products" flash while `products` is still []. */
+  const [catalogReady, setCatalogReady] = useState(false)
 
   // Load products and categories - Non-blocking, optimized for fast navigation
   useEffect(() => {
     let isMounted = true
-    
     const loadData = async () => {
       try {
         // Load cached data first for instant display (non-blocking)
@@ -382,9 +384,9 @@ export default function ProductsClient() {
         // Set cached data immediately when available (don't wait)
         cachedDataPromise.then(([productsResult, categoriesResult]) => {
           if (!isMounted) return
-          
           if (productsResult.status === 'fulfilled' && productsResult.value.length > 0) {
             setProducts(productsResult.value)
+            setCatalogReady(true)
           }
           if (categoriesResult.status === 'fulfilled' && categoriesResult.value.length > 0) {
             setCategories(categoriesResult.value.sort((a: Category, b: Category) => a.order - b.order))
@@ -406,10 +408,14 @@ export default function ProductsClient() {
             if (categoriesResult.status === 'fulfilled' && categoriesResult.value.length > 0) {
               setCategories(categoriesResult.value.sort((a: Category, b: Category) => a.order - b.order))
             }
-          }).catch(() => {}) // Ignore background refresh errors
+            setCatalogReady(true)
+          }).catch(() => {
+            if (isMounted) setCatalogReady(true)
+          }) // Ignore background refresh errors
         }, 100) // Small delay to ensure navigation isn't blocked
       } catch (error) {
         console.error('Error loading data:', error)
+        if (isMounted) setCatalogReady(true)
         // Don't block on errors - page should still render
       }
     }
@@ -576,6 +582,8 @@ export default function ProductsClient() {
 
     return () => clearInterval(timer)
   }, [endTime])
+
+  const showCatalogLoading = !catalogReady && products.length === 0
 
   // Filter and sort products
   const filteredProducts = products
@@ -950,7 +958,8 @@ export default function ProductsClient() {
                 ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3 gap-3.5 md:gap-3.5 items-stretch' 
                 : 'space-y-3.5 md:space-y-3.5'
             }`}>
-              {paginatedProducts.length > 0 ? paginatedProducts.map((product, index) => (
+              {paginatedProducts.length > 0 ? (
+                paginatedProducts.map((product, index) => (
                 <div 
                   key={product.id} 
                   id={`product-${product.id}`}
@@ -961,7 +970,17 @@ export default function ProductsClient() {
                     <ProductCard product={product} hideIds />
                   </div>
                 </div>
-              )) : (
+              ))
+              ) : showCatalogLoading ? (
+                <div className="col-span-full flex flex-col items-center justify-center py-16 gap-4" aria-busy="true" aria-live="polite">
+                  <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-primary-600 to-indigo-600 shadow-lg">
+                    <ArrowPathIcon className="h-9 w-9 text-white animate-spin" style={{ animationDuration: '0.85s' }} />
+                  </div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {t('common.loading') !== 'common.loading' ? t('common.loading') : 'Loading products...'}
+                  </p>
+                </div>
+              ) : (
                 <div className="col-span-full text-center py-12">
                   <div className="mb-4 flex justify-center">
                     <MagnifyingGlassIcon className="h-16 w-16 text-gray-400 dark:text-gray-500" />
@@ -1051,8 +1070,8 @@ export default function ProductsClient() {
               </div>
             )}
 
-        {/* No Results */}
-        {filteredProducts.length === 0 && (
+        {/* No Results (only after catalog load — avoids flash on reload) */}
+        {catalogReady && filteredProducts.length === 0 && (
           <div className="text-center py-12">
             <div className="mb-4 flex justify-center">
               <MagnifyingGlassIcon className="h-16 w-16 text-gray-400 dark:text-gray-500" />

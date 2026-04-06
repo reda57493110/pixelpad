@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { useState, useEffect, useRef, useMemo, Suspense } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, useMemo, Suspense, type PointerEvent, type MouseEvent } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import ProductCard from '@/components/ProductCard'
 import { Product } from '@/types'
@@ -12,6 +12,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { getAllProducts, clearProductsCache } from '@/lib/products'
+import { responseJsonSafe } from '@/lib/safe-json'
 import OrganizationSchema from '@/components/OrganizationSchema'
 import LocalBusinessSchema from '@/components/LocalBusinessSchema'
 import {
@@ -23,6 +24,74 @@ import {
 import { CheckCircleIcon as CheckCircleIconOutline } from '@heroicons/react/24/outline'
 import { ArrowRightIcon } from '@heroicons/react/24/outline'
 import HeroLoadingSpinner from '@/components/HeroLoadingSpinner'
+
+/** Fallback before first layout measure (280px card + gap-3.5 ≈ 14px). */
+const HOME_CAROUSEL_FALLBACK_STRIDE_PX = 294
+
+/** One lap width = distance between adjacent card starts (width + flex gap), measured from DOM. */
+function measureHomeCarouselStridePx(track: HTMLElement | null): number {
+  if (!track || track.children.length < 2) return HOME_CAROUSEL_FALLBACK_STRIDE_PX
+  const a = track.children[0] as HTMLElement
+  const b = track.children[1] as HTMLElement
+  const stride = Math.abs(b.offsetLeft - a.offsetLeft)
+  if (stride > 1) return stride
+  const cs = getComputedStyle(track)
+  const gapRaw = cs.columnGap && cs.columnGap !== 'normal' ? cs.columnGap : cs.gap
+  const gap = parseFloat(String(gapRaw || '').split(/\s+/)[0] || '0') || 14
+  return Math.max(1, a.getBoundingClientRect().width + gap)
+}
+
+function wrapHomeCarouselScroll(scroll: number, itemCount: number, stridePx: number): number {
+  const stride = Math.max(1, stridePx)
+  const totalWidth = itemCount * stride
+  if (totalWidth <= 0) return 0
+  let s = scroll
+  while (s < 0) s += totalWidth
+  while (s >= totalWidth) s -= totalWidth
+  return s
+}
+
+function applyHomeCarouselTrackTransform(
+  el: HTMLElement | null,
+  scroll: number,
+  rtl: boolean
+) {
+  if (!el) return
+  const x = rtl ? scroll : -scroll
+  el.style.transform = `translate3d(${x}px, 0, 0)`
+}
+
+const HOME_CAROUSEL_TARGET_SPEED_PX_S = 44
+const HOME_CAROUSEL_VELOCITY_SMOOTH = 18
+
+function stepHomeCarouselAutoScroll(
+  scrollRef: { current: number },
+  velocityRef: { current: number },
+  itemCount: number,
+  paused: boolean,
+  dt: number,
+  strideRef: { current: number }
+) {
+  const smooth = HOME_CAROUSEL_VELOCITY_SMOOTH
+  if (itemCount <= 0) return
+  const stride = Math.max(1, strideRef.current)
+  const totalWidth = itemCount * stride
+  if (totalWidth <= 0) return
+
+  if (paused) {
+    velocityRef.current += (0 - velocityRef.current) * Math.min(1, smooth * dt)
+    return
+  }
+
+  velocityRef.current +=
+    (HOME_CAROUSEL_TARGET_SPEED_PX_S - velocityRef.current) *
+    Math.min(1, smooth * dt)
+
+  let s = scrollRef.current + velocityRef.current * dt
+  // Must preserve remainder across the lap (e.g. 3008 → 8), not snap to 0 — otherwise the
+  // track jumps backward every loop and the first card “stutters”.
+  scrollRef.current = wrapHomeCarouselScroll(s, itemCount, stride)
+}
 
 // Custom hook for scroll animations
 const useScrollAnimation = () => {
@@ -85,8 +154,8 @@ function UserReviewSection({ user, token, t, isRTL }: { user: any, token: string
         })
 
         if (response.ok) {
-          const data = await response.json()
-          if (data.review) {
+          const data = await responseJsonSafe<{ review?: { rating: number; comment: string } }>(response)
+          if (data?.review) {
             setUserReview(data.review)
             setRating(data.review.rating)
             setComment(data.review.comment)
@@ -120,8 +189,8 @@ function UserReviewSection({ user, token, t, isRTL }: { user: any, token: string
       })
 
       if (response.ok) {
-        const data = await response.json()
-        setUserReview(data.review)
+        const data = await responseJsonSafe<{ review?: { rating: number; comment: string } }>(response)
+        if (data?.review) setUserReview(data.review)
         setIsEditing(false)
       }
     } catch (error) {
@@ -342,14 +411,92 @@ function HomePageContent() {
   const [isLoaded, setIsLoaded] = useState(false)
   const [heroImageLoaded, setHeroImageLoaded] = useState(false)
   const [productsLoading, setProductsLoading] = useState(true)
-  const [newArrivalsScroll, setNewArrivalsScroll] = useState(0)
   const [isNewArrivalsPaused, setIsNewArrivalsPaused] = useState(false)
-  const [bestSellersScroll, setBestSellersScroll] = useState(0)
   const [isBestSellersPaused, setIsBestSellersPaused] = useState(false)
-  const [specialOffersScroll, setSpecialOffersScroll] = useState(0)
   const [isSpecialOffersPaused, setIsSpecialOffersPaused] = useState(false)
-  const [trendingScroll, setTrendingScroll] = useState(0)
   const [isTrendingPaused, setIsTrendingPaused] = useState(false)
+  const newArrivalsScrollRef = useRef(0)
+  const newArrivalsTrackRef = useRef<HTMLDivElement | null>(null)
+  const newArrivalsLenRef = useRef(0)
+  const isNewArrivalsPausedRef = useRef(false)
+  const isRTLRef = useRef(false)
+  const newArrivalsSuppressClickUntilRef = useRef(0)
+  const newArrivalsDragRef = useRef<{
+    active: boolean
+    pointerId: number | null
+    startClientX: number
+    startScroll: number
+    dragging: boolean
+  }>({ active: false, pointerId: null, startClientX: 0, startScroll: 0, dragging: false })
+
+  const bestSellersScrollRef = useRef(0)
+  const bestSellersTrackRef = useRef<HTMLDivElement | null>(null)
+  const bestSellersLenRef = useRef(0)
+  const isBestSellersPausedRef = useRef(false)
+  const bestSellersSuppressClickUntilRef = useRef(0)
+  const bestSellersDragRef = useRef<{
+    active: boolean
+    pointerId: number | null
+    startClientX: number
+    startScroll: number
+    dragging: boolean
+  }>({ active: false, pointerId: null, startClientX: 0, startScroll: 0, dragging: false })
+
+  const specialOffersScrollRef = useRef(0)
+  const specialOffersTrackRef = useRef<HTMLDivElement | null>(null)
+  const specialOffersLenRef = useRef(0)
+  const isSpecialOffersPausedRef = useRef(false)
+  const specialOffersSuppressClickUntilRef = useRef(0)
+  const specialOffersDragRef = useRef<{
+    active: boolean
+    pointerId: number | null
+    startClientX: number
+    startScroll: number
+    dragging: boolean
+  }>({ active: false, pointerId: null, startClientX: 0, startScroll: 0, dragging: false })
+
+  const trendingScrollRef = useRef(0)
+  const trendingTrackRef = useRef<HTMLDivElement | null>(null)
+  const trendingLenRef = useRef(0)
+  const isTrendingPausedRef = useRef(false)
+  const trendingSuppressClickUntilRef = useRef(0)
+  const trendingDragRef = useRef<{
+    active: boolean
+    pointerId: number | null
+    startClientX: number
+    startScroll: number
+    dragging: boolean
+  }>({ active: false, pointerId: null, startClientX: 0, startScroll: 0, dragging: false })
+
+  const newArrivalsVelRef = useRef(0)
+  const bestSellersVelRef = useRef(0)
+  const specialOffersVelRef = useRef(0)
+  const trendingVelRef = useRef(0)
+  const newArrivalsStrideRef = useRef(HOME_CAROUSEL_FALLBACK_STRIDE_PX)
+  const bestSellersStrideRef = useRef(HOME_CAROUSEL_FALLBACK_STRIDE_PX)
+  const specialOffersStrideRef = useRef(HOME_CAROUSEL_FALLBACK_STRIDE_PX)
+  const trendingStrideRef = useRef(HOME_CAROUSEL_FALLBACK_STRIDE_PX)
+
+  useEffect(() => {
+    isNewArrivalsPausedRef.current = isNewArrivalsPaused
+  }, [isNewArrivalsPaused])
+
+  useEffect(() => {
+    isRTLRef.current = isRTL
+  }, [isRTL])
+
+  useEffect(() => {
+    isBestSellersPausedRef.current = isBestSellersPaused
+  }, [isBestSellersPaused])
+
+  useEffect(() => {
+    isSpecialOffersPausedRef.current = isSpecialOffersPaused
+  }, [isSpecialOffersPaused])
+
+  useEffect(() => {
+    isTrendingPausedRef.current = isTrendingPaused
+  }, [isTrendingPaused])
+
   // Removed backgroundImageKey - using static path for better caching
   // fadeInUp animation is already defined in globals.css, no need for dynamic injection
 
@@ -640,179 +787,597 @@ function HomePageContent() {
   // Use flagged products, but fallback to all products if no flags are set
   const specialOffersToShow = flaggedSpecialOffers.length > 0 ? flaggedSpecialOffers : allProducts.slice(0, 10)
   const newArrivalsToShow = flaggedNewArrivals.length > 0 ? flaggedNewArrivals : allProducts.slice(0, 10)
+  newArrivalsLenRef.current = newArrivalsToShow.length
   const bestSellersToShow = flaggedBestSellers.length > 0 ? flaggedBestSellers : allProducts.slice(0, 10)
+  bestSellersLenRef.current = bestSellersToShow.length
+  specialOffersLenRef.current = specialOffersToShow.length
   const trendingToShow = flaggedTrending.length > 0 ? flaggedTrending : allProducts.slice(0, 10)
+  trendingLenRef.current = trendingToShow.length
 
-  // Auto-scroll New Arrivals carousel - starts automatically with smooth animation
+  const handleNewArrivalsPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    setIsNewArrivalsPaused(true)
+    newArrivalsDragRef.current = {
+      active: true,
+      pointerId: e.pointerId,
+      startClientX: e.clientX,
+      startScroll: newArrivalsScrollRef.current,
+      dragging: false,
+    }
+  }
+
+  const handleNewArrivalsPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    const d = newArrivalsDragRef.current
+    if (!d.active || e.pointerId !== d.pointerId) return
+    const delta = e.clientX - d.startClientX
+    const absDelta = Math.abs(delta)
+    if (!d.dragging) {
+      if (absDelta < 6) return
+      d.dragging = true
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId)
+      } catch {
+        // ignore
+      }
+      newArrivalsSuppressClickUntilRef.current = Date.now() + 600
+    }
+    e.preventDefault()
+    const next = isRTL ? d.startScroll + delta : d.startScroll - delta
+    const wrapped = wrapHomeCarouselScroll(
+      next,
+      newArrivalsToShow.length,
+      newArrivalsStrideRef.current
+    )
+    newArrivalsScrollRef.current = wrapped
+    applyHomeCarouselTrackTransform(newArrivalsTrackRef.current, wrapped, isRTL)
+  }
+
+  const handleNewArrivalsPointerUp = (e: PointerEvent<HTMLDivElement>) => {
+    const d = newArrivalsDragRef.current
+    if (!d.active || e.pointerId !== d.pointerId) return
+    if (d.dragging) {
+      e.preventDefault()
+      newArrivalsSuppressClickUntilRef.current = Date.now() + 600
+    }
+    newArrivalsDragRef.current = {
+      active: false,
+      pointerId: null,
+      startClientX: 0,
+      startScroll: 0,
+      dragging: false,
+    }
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    } catch {
+      /* already released */
+    }
+    newArrivalsVelRef.current = 0
+    setTimeout(() => setIsNewArrivalsPaused(false), 1000)
+  }
+
+  const handleNewArrivalsClickCapture = (e: MouseEvent<HTMLDivElement>) => {
+    if (Date.now() < newArrivalsSuppressClickUntilRef.current) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+  }
+
+  const handleBestSellersPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    setIsBestSellersPaused(true)
+    bestSellersDragRef.current = {
+      active: true,
+      pointerId: e.pointerId,
+      startClientX: e.clientX,
+      startScroll: bestSellersScrollRef.current,
+      dragging: false,
+    }
+  }
+
+  const handleBestSellersPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    const d = bestSellersDragRef.current
+    if (!d.active || e.pointerId !== d.pointerId) return
+    const delta = e.clientX - d.startClientX
+    const absDelta = Math.abs(delta)
+    if (!d.dragging) {
+      if (absDelta < 6) return
+      d.dragging = true
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId)
+      } catch {
+        /* ignore */
+      }
+      bestSellersSuppressClickUntilRef.current = Date.now() + 600
+    }
+    e.preventDefault()
+    const next = isRTL ? d.startScroll + delta : d.startScroll - delta
+    const wrapped = wrapHomeCarouselScroll(
+      next,
+      bestSellersLenRef.current,
+      bestSellersStrideRef.current
+    )
+    bestSellersScrollRef.current = wrapped
+    applyHomeCarouselTrackTransform(bestSellersTrackRef.current, wrapped, isRTL)
+  }
+
+  const handleBestSellersPointerUp = (e: PointerEvent<HTMLDivElement>) => {
+    const d = bestSellersDragRef.current
+    if (!d.active || e.pointerId !== d.pointerId) return
+    if (d.dragging) {
+      e.preventDefault()
+      bestSellersSuppressClickUntilRef.current = Date.now() + 600
+    }
+    bestSellersDragRef.current = {
+      active: false,
+      pointerId: null,
+      startClientX: 0,
+      startScroll: 0,
+      dragging: false,
+    }
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    } catch {
+      /* ignore */
+    }
+    bestSellersVelRef.current = 0
+    setTimeout(() => setIsBestSellersPaused(false), 1000)
+  }
+
+  const handleBestSellersClickCapture = (e: MouseEvent<HTMLDivElement>) => {
+    if (Date.now() < bestSellersSuppressClickUntilRef.current) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+  }
+
+  const handleSpecialOffersPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    setIsSpecialOffersPaused(true)
+    specialOffersDragRef.current = {
+      active: true,
+      pointerId: e.pointerId,
+      startClientX: e.clientX,
+      startScroll: specialOffersScrollRef.current,
+      dragging: false,
+    }
+  }
+
+  const handleSpecialOffersPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    const d = specialOffersDragRef.current
+    if (!d.active || e.pointerId !== d.pointerId) return
+    const delta = e.clientX - d.startClientX
+    const absDelta = Math.abs(delta)
+    if (!d.dragging) {
+      if (absDelta < 6) return
+      d.dragging = true
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId)
+      } catch {
+        /* ignore */
+      }
+      specialOffersSuppressClickUntilRef.current = Date.now() + 600
+    }
+    e.preventDefault()
+    const next = isRTL ? d.startScroll + delta : d.startScroll - delta
+    const wrapped = wrapHomeCarouselScroll(
+      next,
+      specialOffersLenRef.current,
+      specialOffersStrideRef.current
+    )
+    specialOffersScrollRef.current = wrapped
+    applyHomeCarouselTrackTransform(specialOffersTrackRef.current, wrapped, isRTL)
+  }
+
+  const handleSpecialOffersPointerUp = (e: PointerEvent<HTMLDivElement>) => {
+    const d = specialOffersDragRef.current
+    if (!d.active || e.pointerId !== d.pointerId) return
+    if (d.dragging) {
+      e.preventDefault()
+      specialOffersSuppressClickUntilRef.current = Date.now() + 600
+    }
+    specialOffersDragRef.current = {
+      active: false,
+      pointerId: null,
+      startClientX: 0,
+      startScroll: 0,
+      dragging: false,
+    }
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    } catch {
+      /* ignore */
+    }
+    specialOffersVelRef.current = 0
+    setTimeout(() => setIsSpecialOffersPaused(false), 1000)
+  }
+
+  const handleSpecialOffersClickCapture = (e: MouseEvent<HTMLDivElement>) => {
+    if (Date.now() < specialOffersSuppressClickUntilRef.current) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+  }
+
+  const handleTrendingPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    setIsTrendingPaused(true)
+    trendingDragRef.current = {
+      active: true,
+      pointerId: e.pointerId,
+      startClientX: e.clientX,
+      startScroll: trendingScrollRef.current,
+      dragging: false,
+    }
+  }
+
+  const handleTrendingPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    const d = trendingDragRef.current
+    if (!d.active || e.pointerId !== d.pointerId) return
+    const delta = e.clientX - d.startClientX
+    const absDelta = Math.abs(delta)
+    if (!d.dragging) {
+      if (absDelta < 6) return
+      d.dragging = true
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId)
+      } catch {
+        /* ignore */
+      }
+      trendingSuppressClickUntilRef.current = Date.now() + 600
+    }
+    e.preventDefault()
+    const next = isRTL ? d.startScroll + delta : d.startScroll - delta
+    const wrapped = wrapHomeCarouselScroll(
+      next,
+      trendingLenRef.current,
+      trendingStrideRef.current
+    )
+    trendingScrollRef.current = wrapped
+    applyHomeCarouselTrackTransform(trendingTrackRef.current, wrapped, isRTL)
+  }
+
+  const handleTrendingPointerUp = (e: PointerEvent<HTMLDivElement>) => {
+    const d = trendingDragRef.current
+    if (!d.active || e.pointerId !== d.pointerId) return
+    if (d.dragging) {
+      e.preventDefault()
+      trendingSuppressClickUntilRef.current = Date.now() + 600
+    }
+    trendingDragRef.current = {
+      active: false,
+      pointerId: null,
+      startClientX: 0,
+      startScroll: 0,
+      dragging: false,
+    }
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId)
+    } catch {
+      /* ignore */
+    }
+    trendingVelRef.current = 0
+    setTimeout(() => setIsTrendingPaused(false), 1000)
+  }
+
+  const handleTrendingClickCapture = (e: MouseEvent<HTMLDivElement>) => {
+    if (Date.now() < trendingSuppressClickUntilRef.current) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+  }
+
+  // Auto-scroll New Arrivals — eased velocity + RAF (DOM only)
   useEffect(() => {
     if (newArrivalsToShow.length === 0) return
-    
-    let animationFrameId: number
-    let lastTime = 0
-    const scrollSpeed = 0.5 // pixels per frame for smooth scrolling
-    
-    const animate = (currentTime: number) => {
-      if (!lastTime) lastTime = currentTime
-      const deltaTime = currentTime - lastTime
-      lastTime = currentTime
-      
-      if (!isNewArrivalsPaused && deltaTime > 0) {
-        setNewArrivalsScroll((prev) => {
-          // Mobile: 280px card + 14px gap = 294px, Small mobile: 300px + 14px = 314px, Desktop: 280px card + 14px gap = 294px
-          const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
-          const isSmallMobile = typeof window !== 'undefined' && window.innerWidth >= 375 && window.innerWidth < 640
-          const cardWidth = isSmallMobile ? 314 : isMobile ? 294 : 294
-          const totalWidth = newArrivalsToShow.length * cardWidth
-          const nextScroll = prev + scrollSpeed
-          
-          if (nextScroll >= totalWidth) {
-            return 0
-          }
-          return nextScroll
-        })
-      }
-      
-      animationFrameId = requestAnimationFrame(animate)
-    }
-    
-    animationFrameId = requestAnimationFrame(animate)
-    
-    return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId)
-      }
-    }
-  }, [isNewArrivalsPaused, newArrivalsToShow.length])
 
-  // Reset scroll position only when products actually change (not on pause state changes)
-  useEffect(() => {
-    if (newArrivalsToShow.length > 0) {
-      setNewArrivalsScroll(0)
+    let cancelled = false
+    let rafId = 0
+    let lastTime = performance.now()
+
+    const tick = (now: number) => {
+      if (cancelled) return
+      const len = newArrivalsLenRef.current
+      if (len === 0) {
+        rafId = requestAnimationFrame(tick)
+        return
+      }
+      const dt = Math.min((now - lastTime) / 1000, 0.032)
+      lastTime = now
+      const paused = isNewArrivalsPausedRef.current
+      stepHomeCarouselAutoScroll(
+        newArrivalsScrollRef,
+        newArrivalsVelRef,
+        len,
+        paused,
+        dt,
+        newArrivalsStrideRef
+      )
+      if (!paused) {
+        applyHomeCarouselTrackTransform(
+          newArrivalsTrackRef.current,
+          newArrivalsScrollRef.current,
+          isRTLRef.current
+        )
+      }
+      rafId = requestAnimationFrame(tick)
+    }
+
+    rafId = requestAnimationFrame(tick)
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(rafId)
     }
   }, [newArrivalsToShow.length])
 
-  // Auto-scroll Best Sellers carousel - smooth animation
+  useLayoutEffect(() => {
+    if (newArrivalsToShow.length === 0) return
+    newArrivalsScrollRef.current = 0
+    newArrivalsVelRef.current = 0
+    applyHomeCarouselTrackTransform(newArrivalsTrackRef.current, 0, isRTL)
+  }, [newArrivalsToShow.length])
+
+  useLayoutEffect(() => {
+    if (newArrivalsToShow.length === 0) return
+    applyHomeCarouselTrackTransform(
+      newArrivalsTrackRef.current,
+      newArrivalsScrollRef.current,
+      isRTL
+    )
+  }, [isRTL, newArrivalsToShow.length])
+
+  useLayoutEffect(() => {
+    const el = newArrivalsTrackRef.current
+    if (!el || newArrivalsToShow.length === 0) return
+    const run = () => {
+      const stride = measureHomeCarouselStridePx(el)
+      if (stride > 1) newArrivalsStrideRef.current = stride
+      newArrivalsScrollRef.current = wrapHomeCarouselScroll(
+        newArrivalsScrollRef.current,
+        newArrivalsLenRef.current,
+        newArrivalsStrideRef.current
+      )
+      applyHomeCarouselTrackTransform(
+        newArrivalsTrackRef.current,
+        newArrivalsScrollRef.current,
+        isRTL
+      )
+    }
+    run()
+    const ro = new ResizeObserver(run)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [newArrivalsToShow.length, isRTL])
+
+  // Best Sellers / Special Offers / Trending — eased velocity + RAF (same as New Arrivals)
   useEffect(() => {
     if (bestSellersToShow.length === 0) return
-    
-    let animationFrameId: number
-    let lastTime = 0
-    const scrollSpeed = 0.5
-    
-    const animate = (currentTime: number) => {
-      if (!lastTime) lastTime = currentTime
-      const deltaTime = currentTime - lastTime
-      lastTime = currentTime
-      
-      if (!isBestSellersPaused && deltaTime > 0) {
-        setBestSellersScroll((prev) => {
-          // Mobile: 280px card + 14px gap = 294px, Small mobile: 300px + 14px = 314px, Desktop: 280px card + 14px gap = 294px
-          const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
-          const isSmallMobile = typeof window !== 'undefined' && window.innerWidth >= 375 && window.innerWidth < 640
-          const cardWidth = isSmallMobile ? 314 : isMobile ? 294 : 294
-          const totalWidth = bestSellersToShow.length * cardWidth
-          const nextScroll = prev + scrollSpeed
-          
-          if (nextScroll >= totalWidth) {
-            return 0
-          }
-          return nextScroll
-        })
+    let cancelled = false
+    let rafId = 0
+    let lastTime = performance.now()
+    const tick = (now: number) => {
+      if (cancelled) return
+      const len = bestSellersLenRef.current
+      if (len === 0) {
+        rafId = requestAnimationFrame(tick)
+        return
       }
-      
-      animationFrameId = requestAnimationFrame(animate)
+      const dt = Math.min((now - lastTime) / 1000, 0.032)
+      lastTime = now
+      const paused = isBestSellersPausedRef.current
+      stepHomeCarouselAutoScroll(
+        bestSellersScrollRef,
+        bestSellersVelRef,
+        len,
+        paused,
+        dt,
+        bestSellersStrideRef
+      )
+      if (!paused) {
+        applyHomeCarouselTrackTransform(
+          bestSellersTrackRef.current,
+          bestSellersScrollRef.current,
+          isRTLRef.current
+        )
+      }
+      rafId = requestAnimationFrame(tick)
     }
-    
-    animationFrameId = requestAnimationFrame(animate)
-    
+    rafId = requestAnimationFrame(tick)
     return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId)
-      }
+      cancelled = true
+      cancelAnimationFrame(rafId)
     }
-  }, [isBestSellersPaused, bestSellersToShow.length])
+  }, [bestSellersToShow.length])
 
-  // Auto-scroll Special Offers carousel - smooth animation
+  useLayoutEffect(() => {
+    if (bestSellersToShow.length === 0) return
+    bestSellersScrollRef.current = 0
+    bestSellersVelRef.current = 0
+    applyHomeCarouselTrackTransform(bestSellersTrackRef.current, 0, isRTL)
+  }, [bestSellersToShow.length])
+
+  useLayoutEffect(() => {
+    if (bestSellersToShow.length === 0) return
+    applyHomeCarouselTrackTransform(
+      bestSellersTrackRef.current,
+      bestSellersScrollRef.current,
+      isRTL
+    )
+  }, [isRTL, bestSellersToShow.length])
+
+  useLayoutEffect(() => {
+    const el = bestSellersTrackRef.current
+    if (!el || bestSellersToShow.length === 0) return
+    const run = () => {
+      const stride = measureHomeCarouselStridePx(el)
+      if (stride > 1) bestSellersStrideRef.current = stride
+      bestSellersScrollRef.current = wrapHomeCarouselScroll(
+        bestSellersScrollRef.current,
+        bestSellersLenRef.current,
+        bestSellersStrideRef.current
+      )
+      applyHomeCarouselTrackTransform(
+        bestSellersTrackRef.current,
+        bestSellersScrollRef.current,
+        isRTL
+      )
+    }
+    run()
+    const ro = new ResizeObserver(run)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [bestSellersToShow.length, isRTL])
+
   useEffect(() => {
     if (specialOffersToShow.length === 0) return
-    
-    let animationFrameId: number
-    let lastTime = 0
-    const scrollSpeed = 0.5
-    
-    const animate = (currentTime: number) => {
-      if (!lastTime) lastTime = currentTime
-      const deltaTime = currentTime - lastTime
-      lastTime = currentTime
-      
-      if (!isSpecialOffersPaused && deltaTime > 0) {
-        setSpecialOffersScroll((prev) => {
-          // Mobile: 280px card + 14px gap = 294px, Small mobile: 300px + 14px = 314px, Desktop: 280px card + 14px gap = 294px
-          const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
-          const isSmallMobile = typeof window !== 'undefined' && window.innerWidth >= 375 && window.innerWidth < 640
-          const cardWidth = isSmallMobile ? 314 : isMobile ? 294 : 294
-          const totalWidth = specialOffersToShow.length * cardWidth
-          const nextScroll = prev + scrollSpeed
-          
-          if (nextScroll >= totalWidth) {
-            return 0
-          }
-          return nextScroll
-        })
+    let cancelled = false
+    let rafId = 0
+    let lastTime = performance.now()
+    const tick = (now: number) => {
+      if (cancelled) return
+      const len = specialOffersLenRef.current
+      if (len === 0) {
+        rafId = requestAnimationFrame(tick)
+        return
       }
-      
-      animationFrameId = requestAnimationFrame(animate)
+      const dt = Math.min((now - lastTime) / 1000, 0.032)
+      lastTime = now
+      const paused = isSpecialOffersPausedRef.current
+      stepHomeCarouselAutoScroll(
+        specialOffersScrollRef,
+        specialOffersVelRef,
+        len,
+        paused,
+        dt,
+        specialOffersStrideRef
+      )
+      if (!paused) {
+        applyHomeCarouselTrackTransform(
+          specialOffersTrackRef.current,
+          specialOffersScrollRef.current,
+          isRTLRef.current
+        )
+      }
+      rafId = requestAnimationFrame(tick)
     }
-    
-    animationFrameId = requestAnimationFrame(animate)
-    
+    rafId = requestAnimationFrame(tick)
     return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId)
-      }
+      cancelled = true
+      cancelAnimationFrame(rafId)
     }
-  }, [isSpecialOffersPaused, specialOffersToShow.length])
+  }, [specialOffersToShow.length])
 
-  // Auto-scroll Trending carousel - smooth animation
+  useLayoutEffect(() => {
+    if (specialOffersToShow.length === 0) return
+    specialOffersScrollRef.current = 0
+    specialOffersVelRef.current = 0
+    applyHomeCarouselTrackTransform(specialOffersTrackRef.current, 0, isRTL)
+  }, [specialOffersToShow.length])
+
+  useLayoutEffect(() => {
+    if (specialOffersToShow.length === 0) return
+    applyHomeCarouselTrackTransform(
+      specialOffersTrackRef.current,
+      specialOffersScrollRef.current,
+      isRTL
+    )
+  }, [isRTL, specialOffersToShow.length])
+
+  useLayoutEffect(() => {
+    const el = specialOffersTrackRef.current
+    if (!el || specialOffersToShow.length === 0) return
+    const run = () => {
+      const stride = measureHomeCarouselStridePx(el)
+      if (stride > 1) specialOffersStrideRef.current = stride
+      specialOffersScrollRef.current = wrapHomeCarouselScroll(
+        specialOffersScrollRef.current,
+        specialOffersLenRef.current,
+        specialOffersStrideRef.current
+      )
+      applyHomeCarouselTrackTransform(
+        specialOffersTrackRef.current,
+        specialOffersScrollRef.current,
+        isRTL
+      )
+    }
+    run()
+    const ro = new ResizeObserver(run)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [specialOffersToShow.length, isRTL])
+
   useEffect(() => {
     if (trendingToShow.length === 0) return
-    
-    let animationFrameId: number
-    let lastTime = 0
-    const scrollSpeed = 0.5
-    
-    const animate = (currentTime: number) => {
-      if (!lastTime) lastTime = currentTime
-      const deltaTime = currentTime - lastTime
-      lastTime = currentTime
-      
-      if (!isTrendingPaused && deltaTime > 0) {
-        setTrendingScroll((prev) => {
-          // Mobile: 280px card + 14px gap = 294px, Small mobile: 300px + 14px = 314px, Desktop: 280px card + 14px gap = 294px
-          const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
-          const isSmallMobile = typeof window !== 'undefined' && window.innerWidth >= 375 && window.innerWidth < 640
-          const cardWidth = isSmallMobile ? 314 : isMobile ? 294 : 294
-          const totalWidth = trendingToShow.length * cardWidth
-          const nextScroll = prev + scrollSpeed
-          
-          if (nextScroll >= totalWidth) {
-            return 0
-          }
-          return nextScroll
-        })
+    let cancelled = false
+    let rafId = 0
+    let lastTime = performance.now()
+    const tick = (now: number) => {
+      if (cancelled) return
+      const len = trendingLenRef.current
+      if (len === 0) {
+        rafId = requestAnimationFrame(tick)
+        return
       }
-      
-      animationFrameId = requestAnimationFrame(animate)
+      const dt = Math.min((now - lastTime) / 1000, 0.032)
+      lastTime = now
+      const paused = isTrendingPausedRef.current
+      stepHomeCarouselAutoScroll(
+        trendingScrollRef,
+        trendingVelRef,
+        len,
+        paused,
+        dt,
+        trendingStrideRef
+      )
+      if (!paused) {
+        applyHomeCarouselTrackTransform(
+          trendingTrackRef.current,
+          trendingScrollRef.current,
+          isRTLRef.current
+        )
+      }
+      rafId = requestAnimationFrame(tick)
     }
-    
-    animationFrameId = requestAnimationFrame(animate)
-    
+    rafId = requestAnimationFrame(tick)
     return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId)
-      }
+      cancelled = true
+      cancelAnimationFrame(rafId)
     }
-  }, [isTrendingPaused, trendingToShow.length])
+  }, [trendingToShow.length])
+
+  useLayoutEffect(() => {
+    if (trendingToShow.length === 0) return
+    trendingScrollRef.current = 0
+    trendingVelRef.current = 0
+    applyHomeCarouselTrackTransform(trendingTrackRef.current, 0, isRTL)
+  }, [trendingToShow.length])
+
+  useLayoutEffect(() => {
+    if (trendingToShow.length === 0) return
+    applyHomeCarouselTrackTransform(
+      trendingTrackRef.current,
+      trendingScrollRef.current,
+      isRTL
+    )
+  }, [isRTL, trendingToShow.length])
+
+  useLayoutEffect(() => {
+    const el = trendingTrackRef.current
+    if (!el || trendingToShow.length === 0) return
+    const run = () => {
+      const stride = measureHomeCarouselStridePx(el)
+      if (stride > 1) trendingStrideRef.current = stride
+      trendingScrollRef.current = wrapHomeCarouselScroll(
+        trendingScrollRef.current,
+        trendingLenRef.current,
+        trendingStrideRef.current
+      )
+      applyHomeCarouselTrackTransform(
+        trendingTrackRef.current,
+        trendingScrollRef.current,
+        isRTL
+      )
+    }
+    run()
+    const ro = new ResizeObserver(run)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [trendingToShow.length, isRTL])
 
   // Check for order success message
   useEffect(() => {
@@ -1361,39 +1926,35 @@ function HomePageContent() {
           
           {newArrivalsToShow.length > 0 ? (
             <div 
-              className="overflow-x-hidden relative w-full max-w-full -mx-2 px-2 sm:-mx-4 sm:px-4 md:mx-0 md:px-0"
+              className="overflow-x-hidden relative w-full max-w-full -mx-2 px-2 sm:-mx-4 sm:px-4 md:mx-0 md:px-0 select-none"
+              style={{ touchAction: 'pan-y' }}
               onMouseEnter={() => setIsNewArrivalsPaused(true)}
               onMouseLeave={() => setIsNewArrivalsPaused(false)}
-              onTouchStart={(e) => {
-                // Only pause if touching the container, not individual product cards
-                if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.overflow-x-hidden')) {
-                  setIsNewArrivalsPaused(true)
-                }
-              }}
+              onTouchStart={() => setIsNewArrivalsPaused(true)}
               onTouchEnd={() => {
                 setTimeout(() => setIsNewArrivalsPaused(false), 1000)
               }}
+              onClickCapture={handleNewArrivalsClickCapture}
+              onPointerDown={handleNewArrivalsPointerDown}
+              onPointerMove={handleNewArrivalsPointerMove}
+              onPointerUp={handleNewArrivalsPointerUp}
+              onPointerCancel={handleNewArrivalsPointerUp}
             >
               <div 
-                className="flex gap-3.5 md:gap-3.5"
+                ref={newArrivalsTrackRef}
+                className="flex gap-3.5 md:gap-3.5 [will-change:transform]"
                 style={{
-                  transform: isRTL 
-                    ? `translateX(${newArrivalsScroll}px)`
-                    : `translateX(-${newArrivalsScroll}px)`,
                   width: 'max-content',
-                  willChange: 'transform',
-                  transition: isNewArrivalsPaused ? 'transform 0.3s ease-out' : 'none',
-                  pointerEvents: 'auto'
+                  pointerEvents: 'auto',
                 }}
               >
-                {/* Duplicate products for seamless infinite loop */}
                 {[...newArrivalsToShow, ...newArrivalsToShow].map((product, index) => (
                   <div
                     key={`${product.id}-${index}`}
                     className="w-[280px] xs:w-[300px] sm:w-[300px] md:w-[280px] flex-shrink-0 relative z-0"
                     style={{ minWidth: '280px' }}
                   >
-                    <div className="w-full h-full relative isolate">
+                    <div className="w-full h-full relative isolate select-auto">
                       <ProductCard product={product} hideIds />
                     </div>
                   </div>
@@ -1440,23 +2001,25 @@ function HomePageContent() {
           
           {bestSellersToShow.length > 0 ? (
             <div 
-              className="overflow-x-hidden relative w-full max-w-full -mx-2 px-2 sm:-mx-4 sm:px-4 md:mx-0 md:px-0"
+              className="overflow-x-hidden relative w-full max-w-full -mx-2 px-2 sm:-mx-4 sm:px-4 md:mx-0 md:px-0 select-none"
+              style={{ touchAction: 'pan-y' }}
               onMouseEnter={() => setIsBestSellersPaused(true)}
               onMouseLeave={() => setIsBestSellersPaused(false)}
               onTouchStart={() => setIsBestSellersPaused(true)}
               onTouchEnd={() => {
                 setTimeout(() => setIsBestSellersPaused(false), 1000)
               }}
+              onClickCapture={handleBestSellersClickCapture}
+              onPointerDown={handleBestSellersPointerDown}
+              onPointerMove={handleBestSellersPointerMove}
+              onPointerUp={handleBestSellersPointerUp}
+              onPointerCancel={handleBestSellersPointerUp}
             >
               <div 
-                className="flex gap-3.5 md:gap-3.5"
+                ref={bestSellersTrackRef}
+                className="flex gap-3.5 md:gap-3.5 [will-change:transform]"
                 style={{
-                  transform: isRTL 
-                    ? `translateX(${bestSellersScroll}px)`
-                    : `translateX(-${bestSellersScroll}px)`,
                   width: 'max-content',
-                  willChange: 'transform',
-                  transition: isBestSellersPaused ? 'transform 0.3s ease-out' : 'none',
                   pointerEvents: 'auto'
                 }}
               >
@@ -1466,7 +2029,7 @@ function HomePageContent() {
                     className="w-[280px] xs:w-[300px] sm:w-[300px] md:w-[280px] flex-shrink-0 relative z-0"
                     style={{ minWidth: '280px' }}
                   >
-                    <div className="w-full h-full relative isolate">
+                    <div className="w-full h-full relative isolate select-auto">
                       <ProductCard product={product} hideIds />
                     </div>
                   </div>
@@ -1515,23 +2078,25 @@ function HomePageContent() {
           
           {specialOffersToShow.length > 0 ? (
             <div 
-              className="overflow-x-hidden relative w-full max-w-full -mx-2 px-2 sm:-mx-4 sm:px-4 md:mx-0 md:px-0"
+              className="overflow-x-hidden relative w-full max-w-full -mx-2 px-2 sm:-mx-4 sm:px-4 md:mx-0 md:px-0 select-none"
+              style={{ touchAction: 'pan-y' }}
               onMouseEnter={() => setIsSpecialOffersPaused(true)}
               onMouseLeave={() => setIsSpecialOffersPaused(false)}
               onTouchStart={() => setIsSpecialOffersPaused(true)}
               onTouchEnd={() => {
                 setTimeout(() => setIsSpecialOffersPaused(false), 1000)
               }}
+              onClickCapture={handleSpecialOffersClickCapture}
+              onPointerDown={handleSpecialOffersPointerDown}
+              onPointerMove={handleSpecialOffersPointerMove}
+              onPointerUp={handleSpecialOffersPointerUp}
+              onPointerCancel={handleSpecialOffersPointerUp}
             >
               <div 
-                className="flex gap-3.5 md:gap-3.5"
+                ref={specialOffersTrackRef}
+                className="flex gap-3.5 md:gap-3.5 [will-change:transform]"
                 style={{
-                  transform: isRTL 
-                    ? `translateX(${specialOffersScroll}px)`
-                    : `translateX(-${specialOffersScroll}px)`,
                   width: 'max-content',
-                  willChange: 'transform',
-                  transition: isSpecialOffersPaused ? 'transform 0.3s ease-out' : 'none',
                   pointerEvents: 'auto'
                 }}
               >
@@ -1541,7 +2106,7 @@ function HomePageContent() {
                     className="w-[280px] xs:w-[300px] sm:w-[300px] md:w-[280px] flex-shrink-0 relative z-0"
                     style={{ minWidth: '280px' }}
                   >
-                    <div className="w-full h-full relative isolate">
+                    <div className="w-full h-full relative isolate select-auto">
                       <ProductCard product={product} hideIds />
                     </div>
                   </div>
@@ -1590,23 +2155,25 @@ function HomePageContent() {
           
           {trendingToShow.length > 0 ? (
             <div 
-              className="overflow-x-hidden relative w-full max-w-full -mx-2 px-2 sm:-mx-4 sm:px-4 md:mx-0 md:px-0"
+              className="overflow-x-hidden relative w-full max-w-full -mx-2 px-2 sm:-mx-4 sm:px-4 md:mx-0 md:px-0 select-none"
+              style={{ touchAction: 'pan-y' }}
               onMouseEnter={() => setIsTrendingPaused(true)}
               onMouseLeave={() => setIsTrendingPaused(false)}
               onTouchStart={() => setIsTrendingPaused(true)}
               onTouchEnd={() => {
                 setTimeout(() => setIsTrendingPaused(false), 1000)
               }}
+              onClickCapture={handleTrendingClickCapture}
+              onPointerDown={handleTrendingPointerDown}
+              onPointerMove={handleTrendingPointerMove}
+              onPointerUp={handleTrendingPointerUp}
+              onPointerCancel={handleTrendingPointerUp}
             >
               <div 
-                className="flex gap-3.5 md:gap-3.5"
+                ref={trendingTrackRef}
+                className="flex gap-3.5 md:gap-3.5 [will-change:transform]"
                 style={{
-                  transform: isRTL 
-                    ? `translateX(${trendingScroll}px)`
-                    : `translateX(-${trendingScroll}px)`,
                   width: 'max-content',
-                  willChange: 'transform',
-                  transition: isTrendingPaused ? 'transform 0.3s ease-out' : 'none',
                   pointerEvents: 'auto'
                 }}
               >
@@ -1616,7 +2183,7 @@ function HomePageContent() {
                     className="w-[280px] xs:w-[300px] sm:w-[300px] md:w-[280px] flex-shrink-0 relative z-0"
                     style={{ minWidth: '280px' }}
                   >
-                    <div className="w-full h-full relative isolate">
+                    <div className="w-full h-full relative isolate select-auto">
                       <ProductCard product={product} hideIds />
                     </div>
                   </div>

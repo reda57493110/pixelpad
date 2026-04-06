@@ -20,6 +20,17 @@ export function NavigationLoadingProvider({ children }: { children: ReactNode })
   const prevPathnameRef = useRef(pathname)
   const isInitialMount = useRef(true)
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const loadingStartedAtRef = useRef<number | null>(null)
+
+  // Show loader briefly on full reload / first load.
+  useEffect(() => {
+    loadingStartedAtRef.current = Date.now()
+    setIsLoading(true)
+    const t = setTimeout(() => {
+      setIsLoading(false)
+    }, 350)
+    return () => clearTimeout(t)
+  }, [])
 
   // Handle pathname changes
   useEffect(() => {
@@ -32,6 +43,7 @@ export function NavigationLoadingProvider({ children }: { children: ReactNode })
 
     // Only show loading if pathname actually changed
     if (prevPathnameRef.current !== pathname) {
+      loadingStartedAtRef.current = Date.now()
       setIsLoading(true)
       prevPathnameRef.current = pathname
       
@@ -79,6 +91,7 @@ export function NavigationLoadingProvider({ children }: { children: ReactNode })
 
   // Function to manually start loading (for link clicks)
   const startLoading = () => {
+    loadingStartedAtRef.current = Date.now()
     setIsLoading(true)
   }
 
