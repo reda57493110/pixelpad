@@ -1053,17 +1053,23 @@ export default function ProductsPage() {
               </div>
             )}
 
-        {/* No Results */}
+        {/* No Results / Reloading */}
         {filteredProducts.length === 0 && (
-          <div className="text-center py-12">
+          <div className="text-center py-12" aria-live="polite">
             <div className="mb-4 flex justify-center">
               <MagnifyingGlassIcon className="h-16 w-16 text-gray-400 dark:text-gray-500" />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  No products found
+              {products.length === 0
+                ? (t('common.loading') !== 'common.loading' ? t('common.loading') : 'Reloading products...')
+                : t('products.noResults.title')}
             </h3>
             <p className="text-gray-600 dark:text-gray-300">
-                  Try adjusting your search criteria or filters
+              {products.length === 0
+                ? (t('products.loading.subtitle') !== 'products.loading.subtitle'
+                    ? t('products.loading.subtitle')
+                    : 'Please wait while we reload products.')
+                : t('products.noResults.description')}
             </p>
           </div>
         )}

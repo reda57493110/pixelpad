@@ -1077,10 +1077,10 @@ export default function ProductsClient() {
               <MagnifyingGlassIcon className="h-16 w-16 text-gray-400 dark:text-gray-500" />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                  No products found
+              {t('products.noResults.title')}
             </h3>
             <p className="text-gray-600 dark:text-gray-300">
-                  Try adjusting your search criteria or filters
+              {t('products.noResults.description')}
             </p>
           </div>
         )}

@@ -64,9 +64,11 @@ async function connectDB(): Promise<typeof mongoose> {
   if (!cached.promise) {
     const opts: mongoose.ConnectOptions = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 5000, // Reduced to 5s for faster failure
-      socketTimeoutMS: 20000, // 20s socket timeout - faster
-      connectTimeoutMS: 5000, // 5s initial connection timeout - faster
+      // NOTE: On some networks (slow DNS / TLS handshake / corporate proxy), Atlas TLS
+      // negotiation can exceed 5s. Too-small timeouts cause frequent 500s on API routes.
+      serverSelectionTimeoutMS: 20000,
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 20000,
       maxPoolSize: 5, // Reduced pool size
       minPoolSize: 1, // Keep at least 1 connection alive
       maxIdleTimeMS: 60000, // Close idle connections after 60s (increased)

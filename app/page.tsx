@@ -1963,7 +1963,9 @@ function HomePageContent() {
             </div>
           ) : (
             <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
-              {t('home.featured.noProducts') || 'No new arrivals available'}
+              {productsLoading
+                ? (t('common.loading') !== 'common.loading' ? t('common.loading') : 'Reloading products...')
+                : (t('home.featured.noProducts') || 'No new arrivals available')}
             </div>
           )}
         </div>
@@ -2038,7 +2040,9 @@ function HomePageContent() {
             </div>
           ) : (
             <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
-              {t('home.featured.noProducts') || 'No best sellers available'}
+              {productsLoading
+                ? (t('common.loading') !== 'common.loading' ? t('common.loading') : 'Reloading products...')
+                : (t('home.featured.noProducts') || 'No best sellers available')}
             </div>
           )}
         </div>
@@ -2115,7 +2119,9 @@ function HomePageContent() {
             </div>
           ) : (
             <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
-              {t('home.featured.noProducts') || 'No special offers available'}
+              {productsLoading
+                ? (t('common.loading') !== 'common.loading' ? t('common.loading') : 'Reloading products...')
+                : (t('home.featured.noProducts') || 'No special offers available')}
             </div>
           )}
         </div>
@@ -2192,7 +2198,9 @@ function HomePageContent() {
             </div>
           ) : (
             <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
-              {t('home.featured.noProducts') || 'No trending products available'}
+              {productsLoading
+                ? (t('common.loading') !== 'common.loading' ? t('common.loading') : 'Reloading products...')
+                : (t('home.featured.noProducts') || 'No trending products available')}
             </div>
           )}
         </div>
