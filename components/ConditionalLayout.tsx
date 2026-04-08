@@ -10,6 +10,7 @@ import PageTransitionLoader from '@/components/PageTransitionLoader'
 export default function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const isAdminRoute = pathname?.startsWith('/admin')
+  const isAccountRoute = pathname?.startsWith('/account')
 
   if (isAdminRoute) {
     // Admin routes: no NavBar or Footer
@@ -35,7 +36,7 @@ export default function ConditionalLayout({ children }: { children: React.ReactN
       <main className="flex-grow w-full overflow-x-hidden overflow-y-visible" style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch', minHeight: 'auto' }}>
         {children}
       </main>
-      <Footer />
+      {!isAccountRoute && <Footer />}
     </div>
   )
 }

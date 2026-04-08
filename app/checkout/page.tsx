@@ -329,23 +329,14 @@ function CheckoutForm() {
             stockValidationErrors.push(`${item.name} - Product not found`)
             continue
           }
-          
-          // Normalize values to avoid false failures (e.g., inStock=false but stockQuantity > 0)
+
+          // The server accepts backorders (see `app/api/orders/route.ts`), so we only enforce
+          // an upper bound when a positive `stockQuantity` is actually provided.
           const availableStock = typeof product.stockQuantity === 'number' ? product.stockQuantity : 0
           const requestedQty = Math.max(1, Number(item.quantity) || 1)
-          const isAvailable = product.inStock || availableStock > 0
 
-          // If no stock at all, block checkout
-          if (!isAvailable) {
-            stockValidationErrors.push(`${item.name} - Out of stock`)
-            continue
-          }
-
-          // If stock exists but less than requested, show precise limit
           if (availableStock > 0 && requestedQty > availableStock) {
-            stockValidationErrors.push(
-              `${item.name} - Only ${availableStock} available (requested ${requestedQty})`
-            )
+            stockValidationErrors.push(`${item.name} - Only ${availableStock} available (requested ${requestedQty})`)
           }
         }
         

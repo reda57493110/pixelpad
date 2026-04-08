@@ -221,12 +221,6 @@ function OrdersPageContent() {
                 title={t('orders.refresh') || 'Refresh'}
                 size="sm"
               />
-              <Link
-                href="/account"
-                className="flex items-center justify-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:border-primary-300 dark:hover:border-primary-700 text-xs sm:text-sm font-medium transition-colors text-gray-700 dark:text-gray-300 text-center"
-              >
-                {t('orders.backToDashboard') || 'Back to Dashboard'}
-              </Link>
             </div>
           </div>
 

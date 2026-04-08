@@ -65,6 +65,11 @@ export default function NavBar() {
   // Prevent hydration mismatch by only rendering client-side content after mount
   useEffect(() => {
     setMounted(true)
+    // Fast Refresh can preserve component state while server markup resets.
+    // Ensure menus start closed so client hydration matches server output.
+    setIsUserMenuOpen(false)
+    setIsLanguageMenuOpen(false)
+    setIsMobileMenuOpen(false)
   }, [])
 
   // Handle scroll effect for navbar - optimized to prevent janky movement
@@ -266,14 +271,14 @@ export default function NavBar() {
                           setIsUserMenuOpen(false)
                         }}
                         className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
-                          item.accent
+                          (item.accent && isActive)
                             ? 'bg-primary-600 text-white hover:bg-primary-700 dark:bg-primary-500 dark:text-white dark:hover:bg-primary-600'
                             : isActive
                               ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300'
                               : 'hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300'
                         }`}
                       >
-                        <item.icon className={`h-5 w-5 ${item.accent ? 'text-white dark:text-white' : isActive ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300'}`} />
+                        <item.icon className={`h-5 w-5 ${(item.accent && isActive) ? 'text-white dark:text-white' : isActive ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300'}`} />
                         <span>{item.label}</span>
                       </Link>
                       {index < desktopLinks.length - 1 && (
@@ -355,13 +360,13 @@ export default function NavBar() {
                 </div>
 
                 {/* User menu */}
-                <div className="relative" ref={userMenuRef}>
+                <div className="relative" ref={userMenuRef} suppressHydrationWarning>
                   <button 
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     className="flex items-center gap-2 px-3 py-2 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white transition-all duration-200"
                   >
                     <div className="relative">
-                      {isLoggedIn && user ? (
+                      {mounted && isLoggedIn && user?.name ? (
                         <div className="w-8 h-8 lg:w-9 lg:h-9 bg-primary-600 dark:bg-primary-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
                           {user.name.charAt(0).toUpperCase()}
                         </div>
@@ -370,7 +375,9 @@ export default function NavBar() {
                       )}
                     </div>
                     <span className="hidden xl:inline text-sm font-semibold text-gray-900 dark:text-white">
-                      {isLoggedIn ? translate('nav.myAccount') || 'My account' : translate('nav.login') || 'My account'}
+                      {mounted
+                        ? (isLoggedIn ? translate('nav.myAccount') || 'My account' : translate('nav.login') || 'My account')
+                        : (frTranslations['nav.myAccount'] ?? 'Mon compte')}
                     </span>
                     <ChevronDownIcon className={`h-4 w-4 transition-transform duration-200 ${isUserMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
@@ -378,18 +385,19 @@ export default function NavBar() {
                   {isUserMenuOpen && (
                     <>
                       <div 
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40" 
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 sm:hidden" 
                         onClick={() => setIsUserMenuOpen(false)}
                       />
-                      <div className="fixed left-1/2 transform -translate-x-1/2 top-20 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 animate-in slide-in-from-top duration-200">
+                      {/* Mobile: centered modal. Desktop: anchored dropdown under button. */}
+                      <div className="fixed left-1/2 transform -translate-x-1/2 top-20 w-80 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 animate-in slide-in-from-top duration-200 sm:absolute sm:left-auto sm:top-full sm:right-0 sm:mt-2 sm:transform-none sm:w-80 sm:max-w-[calc(100vw-1rem)] sm:shadow-xl sm:max-h-[calc(100vh-7rem)] sm:overflow-auto">
                       {isLoggedIn ? (
                         // Logged in user menu
-                        <div className="p-6">
+                        <div className="p-6 sm:p-4">
                           {/* User Profile Header */}
-                          <div className="text-center mb-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+                          <div className="text-center sm:text-left mb-6 sm:mb-3 pb-4 sm:pb-3 border-b border-gray-200 dark:border-gray-700">
                             {/* Pixel Pad Logo */}
-                            <div className="flex items-center justify-center mb-4">
-                              <div className="w-16 h-16 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
+                            <div className="flex items-center justify-center mb-4 sm:hidden">
+                              <div className="w-16 h-16 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
                                 <Image 
                                   src="/images/pixel-pad-logo-new.png"
                                   alt="Pixel Pad Logo"
@@ -399,19 +407,19 @@ export default function NavBar() {
                                 />
                               </div>
                             </div>
-                            <div className="flex flex-col items-center justify-center space-y-3 mb-3">
-                              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                            <div className="flex flex-col items-center justify-center space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-start sm:gap-3 mb-3 sm:mb-0">
+                              <div className="w-12 h-12 sm:w-9 sm:h-9 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-bold text-lg sm:text-sm">
                                 {user?.name?.charAt(0).toUpperCase()}
                               </div>
-                              <div className="text-center">
-                                <h3 className="font-semibold text-gray-900 dark:text-white text-lg">{user?.name}</h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">{user?.email}</p>
+                              <div className="text-center sm:text-left">
+                                <h3 className="font-semibold text-gray-900 dark:text-white text-lg sm:text-sm leading-tight">{user?.name}</h3>
+                                <p className="text-sm sm:text-xs text-gray-600 dark:text-gray-400 break-all">{user?.email}</p>
                               </div>
                             </div>
                           </div>
 
                           {/* User Stats */}
-                          <div className="grid grid-cols-1 gap-4 mb-6">
+                          <div className="grid grid-cols-1 gap-4 mb-6 sm:mb-3">
                             <div className="bg-slate-50 dark:bg-slate-900/20 rounded-lg p-3 text-center">
                               <div className="text-2xl font-bold text-slate-600 dark:text-slate-400">{mounted ? ordersCount : 0}</div>
                               <div className="text-xs text-gray-600 dark:text-gray-400">{translate('userMenu.orders')}</div>
@@ -423,7 +431,7 @@ export default function NavBar() {
                             <Link 
                               href="/account/profile" 
                               prefetch={true}
-                              className="flex items-center justify-center space-x-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-center"
+                              className="flex items-center justify-center space-x-3 p-3 sm:p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-center"
                               onClick={() => setIsUserMenuOpen(false)}
                             >
                               <UserIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
@@ -433,7 +441,7 @@ export default function NavBar() {
                             <Link 
                               href="/account" 
                               prefetch={true}
-                              className="flex items-center justify-center space-x-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-center"
+                              className="flex items-center justify-center space-x-3 p-3 sm:p-2.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-center"
                               onClick={() => setIsUserMenuOpen(false)}
                             >
                               <ArrowRightIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
@@ -455,7 +463,7 @@ export default function NavBar() {
                             <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
                               <button 
                                 onClick={handleLogout}
-                                className="flex items-center justify-center space-x-3 p-3 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors w-full text-center"
+                                className="flex items-center justify-center space-x-3 p-3 sm:p-2.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors w-full text-center"
                               >
                                 <ArrowRightOnRectangleIcon className="h-5 w-5 text-red-600 dark:text-red-400" />
                                 <span className="text-red-600 dark:text-red-400">{translate('userMenu.logout')}</span>
@@ -465,7 +473,7 @@ export default function NavBar() {
                         </div>
                       ) : (
                         // Guest user menu
-                        <div className="p-6">
+                        <div className="p-6 sm:p-4">
                           <div className="text-center mb-6">
                             <div className="flex items-center justify-center mb-4">
                               <div className="w-20 h-20 rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
