@@ -949,7 +949,7 @@ export default function ProductsClient() {
             {/* Products Grid - Using ProductCard component like home page */}
             <div className={`${
               viewMode === 'grid' 
-                ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3 gap-3.5 md:gap-3.5 items-stretch' 
+                ? 'grid grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3 gap-2 sm:gap-3 md:gap-3.5 items-stretch' 
                 : 'space-y-3.5 md:space-y-3.5'
             }`}>
               {paginatedProducts.length > 0 ? (

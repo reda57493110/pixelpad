@@ -35,7 +35,13 @@ function ProductCard({ product, variant = 'default', hideIds = false }: ProductC
   
   return (
     <div 
-      className={`${isHero ? 'bg-white dark:bg-gray-800' : 'bg-white dark:bg-gray-800'} rounded-2xl dark:shadow-xl dark:shadow-gray-900/50 overflow-hidden group flex flex-col ${isHero ? 'h-full' : 'h-full'} relative isolate border-0 dark:border dark:border-gray-700`}
+      className={`${
+        isHero
+          ? 'bg-white dark:bg-gray-800 rounded-2xl'
+          : 'bg-white dark:bg-gray-800 rounded-xl md:rounded-2xl shadow-sm md:shadow-md dark:shadow-lg dark:md:shadow-xl'
+      } overflow-hidden group flex flex-col h-full relative isolate ${
+        isHero ? 'border-0 dark:border dark:border-gray-700' : 'border border-gray-100 dark:border-gray-700 max-md:border-gray-200/80'
+      }`}
       onMouseEnter={() => {
         // Prefetch product page and data on hover for instant loading
         if (typeof window !== 'undefined' && product.id) {
@@ -49,15 +55,23 @@ function ProductCard({ product, variant = 'default', hideIds = false }: ProductC
       <div className="relative">
         <Link href={`/products/${product.id}`} prefetch={true}>
           <div 
-            className={`relative w-full ${isHero ? 'h-80 sm:h-96 md:h-80 lg:h-96' : 'h-80'} overflow-hidden rounded-lg`}
+            className={`relative w-full ${
+              isHero
+                ? 'h-80 sm:h-96 md:h-80 lg:h-96'
+                : 'aspect-[4/3] md:aspect-auto md:h-80 bg-white dark:bg-gray-800'
+            } overflow-hidden ${isHero ? 'rounded-lg' : 'rounded-md md:rounded-lg'}`}
           >
             {product.image ? (
               <Image 
                 src={product.image} 
                 alt={product.name}
                 fill
-                className={isHero ? "object-contain sm:object-cover" : "object-cover"}
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                className={
+                  isHero
+                    ? 'object-contain sm:object-cover'
+                    : 'object-cover'
+                }
+                sizes="(max-width: 767px) 50vw, (max-width: 1279px) 50vw, 33vw"
                 priority={isHero}
                 loading={isHero ? "eager" : "lazy"}
                 fetchPriority={isHero ? "high" : "auto"}
@@ -120,18 +134,18 @@ function ProductCard({ product, variant = 'default', hideIds = false }: ProductC
         </div>
       </div>
       
-      <div className={`${isHero ? 'p-3 sm:p-3.5 md:p-3.5 lg:p-4' : 'p-3 sm:p-4'} flex flex-col h-full`}>
-        <div className="flex items-center justify-between mb-2 sm:mb-2.5 gap-2">
-          <span className={`${isHero ? 'text-[9px] sm:text-[10px] lg:text-[10px]' : 'text-[10px] sm:text-[11px] lg:text-xs'} font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wide truncate flex-shrink`}>
+      <div className={`${isHero ? 'p-3 sm:p-3.5 md:p-3.5 lg:p-4' : 'p-2 sm:p-3 md:p-4'} flex flex-col h-full`}>
+        <div className={`flex items-center justify-between gap-1.5 sm:gap-2 ${isHero ? 'mb-2 sm:mb-2.5' : 'mb-1.5 sm:mb-2 md:mb-2.5'}`}>
+          <span className={`${isHero ? 'text-[9px] sm:text-[10px] lg:text-[10px]' : 'text-[8px] sm:text-[10px] md:text-[11px] lg:text-xs max-md:tracking-tight'} font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wide truncate flex-shrink min-w-0`}>
             {displayCategory || ''}
           </span>
           {typeof product.rating === 'number' && (
-            <div className={`flex items-center gap-0.5 sm:gap-1 bg-primary-50 dark:bg-gray-800 border border-primary-200 dark:border-gray-700 ${isHero ? 'px-1.5 sm:px-2 lg:px-2.5 py-0.5' : 'px-1.5 sm:px-2 py-0.5'} rounded-full max-w-full overflow-hidden shadow-sm dark:shadow-gray-900/50 flex-shrink-0`}>
-              <div className={`flex items-center ${isRTL ? 'flex-row-reverse' : ''} gap-0.5`}>
+            <div className={`flex items-center gap-0.5 sm:gap-1 bg-primary-50 dark:bg-gray-800 border border-primary-200 dark:border-gray-700 ${isHero ? 'px-1.5 sm:px-2 lg:px-2.5 py-0.5' : 'px-1 max-md:px-1.5 sm:px-2 py-0.5'} rounded-full max-w-full overflow-hidden shadow-sm dark:shadow-gray-900/50 flex-shrink-0`}>
+              <div className={`flex items-center ${isRTL ? 'flex-row-reverse' : ''} gap-0.5 max-md:gap-px`}>
                 {[...Array(5)].map((_, i) => (
                   <StarIcon
                     key={i}
-                    className={`${isHero ? 'w-2.5 h-2.5 sm:w-3 sm:h-3' : 'w-2.5 h-2.5 sm:w-3 h-3'} ${
+                    className={`${isHero ? 'w-2.5 h-2.5 sm:w-3 sm:h-3' : 'w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3'} ${
                       i < Math.floor(product.rating || 0)
                         ? 'text-primary-600 dark:text-primary-400 fill-primary-600 dark:fill-primary-400'
                         : 'text-gray-300 dark:text-gray-600'
@@ -139,7 +153,7 @@ function ProductCard({ product, variant = 'default', hideIds = false }: ProductC
                   />
                 ))}
               </div>
-              <span className={`${isHero ? 'text-[9px] sm:text-[10px] lg:text-[11px]' : 'text-[10px] sm:text-[11px]'} leading-none font-bold text-primary-700 dark:text-primary-300 ${isRTL ? 'mr-0.5 sm:mr-1' : 'ml-0.5 sm:ml-1'} whitespace-nowrap`}>{product.rating}</span>
+              <span className={`${isHero ? 'text-[9px] sm:text-[10px] lg:text-[11px]' : 'text-[9px] sm:text-[10px] md:text-[11px]'} leading-none font-bold text-primary-700 dark:text-primary-300 ${isRTL ? 'mr-0.5 sm:mr-1' : 'ml-0.5 sm:ml-1'} whitespace-nowrap`}>{product.rating}</span>
               {typeof product.reviews === 'number' && (
                 <span className={`${isHero ? 'text-[8px] sm:text-[9px] lg:text-[10px]' : 'text-[9px] sm:text-[10px]'} leading-none text-primary-600 dark:text-primary-400 ${isRTL ? 'mr-0.5 sm:mr-1' : 'ml-0.5 sm:ml-1'} whitespace-nowrap hidden sm:inline`}>
                   ({product.reviews} {t('product.reviews') || 'reviews'})
@@ -151,53 +165,53 @@ function ProductCard({ product, variant = 'default', hideIds = false }: ProductC
         
         <div className="flex-1 flex flex-col">
           <Link href={`/products/${product.id}`} prefetch={true}>
-            <h3 className={`${isHero ? 'text-sm sm:text-lg md:text-base lg:text-base' : 'text-sm sm:text-base lg:text-lg'} text-gray-900 dark:text-white hover:text-primary-600 dark:hover:text-primary-300 font-bold transition-colors mb-2 sm:mb-2.5 md:mb-2.5 lg:mb-2 line-clamp-2 leading-tight`}>
+            <h3 className={`${isHero ? 'text-sm sm:text-lg md:text-base lg:text-base' : 'text-xs sm:text-sm md:text-base lg:text-lg'} text-gray-900 dark:text-white hover:text-primary-600 dark:hover:text-primary-300 font-bold transition-colors mb-1.5 sm:mb-2 md:mb-2.5 lg:mb-2 line-clamp-2 leading-snug max-md:leading-tight`}>
               {displayName || ''}
             </h3>
           </Link>
           
-          <p className={`${isHero ? 'text-[10px] sm:text-sm md:text-[10px] lg:text-[10px]' : 'text-[10px] sm:text-[11px] lg:text-sm'} text-gray-700 dark:text-gray-200 mb-2 sm:mb-2.5 md:mb-2.5 lg:mb-2 line-clamp-2 leading-relaxed`}>
+          <p className={`${isHero ? 'text-[10px] sm:text-sm md:text-[10px] lg:text-[10px]' : 'text-[9px] sm:text-[10px] md:text-[11px] lg:text-sm'} text-gray-700 dark:text-gray-200 mb-1.5 sm:mb-2 md:mb-2.5 lg:mb-2 line-clamp-2 leading-snug max-md:leading-normal`}>
             {displayDescription || ''}
           </p>
           
-          <div className={`${isHero ? 'mb-2.5 sm:mb-3' : 'mb-2 lg:mb-2'}`}>
-            {/* Stock Progress Bar */}
-            <div className={`${isHero ? 'mt-2 sm:mt-2.5' : 'mt-2'}`}>
-              <div className={`flex items-center justify-between ${isHero ? 'text-[10px] sm:text-[11px] lg:text-[11px]' : 'text-[11px] lg:text-sm'} text-gray-700 dark:text-gray-300 mb-1`}>
-                <span>Only 3 left in stock!</span>
-                <span className="text-primary-700 dark:text-primary-200 font-bold">Hurry!</span>
+          <div className={`${isHero ? 'mb-2.5 sm:mb-3' : 'mb-1.5 md:mb-2 lg:mb-2 max-md:hidden'}`}>
+            {/* Stock Progress Bar — hidden on very narrow cards to save space */}
+            <div className={`${isHero ? 'mt-2 sm:mt-2.5' : 'mt-1.5 md:mt-2'}`}>
+              <div className={`flex items-center justify-between ${isHero ? 'text-[10px] sm:text-[11px] lg:text-[11px]' : 'text-[9px] md:text-[11px] lg:text-sm'} text-gray-700 dark:text-gray-300 mb-0.5 md:mb-1`}>
+                <span className="truncate max-md:pr-1">Only 3 left in stock!</span>
+                <span className="text-primary-700 dark:text-primary-200 font-bold shrink-0">Hurry!</span>
               </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700/70 rounded-full h-2">
-                <div className="bg-gradient-to-r from-primary-500 to-blue-500 dark:from-primary-400 dark:to-blue-400 h-2 rounded-full shadow-sm dark:shadow-primary-500/50" style={{width: '15%'}}></div>
+              <div className="w-full bg-gray-200 dark:bg-gray-700/70 rounded-full h-1.5 md:h-2">
+                <div className="bg-gradient-to-r from-primary-500 to-blue-500 dark:from-primary-400 dark:to-blue-400 h-1.5 md:h-2 rounded-full shadow-sm dark:shadow-primary-500/50" style={{width: '15%'}}></div>
               </div>
             </div>
           </div>
         </div>
         
-        <div className="flex flex-col gap-2 sm:gap-2 mt-auto">
+        <div className={`flex flex-col mt-auto ${isHero ? 'gap-2 sm:gap-2' : 'gap-1.5 sm:gap-2'}`}>
           {/* Price Section */}
           <div className="flex flex-col">
-            <div className={`flex items-center flex-wrap ${isRTL ? 'space-x-reverse space-x-2 sm:space-x-2 md:space-x-2 lg:space-x-2' : 'space-x-2 sm:space-x-2 md:space-x-2 lg:space-x-2'} mb-1`}>
-              <span className={`${isHero ? 'text-base sm:text-xl md:text-lg lg:text-lg' : 'text-base sm:text-lg lg:text-xl'} text-primary-600 dark:text-primary-300 font-bold whitespace-nowrap`}>
+            <div className={`flex items-center flex-wrap ${isRTL ? 'space-x-reverse space-x-1.5 sm:space-x-2' : 'space-x-1.5 sm:space-x-2'} mb-0.5 sm:mb-1`}>
+              <span className={`${isHero ? 'text-base sm:text-xl md:text-lg lg:text-lg' : 'text-sm sm:text-base md:text-lg lg:text-xl'} text-primary-600 dark:text-primary-300 font-bold whitespace-nowrap tabular-nums`}>
                 {formatCurrency(product.price)}
               </span>
               {product.originalPrice && product.originalPrice > product.price && (
-                <span className={`${isHero ? 'text-[10px] sm:text-sm md:text-[10px] lg:text-[10px]' : 'text-[10px] sm:text-[11px] lg:text-sm'} text-gray-500 dark:text-gray-500 line-through whitespace-nowrap`}>
+                <span className={`${isHero ? 'text-[10px] sm:text-sm md:text-[10px] lg:text-[10px]' : 'text-[9px] sm:text-[10px] md:text-[11px] lg:text-sm'} text-gray-500 dark:text-gray-500 line-through whitespace-nowrap`}>
                   {formatCurrency(product.originalPrice)}
                 </span>
               )}
             </div>
             {product.originalPrice && product.originalPrice > product.price && (
-              <span className={`${isHero ? 'text-[10px] sm:text-sm md:text-[10px] lg:text-[11px] px-2 sm:px-3 md:px-2.5 lg:px-3 py-0.5 sm:py-1 md:py-0.5 lg:py-1 bg-gradient-to-r from-green-500 to-emerald-500 dark:from-green-400 dark:to-emerald-400 text-white rounded-full inline-block w-fit shadow-sm dark:shadow-green-900/30' : 'text-[10px] sm:text-[11px] lg:text-sm text-green-600 dark:text-green-300'} font-black whitespace-nowrap`}>
+              <span className={`${isHero ? 'text-[10px] sm:text-sm md:text-[10px] lg:text-[11px] px-2 sm:px-3 md:px-2.5 lg:px-3 py-0.5 sm:py-1 md:py-0.5 lg:py-1 bg-gradient-to-r from-green-500 to-emerald-500 dark:from-green-400 dark:to-emerald-400 text-white rounded-full inline-block w-fit shadow-sm dark:shadow-green-900/30' : 'text-[9px] sm:text-[10px] md:text-[11px] lg:text-sm text-green-600 dark:text-green-300'} font-black whitespace-nowrap`}>
                 Save {formatCurrency(product.originalPrice - product.price)}!
               </span>
             )}
           </div>
           
-          {/* Buttons Section - Always below price on desktop */}
-          <div className="flex gap-2 sm:gap-2 w-full">
+          {/* Buttons — compact on narrow 2-col layout */}
+          <div className={`flex w-full ${isHero ? 'gap-2 sm:gap-2' : 'flex-col max-md:gap-1.5 sm:flex-row sm:gap-2'}`}>
             <button 
-              className={`${isHero ? 'px-3 sm:px-4 md:px-3 lg:px-4 py-2 sm:py-2.5 md:py-2 lg:py-2.5 text-[10px] sm:text-xs md:text-[10px] lg:text-[11px]' : 'px-3 sm:px-4 lg:px-3 py-2 sm:py-2.5 lg:py-2 text-[10px] sm:text-[11px] lg:text-xs'} flex-1 rounded-xl font-bold transition-all duration-200 transform hover:scale-[1.02] active:scale-95 shadow-md dark:shadow-lg whitespace-nowrap touch-manipulation bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white`}
+              className={`${isHero ? 'px-3 sm:px-4 md:px-3 lg:px-4 py-2 sm:py-2.5 md:py-2 lg:py-2.5 text-[10px] sm:text-xs md:text-[10px] lg:text-[11px]' : 'px-2 sm:px-3 md:px-4 lg:px-3 py-1.5 sm:py-2 lg:py-2 text-[9px] sm:text-[10px] md:text-[11px] lg:text-xs'} flex-1 rounded-lg sm:rounded-xl font-bold transition-all duration-200 transform hover:scale-[1.02] active:scale-95 shadow-md dark:shadow-lg max-md:min-h-[36px] touch-manipulation bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white`}
               onClick={() => {
                 // Prefetch product data before navigation for instant loading
                 if (typeof window !== 'undefined' && product.id) {
@@ -215,7 +229,7 @@ function ProductCard({ product, variant = 'default', hideIds = false }: ProductC
               {t('product.viewDetails') || 'View Details'}
             </button>
             <button 
-              className={`${isHero ? 'px-3.5 sm:px-5 md:px-4 lg:px-7 py-2 sm:py-3 md:py-2.5 lg:py-2.5 text-[10px] sm:text-sm md:text-[11px] lg:text-xs' : 'px-4 sm:px-5 lg:px-4 py-2 sm:py-2.5 lg:py-2 text-[10px] sm:text-[11px] lg:text-xs'} flex-1 rounded-xl font-bold transition-all duration-200 transform hover:scale-[1.02] active:scale-95 shadow-md dark:shadow-lg dark:shadow-primary-900/50 whitespace-nowrap touch-manipulation ${
+              className={`${isHero ? 'px-3.5 sm:px-5 md:px-4 lg:px-7 py-2 sm:py-3 md:py-2.5 lg:py-2.5 text-[10px] sm:text-sm md:text-[11px] lg:text-xs' : 'px-2 sm:px-3 md:px-5 lg:px-4 py-1.5 sm:py-2.5 lg:py-2 text-[9px] sm:text-[10px] md:text-[11px] lg:text-xs'} flex-1 rounded-lg sm:rounded-xl font-bold transition-all duration-200 transform hover:scale-[1.02] active:scale-95 shadow-md dark:shadow-lg dark:shadow-primary-900/50 max-md:min-h-[36px] touch-manipulation ${
                 isHero 
                   ? 'bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-400 text-white'
                   : 'bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-400 text-white'
