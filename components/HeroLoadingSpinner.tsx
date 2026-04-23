@@ -30,7 +30,7 @@ export default function HeroLoadingSpinner({ isLoading }: HeroLoadingSpinnerProp
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] flex items-center justify-center transition-opacity duration-500 ${
+      className={`fixed inset-0 z-[9999] flex items-center justify-center transition-opacity duration-500 pointer-events-none ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
       style={{

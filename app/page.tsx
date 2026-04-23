@@ -406,6 +406,7 @@ function HomePageContent() {
   const [flaggedBestSellers, setFlaggedBestSellers] = useState<Product[]>([])
   const [flaggedSpecialOffers, setFlaggedSpecialOffers] = useState<Product[]>([])
   const [flaggedTrending, setFlaggedTrending] = useState<Product[]>([])
+  const [hasFreshHomeData, setHasFreshHomeData] = useState(false)
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
   const [isLoaded, setIsLoaded] = useState(false)
@@ -605,7 +606,7 @@ function HomePageContent() {
     
     // Show page immediately - don't block rendering
     setIsLoaded(true)
-    
+
     const loadProducts = async () => {
       try {
         setProductsLoading(true)
@@ -614,7 +615,7 @@ function HomePageContent() {
         
         if (cachedProducts && cachedProducts.length > 0 && isMounted) {
           // Process cached data immediately for fast initial render
-          processProducts(cachedProducts)
+          processProducts(cachedProducts, 'cached')
         }
         
         // Refresh data in background (non-blocking)
@@ -640,7 +641,7 @@ function HomePageContent() {
         }
         
         // Update with fresh data
-        processProducts(freshProducts)
+        processProducts(freshProducts, 'fresh')
         
       } catch (error) {
         console.error('Error loading products:', error)
@@ -650,18 +651,26 @@ function HomePageContent() {
     }
     
     // Helper function to process products (reduces code duplication)
-    const processProducts = (products: Product[]) => {
+    const processProducts = (products: Product[], source: 'cached' | 'fresh') => {
       if (!isMounted) return
       
       setAllProducts(products)
       setProductsLoading(false)
+      if (source === 'fresh') {
+        setHasFreshHomeData(true)
+      }
       
       // Use flagged products, but fallback to all products if no flags are set
       const carouselProducts = products.filter(p => p.showOnHomeCarousel === true)
-      setFeaturedProducts(carouselProducts.length > 0 ? carouselProducts : products.slice(0, 5))
+      // Keep hero-related UI from fresh source only to avoid stale cached hero flash.
+      if (source === 'fresh') {
+        setFeaturedProducts(carouselProducts.length > 0 ? carouselProducts : products.slice(0, 5))
+      }
       
       const heroProducts = products.filter(p => p.showInHero === true)
-      setHeroFlagged(heroProducts.length > 0 ? heroProducts : products.slice(0, 1))
+      if (source === 'fresh') {
+        setHeroFlagged(heroProducts.length > 0 ? heroProducts : products.slice(0, 1))
+      }
       setFlaggedNewArrivals(products.filter(p => p.showInNewArrivals === true))
       setFlaggedBestSellers(products.filter(p => p.showInBestSellers === true))
       setFlaggedSpecialOffers(products.filter(p => p.showInSpecialOffers === true))
@@ -709,7 +718,6 @@ function HomePageContent() {
     
     return () => clearInterval(interval)
   }, [isAutoPlaying, featuredProducts.length])
-
 
   // Handle scroll events to pause auto-play during scrolling
   useEffect(() => {
@@ -1439,7 +1447,7 @@ function HomePageContent() {
       {/* Hero Section with Background Image Extending Full Width */}
       <div className="relative overflow-x-hidden w-full" style={{ touchAction: 'pan-y' }}>
         {/* Hero Section - Featured Products with Background Image */}
-        {heroProductsToShow.length > 0 && (
+        {hasFreshHomeData && heroProductsToShow.length > 0 && (
           <section
             ref={heroRef}
             className="relative min-h-[60vh] sm:min-h-[calc(100vh-200px)]"
@@ -1525,7 +1533,7 @@ function HomePageContent() {
             </div>
           ) : (
             <div className="relative bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-xl sm:rounded-2xl lg:rounded-3xl shadow-xl border border-gray-100/70 dark:border-gray-700/60 overflow-hidden">
-              <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute inset-0 pointer-events-none hidden lg:block">
                 <div className="h-full w-full bg-white/40 dark:bg-black/20 backdrop-blur-[1px]" />
               </div>
               <div 
@@ -1545,23 +1553,30 @@ function HomePageContent() {
                       : `translateX(-${currentSlide * 100}%)`
                   }}
                 >
-                  {featuredProducts.map((product) => {
+                  {featuredProducts.map((product, slideIndex) => {
                     const looksLikeId = (value?: string) => typeof value === 'string' && /^[0-9a-f]{24}$/i.test(value.trim())
                     const displayName = looksLikeId(product.name) ? '' : product.name
                     const displayDescription = looksLikeId(product.description) ? '' : product.description
                     
                     return (
-                      <div key={product.id} className="w-full flex-shrink-0 px-2 sm:px-2.5 md:px-3 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
-                        <div className={`grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-2.5 md:gap-3 lg:gap-4 items-center ${isRTL ? 'rtl' : 'ltr'}`}>
+                      <div
+                        key={product.id}
+                        data-slide-index={String(slideIndex)}
+                        className="w-full flex-shrink-0 px-2 sm:px-2.5 md:px-3 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4"
+                      >
+                        <div className={`grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-2.5 md:gap-3 lg:gap-4 items-start lg:items-center ${isRTL ? 'rtl' : 'ltr'}`}>
                             {/* Product Image */}
-                            <div className="relative">
-                              <div className="aspect-square rounded-md sm:rounded-lg lg:rounded-xl overflow-hidden shadow-lg">
+                            <div className="relative w-full min-w-0">
+                              <div
+                                className="relative aspect-square w-full max-w-full rounded-md sm:rounded-lg lg:rounded-xl overflow-hidden shadow-lg bg-white dark:bg-gray-800"
+                              >
                                 {product.image ? (
                                   <Image
                                     src={product.image}
                                     alt={displayName}
                                     fill
-                                    className="object-cover"
+                                    className="object-cover object-center"
+                                    sizes="(max-width: 1023px) 100vw, 45vw"
                                     priority
                                     loading="eager"
                                     fetchPriority="high"

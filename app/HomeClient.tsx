@@ -1524,7 +1524,8 @@ export default function HomeClient() {
             </div>
           ) : (
             <div className="relative bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm rounded-xl sm:rounded-2xl lg:rounded-3xl shadow-xl border border-gray-100/70 dark:border-gray-700/60 overflow-hidden">
-              <div className="absolute inset-0 pointer-events-none">
+              {/* Frost only on large screens — on phones it reads as haze/“background” over the product photo */}
+              <div className="absolute inset-0 pointer-events-none hidden lg:block">
                 <div className="h-full w-full bg-white/40 dark:bg-black/20 backdrop-blur-[1px]" />
               </div>
               <div 
@@ -1551,16 +1552,17 @@ export default function HomeClient() {
                     
                     return (
                       <div key={product.id} className="w-full flex-shrink-0 px-2 sm:px-2.5 md:px-3 lg:px-6 py-2 sm:py-2.5 md:py-3 lg:py-4">
-                        <div className={`grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-2.5 md:gap-3 lg:gap-4 items-center ${isRTL ? 'rtl' : 'ltr'}`}>
+                        <div className={`grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-2.5 md:gap-3 lg:gap-4 items-start lg:items-center ${isRTL ? 'rtl' : 'ltr'}`}>
                             {/* Product Image */}
-                            <div className="relative">
-                              <div className="aspect-square rounded-md sm:rounded-lg lg:rounded-xl overflow-hidden shadow-lg">
+                            <div className="relative w-full min-w-0">
+                              <div className="relative aspect-square w-full max-w-full rounded-md sm:rounded-lg lg:rounded-xl overflow-hidden shadow-lg bg-white dark:bg-gray-800">
                                 {product.image ? (
                                   <Image
                                     src={product.image}
                                     alt={displayName}
                                     fill
-                                    className="object-cover"
+                                    className="object-cover object-center"
+                                    sizes="(max-width: 1023px) 100vw, 45vw"
                                     priority
                                     loading="eager"
                                     fetchPriority="high"

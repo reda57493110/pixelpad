@@ -32,7 +32,7 @@ function ProductCard({ product, variant = 'default', hideIds = false }: ProductC
     : product.category
 
   const isHero = variant === 'hero'
-  
+
   return (
     <div 
       className={`${
@@ -54,10 +54,10 @@ function ProductCard({ product, variant = 'default', hideIds = false }: ProductC
     >
       <div className="relative">
         <Link href={`/products/${product.id}`} prefetch={true}>
-          <div 
+          <div
             className={`relative w-full ${
               isHero
-                ? 'h-80 sm:h-96 md:h-80 lg:h-96'
+                ? 'h-80 sm:h-96 md:h-80 lg:h-96 bg-white dark:bg-gray-800'
                 : 'aspect-[4/3] md:aspect-auto md:h-80 bg-white dark:bg-gray-800'
             } overflow-hidden ${isHero ? 'rounded-lg' : 'rounded-md md:rounded-lg'}`}
           >
@@ -66,12 +66,12 @@ function ProductCard({ product, variant = 'default', hideIds = false }: ProductC
                 src={product.image} 
                 alt={product.name}
                 fill
-                className={
+                className="object-cover"
+                sizes={
                   isHero
-                    ? 'object-contain sm:object-cover'
-                    : 'object-cover'
+                    ? '(max-width: 639px) 280px, (max-width: 1023px) 45vw, 33vw'
+                    : '(max-width: 767px) 50vw, (max-width: 1279px) 50vw, 33vw'
                 }
-                sizes="(max-width: 767px) 50vw, (max-width: 1279px) 50vw, 33vw"
                 priority={isHero}
                 loading={isHero ? "eager" : "lazy"}
                 fetchPriority={isHero ? "high" : "auto"}
@@ -163,18 +163,18 @@ function ProductCard({ product, variant = 'default', hideIds = false }: ProductC
           )}
         </div>
         
-        <div className="flex-1 flex flex-col">
+        <div className={isHero ? 'flex flex-col' : 'flex-1 flex flex-col'}>
           <Link href={`/products/${product.id}`} prefetch={true}>
             <h3 className={`${isHero ? 'text-sm sm:text-lg md:text-base lg:text-base' : 'text-xs sm:text-sm md:text-base lg:text-lg'} text-gray-900 dark:text-white hover:text-primary-600 dark:hover:text-primary-300 font-bold transition-colors mb-1.5 sm:mb-2 md:mb-2.5 lg:mb-2 line-clamp-2 leading-snug max-md:leading-tight`}>
               {displayName || ''}
             </h3>
           </Link>
           
-          <p className={`${isHero ? 'text-[10px] sm:text-sm md:text-[10px] lg:text-[10px]' : 'text-[9px] sm:text-[10px] md:text-[11px] lg:text-sm'} text-gray-700 dark:text-gray-200 mb-1.5 sm:mb-2 md:mb-2.5 lg:mb-2 line-clamp-2 leading-snug max-md:leading-normal`}>
+          <p className={`${isHero ? 'text-[10px] sm:text-sm md:text-[10px] lg:text-[10px]' : 'text-[9px] sm:text-[10px] md:text-[11px] lg:text-sm'} text-gray-700 dark:text-gray-200 mb-1 sm:mb-2 md:mb-2.5 lg:mb-2 line-clamp-2 leading-snug max-md:leading-normal`}>
             {displayDescription || ''}
           </p>
           
-          <div className={`${isHero ? 'mb-2.5 sm:mb-3' : 'mb-1.5 md:mb-2 lg:mb-2 max-md:hidden'}`}>
+          <div className={`${isHero ? 'mb-1.5 sm:mb-3 max-sm:hidden' : 'mb-1.5 md:mb-2 lg:mb-2 max-md:hidden'}`}>
             {/* Stock Progress Bar — hidden on very narrow cards to save space */}
             <div className={`${isHero ? 'mt-2 sm:mt-2.5' : 'mt-1.5 md:mt-2'}`}>
               <div className={`flex items-center justify-between ${isHero ? 'text-[10px] sm:text-[11px] lg:text-[11px]' : 'text-[9px] md:text-[11px] lg:text-sm'} text-gray-700 dark:text-gray-300 mb-0.5 md:mb-1`}>
@@ -188,7 +188,7 @@ function ProductCard({ product, variant = 'default', hideIds = false }: ProductC
           </div>
         </div>
         
-        <div className={`flex flex-col mt-auto ${isHero ? 'gap-2 sm:gap-2' : 'gap-1.5 sm:gap-2'}`}>
+        <div className={`flex flex-col ${isHero ? 'mt-1.5 sm:mt-2 gap-1.5 sm:gap-2' : 'mt-auto gap-1.5 sm:gap-2'}`}>
           {/* Price Section */}
           <div className="flex flex-col">
             <div className={`flex items-center flex-wrap ${isRTL ? 'space-x-reverse space-x-1.5 sm:space-x-2' : 'space-x-1.5 sm:space-x-2'} mb-0.5 sm:mb-1`}>

@@ -175,8 +175,9 @@
 
   @media (min-width: 768px) {
     body {
-      scroll-snap-type: y proximity;
-      overscroll-behavior-y: contain;
+      /* Match mobile: viewport scroll-snap on body broke desktop wheel scrolling (scrollY stuck at 0). */
+      scroll-snap-type: none !important;
+      overscroll-behavior-y: auto !important;
     }
   }
 

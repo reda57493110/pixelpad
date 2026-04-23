@@ -6,8 +6,6 @@ import { useState, useEffect, useRef } from 'react'
 import { 
   ShoppingCartIcon, 
   MagnifyingGlassIcon, 
-  SunIcon, 
-  MoonIcon, 
   UserIcon,
   Bars3Icon,
   XMarkIcon,
@@ -16,24 +14,19 @@ import {
   ArrowRightIcon,
   ChevronDownIcon,
   HeartIcon,
-  ClipboardDocumentListIcon,
   CreditCardIcon,
   TruckIcon,
   ShieldCheckIcon,
-  QuestionMarkCircleIcon,
   ArrowRightOnRectangleIcon,
   UserPlusIcon,
   EnvelopeIcon,
   LockClosedIcon,
   HomeIcon,
   WrenchScrewdriverIcon,
-  InformationCircleIcon,
   PhoneIcon,
-  ChatBubbleLeftRightIcon,
   MapPinIcon,
   ShoppingBagIcon
 } from '@heroicons/react/24/outline'
-import { useTheme } from '@/contexts/ThemeContext'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { fr as frTranslations } from '@/translations/fr'
 import { useAuth } from '@/contexts/AuthContext'
@@ -54,7 +47,6 @@ export default function NavBar() {
   const { count: cartCount, items: cartItems, openCart } = useCart()
   const [showLoginForm, setShowLoginForm] = useState(false)
   const [showRegisterForm, setShowRegisterForm] = useState(false)
-  const { theme, toggleTheme } = useTheme()
   const { language, setLanguage, t, isRTL } = useLanguage()
   const { user, isLoggedIn, logout } = useAuth()
   const { startLoading } = useNavigationLoading()
@@ -701,85 +693,8 @@ export default function NavBar() {
                       
                     </Link>
                     
-                    {/* Centered Action Buttons - Enhanced */}
-                    <div className={`flex items-center justify-center ${isRTL ? 'space-x-reverse space-x-2' : 'space-x-2'} flex-shrink-0`}>
-                      {/* Enhanced Language Switcher - Mobile (shows current, opens menu in mobile menu section) */}
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          // Scroll to language section in mobile menu
-                          const langSection = document.getElementById('mobile-language-section')
-                          if (langSection) {
-                            langSection.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                            // Highlight it briefly
-                            langSection.classList.add('ring-2', 'ring-slate-500')
-                            setTimeout(() => {
-                              langSection.classList.remove('ring-2', 'ring-slate-500')
-                            }, 2000)
-                          }
-                        }}
-                        className="p-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-all duration-300 border border-gray-300 dark:border-gray-600 flex items-center justify-center group hover:scale-110 active:scale-95"
-                        aria-label={`Current language: ${language.toUpperCase()}. Tap to change`}
-                      >
-                        <div className="w-5 h-5 rounded overflow-hidden shadow-sm">
-                          {language === 'en' && (
-                            <Image 
-                              src="/flags/flag-for-flag-united-kingdom.svg" 
-                              alt="English" 
-                              width={20} 
-                              height={20} 
-                              className="w-full h-full object-cover"
-                            />
-                          )}
-                          {language === 'fr' && (
-                            <Image 
-                              src="/flags/flag-for-flag-france.svg" 
-                              alt="Français" 
-                              width={20} 
-                              height={20} 
-                              className="w-full h-full object-cover"
-                            />
-                          )}
-                          {language === 'ar' && (
-                            <Image 
-                              src="/flags/flag-for-flag-saudi-arabia.svg" 
-                              alt="العربية" 
-                              width={20} 
-                              height={20} 
-                              className="w-full h-full object-cover"
-                            />
-                          )}
-                        </div>
-                      </button>
-                      
-                      {/* Enhanced Theme Toggle - Mobile */}
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault()
-                          e.stopPropagation()
-                          toggleTheme()
-                          setIsMobileMenuOpen(false)
-                        }}
-                        className="p-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-all duration-300 border border-gray-300 dark:border-gray-600 flex items-center justify-center group hover:scale-110 active:scale-95 relative overflow-hidden"
-                        aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-                      >
-                        <div className="relative w-4 h-4 z-10">
-                          {theme === 'light' ? (
-                            <MoonIcon className="w-full h-full text-gray-700 dark:text-gray-300 group-hover:text-slate-600 transition-colors duration-300" />
-                          ) : (
-                            <SunIcon className="w-full h-full text-yellow-500 group-hover:text-yellow-400 transition-colors duration-300" />
-                          )}
-                        </div>
-                        {/* Animated background */}
-                        <div className={`absolute inset-0 rounded-lg transition-all duration-300 ${
-                          theme === 'light' 
-                            ? 'bg-gradient-to-br from-slate-600/20 to-slate-700/20 opacity-0 group-active:opacity-100' 
-                            : 'bg-gradient-to-br from-yellow-500/20 to-orange-500/20 opacity-0 group-active:opacity-100'
-                        }`}></div>
-                      </button>
-                      
-                      {/* Simple Close Button */}
+                    <div className={`flex items-center justify-end ${isRTL ? 'space-x-reverse space-x-2' : 'space-x-2'} flex-shrink-0`}>
+                      {/* Close — language is under Preferences; About/FAQ/etc. stay in the footer */}
                       <button
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="p-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors border border-gray-300 dark:border-gray-600 flex items-center justify-center"
@@ -877,147 +792,8 @@ export default function NavBar() {
                     })}
                   </div>
 
-                  {/* More Section */}
-                  <div className="space-y-1 pt-2 border-t border-gray-300 dark:border-gray-700/50">
-                    <div className={`flex items-center justify-between px-1 mb-1.5 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <h4 className="text-[9px] font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest">{translate('nav.more')}</h4>
-                      <div className={`flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-600 to-transparent ${isRTL ? 'mr-2' : 'ml-2'}`}></div>
-                    </div>
-                    {[
-                      { href: '/more/about', label: t('nav.about'), icon: InformationCircleIcon },
-                      { href: '/more/faq', label: t('nav.faq'), icon: QuestionMarkCircleIcon },
-                      { href: '/more/warranty', label: t('nav.warranty'), icon: ShieldCheckIcon },
-                      { href: '/more/return', label: t('nav.return'), icon: ArrowRightIcon },
-                    ].map((item) => {
-                      const isActive = pathname === item.href
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          prefetch={true}
-                          className={`group flex items-center p-2 rounded-2xl transition-colors duration-200 relative overflow-hidden touch-manipulation ${isRTL ? 'flex-row-reverse' : ''} ${
-                            isActive 
-                              ? 'bg-primary-100 dark:bg-primary-900/30 border border-primary-300 dark:border-primary-700 shadow-md' 
-                              : 'bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/70 active:bg-gray-200 dark:active:bg-gray-700'
-                          }`}
-                          onClick={() => {
-                            if (!isActive) {
-                              startLoading()
-                            }
-                            setIsMobileMenuOpen(false)
-                          }}
-                        >
-                          <div className={`w-9 h-9 rounded-full flex items-center justify-center ${isRTL ? 'ml-2' : 'mr-2'} bg-primary-100 dark:bg-primary-900/30 border border-primary-300 dark:border-primary-700`}>
-                            <item.icon className={`w-5 h-5 ${isActive ? 'text-primary-700 dark:text-primary-300' : 'text-gray-700 dark:text-gray-300'}`} />
-                          </div>
-                          <div className={`flex-1 font-semibold text-sm ${
-                            isActive 
-                              ? 'text-primary-700 dark:text-primary-300' 
-                              : 'text-gray-900 dark:text-gray-200'
-                          }`}>
-                            {item.label}
-                          </div>
-                        </Link>
-                      )
-                    })}
-                  </div>
-
-                  {/* Ultra Premium User Account Section - Maximum Enhancement */}
-                  {isLoggedIn && user && (
-                    <div className="space-y-2 pt-2 border-t border-gray-300 dark:border-gray-700/50">
-                      {/* Enhanced Section Header with Animated Accent */}
-                      <div className={`flex items-center justify-between px-1 mb-2 relative ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        <div className={`flex items-center ${isRTL ? 'gap-1.5 flex-row-reverse' : 'gap-1.5'}`}>
-                          <div className="w-0.5 h-4 bg-gradient-to-b from-primary-400 via-primary-300 via-primary-400 to-primary-500 rounded-full shadow-lg shadow-primary-500/50"></div>
-                          <h4 className="text-[10px] font-black text-gray-700 dark:text-gray-200 uppercase tracking-widest">{translate('mobileMenu.account')}</h4>
-                        </div>
-                        <div className={`flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-600 to-transparent ${isRTL ? 'mr-2' : 'ml-2'}`}></div>
-                      </div>
-                      
-                      {/* Simple Account Card */}
-                      <Link
-                        href="/account"
-                        prefetch={true}
-                        className={`group flex items-center p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-700 transition-all duration-200 shadow-md hover:shadow-lg ${isRTL ? 'flex-row-reverse' : ''}`}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        {/* Simple Icon */}
-                        <div className={`bg-primary-600 dark:bg-primary-500 rounded-lg flex items-center justify-center ${isRTL ? 'ml-3' : 'mr-3'} flex-shrink-0 w-10 h-10`}>
-                          <UserIcon className="w-5 h-5 text-white" />
-                        </div>
-                        
-                        {/* User Info - All Text Visible */}
-                        <div className="flex-1 min-w-0 relative z-10">
-                          <div className="font-bold text-sm text-gray-900 dark:text-white mb-1">
-                            {translate('mobileMenu.myAccount')}
-                          </div>
-                          <div className="text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5 break-words">
-                            {user.name}
-                          </div>
-                          <div className="text-[10px] text-gray-600 dark:text-gray-300 mb-1.5 break-all">
-                            {user.email}
-                          </div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {/* Simple Active Status */}
-                            <span className="inline-flex items-center px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 rounded-md border border-primary-300 dark:border-primary-700">
-                              <span className="w-1.5 h-1.5 bg-primary-600 dark:bg-primary-400 rounded-full mr-1.5"></span>
-                              <span className="text-[9px] font-semibold text-primary-700 dark:text-primary-300">
-                                {translate('mobileMenu.active')}
-                              </span>
-                            </span>
-                            {/* Simple Order Count */}
-                            {mounted && ordersCount > 0 && (
-                              <span className="inline-flex items-center px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 rounded-md border border-primary-300 dark:border-primary-700">
-                                <ClipboardDocumentListIcon className="w-3 h-3 mr-1 text-primary-600 dark:text-primary-400" />
-                                <span className="text-[9px] font-semibold text-primary-700 dark:text-primary-300">
-                                  {ordersCount} {ordersCount === 1 ? translate('mobileMenu.order') : translate('mobileMenu.orders')}
-                                </span>
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </Link>
-                      
-                      {/* Enhanced Quick Account Actions Grid */}
-                      <div className="grid grid-cols-2 gap-2">
-                        {[
-                          { href: '/account/messages', label: translate('account.messages.title'), icon: ChatBubbleLeftRightIcon, color: 'from-primary-500 via-primary-400 to-primary-600', bgColor: 'from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-800/50', borderColor: 'border-gray-200 dark:border-gray-700' },
-                          { href: '/account/service-requests', label: translate('account.serviceRequests.title'), icon: WrenchScrewdriverIcon, color: 'from-primary-600 via-primary-500 to-primary-700', bgColor: 'from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-800/50', borderColor: 'border-gray-200 dark:border-gray-700' },
-                        ].map((item, index) => (
-                          <Link
-                            key={item.href}
-                            href={item.href}
-                            prefetch={true}
-                            className={`group/action flex flex-col items-center justify-center p-2 rounded-lg bg-gradient-to-br ${item.bgColor} border ${item.borderColor} hover:border-primary-300 dark:hover:border-primary-700 transition-all duration-300 relative overflow-hidden touch-manipulation shadow-sm hover:shadow-md hover:scale-105`}
-                            onClick={() => setIsMobileMenuOpen(false)}
-                          >
-                            {/* Hover Background Glow */}
-                            <div className={`absolute inset-0 bg-gradient-to-br ${item.color} opacity-0 group-hover/action:opacity-10 transition-opacity duration-300 rounded-lg`}></div>
-                            
-                            {/* Compact Icon Container */}
-                            <div className={`relative w-9 h-9 bg-gradient-to-br ${item.color} rounded-lg flex items-center justify-center mb-1.5 shadow-md group-hover/action:scale-110 group-hover/action:rotate-3 transition-all duration-300 relative z-10`}>
-                              <item.icon className="w-5 h-5 text-white relative z-10 drop-shadow-sm" />
-                              {/* Icon shine effect */}
-                              <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-white/15 to-transparent rounded-lg"></div>
-                              {/* Glow ring on hover */}
-                              <div className={`absolute -inset-0.5 bg-gradient-to-br ${item.color} rounded-lg blur-sm opacity-0 group-hover/action:opacity-50 transition-opacity duration-300`}></div>
-                            </div>
-                            
-                            {/* Compact Label */}
-                            <span className="text-[10px] font-semibold text-gray-900 dark:text-white group-hover/action:text-primary-700 dark:group-hover/action:text-primary-300 transition-colors duration-300 text-center relative z-10 leading-tight">
-                              {item.label}
-                            </span>
-                            
-                            {/* Shimmer effect on hover */}
-                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/action:translate-x-full transition-transform duration-700 rounded-lg"></div>
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Quick Actions Section - More Compact */}
-                  <div className="space-y-1.5 pt-2 border-top border-gray-300 dark:border-gray-700/50">
+                  {/* Quick actions: Cart + Sign in (guest) or Account (signed in). About/FAQ/etc. stay in the footer. */}
+                  <div className="space-y-1.5 pt-2 border-t border-gray-300 dark:border-gray-700/50">
                       <div className={`flex items-center justify-between px-1 mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                       <h4 className="text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest">{translate('mobileMenu.quickActions')}</h4>
                       <div className={`flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-600 to-transparent ${isRTL ? 'mr-2' : 'ml-2'}`}></div>
@@ -1048,7 +824,7 @@ export default function NavBar() {
                         </div>
                       </button>
                       
-                      {!isLoggedIn && (
+                      {!isLoggedIn ? (
                         <button
                           onClick={() => {
                             setIsMobileMenuOpen(false)
@@ -1063,6 +839,23 @@ export default function NavBar() {
                             <span className="text-sm font-semibold text-gray-900 dark:text-white">{translate('mobileMenu.signIn')}</span>
                           </div>
                         </button>
+                      ) : (
+                        <Link
+                          href="/account"
+                          prefetch={true}
+                          className="group flex items-center gap-2 p-2 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/70 active:bg-gray-200 dark:active:bg-gray-700 transition-all duration-200"
+                          onClick={() => {
+                            startLoading()
+                            setIsMobileMenuOpen(false)
+                          }}
+                        >
+                          <div className="w-9 h-9 rounded-full bg-primary-100 dark:bg-primary-900/30 border border-primary-300 dark:border-primary-700 flex items-center justify-center">
+                            <UserIcon className="w-5 h-5 text-primary-700 dark:text-primary-300" />
+                          </div>
+                          <div className="flex flex-col leading-tight min-w-0">
+                            <span className="text-sm font-semibold text-gray-900 dark:text-white">{translate('mobileMenu.account')}</span>
+                          </div>
+                        </Link>
                       )}
                     </div>
                   </div>
@@ -1070,21 +863,12 @@ export default function NavBar() {
                   {/* Language Section */}
                   <div id="mobile-language-section" className="space-y-2 pt-2 border-t border-gray-300 dark:border-gray-700/50">
                     <div className={`flex items-center justify-between px-1 mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                      <h4 className="text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest">{translate('mobileMenu.preferences')}</h4>
+                      <h4 className="text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest">{translate('mobileMenu.language')}</h4>
                       <div className={`flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-600 to-transparent ${isRTL ? 'mr-2' : 'ml-2'}`}></div>
                     </div>
                     
-                    {/* Language Switcher Card */}
                     <div className="rounded-2xl p-3 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
-                      <div className="flex items-center space-x-2 mb-3">
-                        <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 border border-primary-300 dark:border-primary-700 flex items-center justify-center flex-shrink-0">
-                          <span className="text-sm">🌐</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <span className="text-xs font-semibold text-gray-900 dark:text-white block">{translate('mobileMenu.language')}</span>
-                          <span className="text-[11px] text-gray-600 dark:text-gray-400">{translate('mobileMenu.chooseLanguage')}</span>
-                        </div>
-                      </div>
+                      <p className="text-[11px] text-gray-600 dark:text-gray-400 mb-3">{translate('mobileMenu.chooseLanguage')}</p>
                       <div className="grid grid-cols-3 gap-2">
                         {[
                           { code: 'en' as const, flag: '/flags/flag-for-flag-united-kingdom.svg', name: 'EN', fullName: 'English' },
