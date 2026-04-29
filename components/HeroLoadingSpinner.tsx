@@ -43,11 +43,11 @@ export default function HeroLoadingSpinner({ isLoading }: HeroLoadingSpinnerProp
         height: '100vh',
       }}
     >
-      {/* Background with dark mode support */}
-      <div className="absolute inset-0 bg-white/95 dark:bg-gray-900/95 transition-colors duration-300" />
+      {/* Stronger backdrop so page content does not show through */}
+      <div className="absolute inset-0 bg-white/96 dark:bg-gray-900/94 transition-colors duration-300" />
       
-      {/* Backdrop blur effect */}
-      <div className="absolute inset-0 backdrop-blur-sm" />
+      {/* Blur page content under the loader */}
+      <div className="absolute inset-0 backdrop-blur-xl dark:backdrop-blur-lg" />
       
       {/* Main content - centered in viewport */}
       <div className="relative z-10 flex flex-col items-center justify-center gap-6" style={{ 
@@ -57,19 +57,10 @@ export default function HeroLoadingSpinner({ isLoading }: HeroLoadingSpinnerProp
         transform: 'translate(-50%, -50%)',
       }}>
         {/* Glowing background circle */}
-        <div className="absolute -top-32 -left-32 w-64 h-64 bg-gradient-to-br from-primary-400 via-blue-400 to-primary-500 rounded-full blur-3xl opacity-30 dark:opacity-20 animate-pulse" />
+        <div className="absolute -top-32 -left-32 w-64 h-64 bg-gradient-to-br from-primary-400 via-blue-400 to-primary-500 rounded-full blur-2xl opacity-18 dark:opacity-20 animate-pulse" />
         
         {/* Logo container with animation */}
         <div className="relative">
-          {/* Rotating ring around logo */}
-          <div 
-            className="absolute inset-0 -m-4 rounded-full"
-            style={{
-              background: 'conic-gradient(from 0deg, transparent, rgba(59, 130, 246, 0.3), rgba(37, 99, 235, 0.4), rgba(59, 130, 246, 0.3), transparent)',
-              animation: 'spin 3s linear infinite',
-            }}
-          />
-          
           {/* Logo with pulse animation */}
           <div className="relative animate-pulse" style={{ animationDuration: '2s' }}>
             <Image
@@ -77,7 +68,7 @@ export default function HeroLoadingSpinner({ isLoading }: HeroLoadingSpinnerProp
               alt="Pixel Pad Logo"
               width={180}
               height={80}
-              className="w-40 h-auto sm:w-48 md:w-52 lg:w-56 drop-shadow-2xl"
+              className="w-40 h-auto sm:w-48 md:w-52 lg:w-56 drop-shadow-[0_6px_18px_rgba(37,99,235,0.18)] dark:drop-shadow-2xl"
               priority
             />
           </div>

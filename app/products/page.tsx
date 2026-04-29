@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react'
 import ProductCard from '@/components/ProductCard'
+import HeroLoadingSpinner from '@/components/HeroLoadingSpinner'
 
 // Lazy load QuickOrderModal - only needed when user clicks quick order
 const QuickOrderModal = lazy(() => import('@/components/QuickOrderModal'))
@@ -362,6 +363,7 @@ export default function ProductsPage() {
   const [showProductNotification, setShowProductNotification] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 15
+  const [catalogReady, setCatalogReady] = useState(false)
 
   // Load products and categories - Non-blocking, optimized for fast navigation
   useEffect(() => {
@@ -385,6 +387,7 @@ export default function ProductsPage() {
           if (categoriesResult.status === 'fulfilled' && categoriesResult.value.length > 0) {
             setCategories(categoriesResult.value.sort((a: Category, b: Category) => a.order - b.order))
           }
+          setCatalogReady(true)
         }).catch(() => {}) // Ignore errors, continue with background refresh
         
         // Refresh in background (completely non-blocking)
@@ -402,10 +405,12 @@ export default function ProductsPage() {
             if (categoriesResult.status === 'fulfilled' && categoriesResult.value.length > 0) {
               setCategories(categoriesResult.value.sort((a: Category, b: Category) => a.order - b.order))
             }
+            setCatalogReady(true)
           }).catch(() => {}) // Ignore background refresh errors
         }, 100) // Small delay to ensure navigation isn't blocked
       } catch (error) {
         console.error('Error loading data:', error)
+        if (isMounted) setCatalogReady(true)
         // Don't block on errors - page should still render
       }
     }
@@ -727,6 +732,7 @@ export default function ProductsPage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 relative pt-12 sm:pt-20 md:pt-24 lg:pt-16">
+      <HeroLoadingSpinner isLoading={!catalogReady} />
       
       {/* Enhanced Header */}
       <div className="relative bg-white dark:bg-gray-900 shadow-lg lg:shadow-none overflow-hidden z-10 pt-12 sm:pt-20 md:pt-24 lg:pt-16">

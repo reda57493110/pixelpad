@@ -9,7 +9,8 @@ import {
   UserIcon,
   Bars3Icon,
   XMarkIcon,
-  ComputerDesktopIcon,
+  SunIcon,
+  MoonIcon,
   XCircleIcon,
   ArrowRightIcon,
   ChevronDownIcon,
@@ -32,6 +33,7 @@ import { fr as frTranslations } from '@/translations/fr'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCart } from '@/contexts/CartContext'
 import { useNavigationLoading } from '@/contexts/NavigationLoadingContext'
+import { useTheme } from '@/contexts/ThemeContext'
 import { getUserOrders } from '@/lib/orders'
 import Image from 'next/image'
 import LoginForm from './LoginForm'
@@ -48,6 +50,7 @@ export default function NavBar() {
   const [showLoginForm, setShowLoginForm] = useState(false)
   const [showRegisterForm, setShowRegisterForm] = useState(false)
   const { language, setLanguage, t, isRTL } = useLanguage()
+  const { theme, toggleTheme } = useTheme()
   const { user, isLoggedIn, logout } = useAuth()
   const { startLoading } = useNavigationLoading()
   const [ordersCount, setOrdersCount] = useState<number>(0)
@@ -283,6 +286,20 @@ export default function NavBar() {
 
               {/* Desktop actions */}
               <div className="flex items-center gap-3" dir="ltr">
+                {/* Theme toggle */}
+                <button
+                  onClick={toggleTheme}
+                  className="hidden lg:flex items-center justify-center w-10 h-10 xl:w-11 xl:h-11 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 transition-all duration-300 hover:scale-105 cursor-pointer"
+                  aria-label={mounted ? `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode` : 'Toggle theme'}
+                  title={mounted ? `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode` : 'Toggle theme'}
+                >
+                  {mounted && theme === 'dark' ? (
+                    <SunIcon className="w-5 h-5 text-yellow-300" />
+                  ) : (
+                    <MoonIcon className="w-5 h-5 text-gray-700 dark:text-gray-200" />
+                  )}
+                </button>
+
                 {/* Language */}
                 <div className="relative" ref={languageMenuRef}>
                   <button
@@ -623,6 +640,19 @@ export default function NavBar() {
                       height={22}
                       className="w-5 h-5 rounded-full object-cover"
                     />
+                  </button>
+
+                  <button
+                    onClick={toggleTheme}
+                    className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 transition-all duration-200 active:scale-95"
+                    aria-label={mounted ? `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode` : 'Toggle theme'}
+                    title={mounted ? `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode` : 'Toggle theme'}
+                  >
+                    {mounted && theme === 'dark' ? (
+                      <SunIcon className="w-5 h-5 text-yellow-300" />
+                    ) : (
+                      <MoonIcon className="w-5 h-5 text-gray-700 dark:text-gray-200" />
+                    )}
                   </button>
 
                   <button 

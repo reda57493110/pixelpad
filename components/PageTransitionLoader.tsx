@@ -35,7 +35,7 @@ export default function PageTransitionLoader() {
       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
         <div className="relative flex flex-col items-center">
           {/* Large Glowing Background Circle */}
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-full blur-3xl opacity-50 animate-pulse scale-150"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 rounded-full blur-2xl opacity-35 animate-pulse scale-125"></div>
           
           {/* Icon Container - Clean gradient design */}
           <div className="relative w-20 h-20 rounded-full flex items-center justify-center shadow-2xl overflow-hidden">
@@ -47,9 +47,9 @@ export default function PageTransitionLoader() {
               className="absolute inset-0 rounded-full"
               style={{
                 background: 'conic-gradient(from 0deg, transparent, rgba(59, 130, 246, 0.8), rgba(99, 102, 241, 0.8), rgba(147, 51, 234, 0.8), transparent)',
-                animation: 'spin 2s linear infinite',
-                mask: 'radial-gradient(circle, transparent 75%, black 78%)',
-                WebkitMask: 'radial-gradient(circle, transparent 75%, black 78%)',
+                animation: 'spin 3s linear infinite',
+                mask: 'radial-gradient(circle, transparent 72%, black 76%)',
+                WebkitMask: 'radial-gradient(circle, transparent 72%, black 76%)',
               }}
             ></div>
             
@@ -61,10 +61,10 @@ export default function PageTransitionLoader() {
             
             {/* Refresh Icon - Centered and spinning */}
             <ArrowPathIcon 
-              className="w-10 h-10 text-white relative z-10 animate-spin"
+              className="w-10 h-10 text-blue-100 dark:text-white relative z-10 animate-spin transform-gpu"
               style={{ 
-                animationDuration: '0.8s',
-                filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+                animationDuration: '1.35s',
+                filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.22))',
               }}
             />
           </div>

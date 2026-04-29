@@ -64,7 +64,7 @@ export default function RefreshButton({
     >
       {/* Animated background gradient */}
       <div 
-        className="absolute inset-0 bg-gradient-to-r from-blue-400 via-indigo-400 via-purple-400 to-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        className="absolute inset-0 bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{ backgroundSize: '200% 100%', animation: isRefreshing ? 'gradientShift 2s ease infinite' : 'none' }}
       />
       
@@ -80,11 +80,12 @@ export default function RefreshButton({
       <ArrowPathIcon 
         className={`
           ${iconSizes[size]}
-          relative z-10
+          relative z-10 text-blue-100 dark:text-white
+          transform-gpu
           transition-transform duration-300
           ${isRefreshing ? 'animate-spin' : 'group-hover:rotate-180'}
         `}
-        style={{ direction: 'ltr' }}
+        style={{ direction: 'ltr', animationDuration: isRefreshing ? '1.2s' : undefined }}
       />
 
       {/* Glow effect */}
