@@ -3,7 +3,7 @@ import connectDB from '@/lib/mongodb'
 import User from '@/models/User'
 import Customer from '@/models/Customer'
 import bcrypt from 'bcryptjs'
-import { signToken } from '@/lib/jwt'
+import { setAuthCookie, signToken } from '@/lib/jwt'
 import { loginRateLimit } from '@/lib/rate-limit'
 import { defaultCors } from '@/lib/cors'
 
@@ -88,7 +88,7 @@ async function handleLogin(request: NextRequest) {
     const userWithoutPassword = user.toObject()
     delete userWithoutPassword.password
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         user: userWithoutPassword,
         token,
@@ -96,6 +96,8 @@ async function handleLogin(request: NextRequest) {
       },
       { status: 200 }
     )
+    setAuthCookie(response, token)
+    return response
   } catch (error: any) {
     // Handle connection abort errors gracefully
     if (error.name === 'AbortError' || error.code === 'ECONNRESET') {

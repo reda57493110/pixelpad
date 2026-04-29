@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import Order from '@/models/Order'
+import { requireAdmin } from '@/lib/auth-middleware'
 
 export async function DELETE(request: NextRequest) {
   try {
+    const { error } = await requireAdmin(request)
+    if (error) return error
+
     await connectDB()
     const { searchParams } = new URL(request.url)
     const email = searchParams.get('email')

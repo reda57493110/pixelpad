@@ -3,20 +3,24 @@
 
 import connectDB from './mongodb'
 import ResetToken from '@/models/ResetToken'
+import crypto from 'crypto'
 
 interface ResetTokenData {
   email: string
-  token: string
+  tokenHash: string
   expiresAt: number
+}
+
+function hashToken(token: string) {
+  return crypto.createHash('sha256').update(token).digest('hex')
 }
 
 export async function createResetToken(email: string): Promise<{ token: string; expiresAt: number }> {
   await connectDB()
   
-  // Generate reset token
-  const token = Math.random().toString(36).substring(2, 15) + 
-                Math.random().toString(36).substring(2, 15) + 
-                Date.now().toString(36)
+  // Generate a cryptographically secure reset token.
+  const token = crypto.randomBytes(32).toString('hex')
+  const tokenHash = hashToken(token)
   
   // Token expires in 1 hour
   const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
@@ -27,7 +31,7 @@ export async function createResetToken(email: string): Promise<{ token: string; 
   // Store token in database
   await ResetToken.create({
     email: email.toLowerCase().trim(),
-    token,
+    tokenHash,
     expiresAt,
   })
 
@@ -36,8 +40,9 @@ export async function createResetToken(email: string): Promise<{ token: string; 
 
 export async function getResetTokenData(token: string): Promise<ResetTokenData | null> {
   await connectDB()
+  const tokenHash = hashToken(token)
   
-  const tokenDoc = await ResetToken.findOne({ token })
+  const tokenDoc = await ResetToken.findOne({ tokenHash })
   
   if (!tokenDoc) {
     return null
@@ -45,20 +50,20 @@ export async function getResetTokenData(token: string): Promise<ResetTokenData |
   
   // Check if expired (MongoDB TTL should handle this, but double-check)
   if (tokenDoc.expiresAt.getTime() < Date.now()) {
-    await ResetToken.deleteOne({ token })
+    await ResetToken.deleteOne({ tokenHash })
     return null
   }
   
   return {
     email: tokenDoc.email,
-    token: tokenDoc.token,
+    tokenHash: tokenDoc.tokenHash,
     expiresAt: tokenDoc.expiresAt.getTime(),
   }
 }
 
 export async function deleteResetToken(token: string): Promise<void> {
   await connectDB()
-  await ResetToken.deleteOne({ token })
+  await ResetToken.deleteOne({ tokenHash: hashToken(token) })
 }
 
 

@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import Product from '@/models/Product'
+import { requireAdminOrTeam } from '@/lib/auth-middleware'
 
 export async function POST(request: NextRequest) {
   try {
+    const { error } = await requireAdminOrTeam(request)
+    if (error) return error
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ error: 'Setup endpoint disabled in production' }, { status: 403 })
+    }
+
     await connectDB()
     
     // Auto-setup endpoint - no authentication required for initial setup

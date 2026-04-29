@@ -6,6 +6,7 @@ import Message from '@/models/Message'
 import ServiceRequest from '@/models/ServiceRequest'
 import Coupon from '@/models/Coupon'
 import User from '@/models/User'
+import { requireAdmin } from '@/lib/auth-middleware'
 
 /**
  * API Route to migrate data from localStorage format to MongoDB
@@ -13,6 +14,12 @@ import User from '@/models/User'
  */
 export async function POST(request: NextRequest) {
   try {
+    const { error } = await requireAdmin(request)
+    if (error) return error
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ error: 'Migration endpoint disabled in production' }, { status: 403 })
+    }
+
     await connectDB()
     const body = await request.json()
     const { type, data } = body

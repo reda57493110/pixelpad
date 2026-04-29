@@ -1,19 +1,11 @@
 /**
- * Client-side API helper that automatically includes authentication tokens
+ * Client-side API helper that automatically uses auth cookies
  */
 
 export function getAuthHeaders(): HeadersInit {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('pixelpad_token') : null
-  
-  const headers: HeadersInit = {
+  return {
     'Content-Type': 'application/json',
   }
-  
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-  }
-  
-  return headers
 }
 
 export async function authenticatedFetch(
@@ -28,6 +20,7 @@ export async function authenticatedFetch(
   return fetch(url, {
     ...options,
     headers,
+    credentials: 'include',
   })
 }
 

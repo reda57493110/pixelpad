@@ -3,6 +3,7 @@ import { Document } from 'mongoose'
 import connectDB from '@/lib/mongodb'
 import Order, { IOrder, IOrderItem } from '@/models/Order'
 import Product from '@/models/Product'
+import { requireAuth, requireAdminOrTeam } from '@/lib/auth-middleware'
 
 // Force dynamic rendering to prevent build-time execution
 export const dynamic = 'force-dynamic'
@@ -15,6 +16,9 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { user, error } = await requireAuth(request)
+    if (error || !user) return error!
+
     const { id } = await context.params
     await connectDB()
     
@@ -46,6 +50,16 @@ export async function GET(
     }
     if (!order) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+    }
+
+    const isStaff = user.type === 'user' && (user.role === 'admin' || user.role === 'team')
+    if (!isStaff) {
+      const normalizedEmail = user.email.toLowerCase()
+      const ownerValues = [order.email?.toLowerCase?.(), order.userId]
+      const isOwner = ownerValues.includes(normalizedEmail) || ownerValues.includes(user.id)
+      if (!isOwner) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
     }
     
     // Clean up response - remove unnecessary MongoDB fields
@@ -92,6 +106,9 @@ export async function PUT(
 ) {
   const { id } = await context.params
   try {
+    const { error } = await requireAdminOrTeam(request)
+    if (error) return error
+
     await connectDB()
     
     // Parse request body with error handling for aborted requests
@@ -500,6 +517,9 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { error } = await requireAdminOrTeam(request)
+    if (error) return error
+
     const { id } = await context.params
     await connectDB()
     const order = await Order.findByIdAndDelete(id)

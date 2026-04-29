@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import Customer from '@/models/Customer'
 import bcrypt from 'bcryptjs'
-import { signToken } from '@/lib/jwt'
+import { setAuthCookie, signToken } from '@/lib/jwt'
 import { loginRateLimit } from '@/lib/rate-limit'
 import { defaultCors } from '@/lib/cors'
 
@@ -63,7 +63,7 @@ async function handleRegister(request: NextRequest) {
     const customerWithoutPassword = customer.toObject()
     delete customerWithoutPassword.password
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         user: customerWithoutPassword,
         token,
@@ -71,6 +71,8 @@ async function handleRegister(request: NextRequest) {
       },
       { status: 201 }
     )
+    setAuthCookie(response, token)
+    return response
   } catch (error) {
     if (process.env.NODE_ENV === 'development') {
       console.error('Registration error:', error)

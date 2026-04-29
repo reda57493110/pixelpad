@@ -32,27 +32,24 @@ export default function AdminProtected({ children }: { children: ReactNode }) {
       return
     }
 
-    // Get token from localStorage if context token isn't available yet
-    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('pixelpad_token') : null)
-    
-    if (!authToken) {
+    if (!token && !user) {
       setIsVerifying(false)
       hasVerifiedRef.current = true
       return
     }
 
     // Check if token changed - if so, reset verification
-    if (lastTokenRef.current !== authToken) {
+    if (lastTokenRef.current !== token) {
       hasVerifiedRef.current = false
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('admin_verified_token')
       }
-      lastTokenRef.current = authToken
+      lastTokenRef.current = token
     }
 
     // Check if we have a cached verification for this token
     const cachedToken = typeof window !== 'undefined' ? sessionStorage.getItem('admin_verified_token') : null
-    if (cachedToken === authToken && hasVerifiedRef.current) {
+    if (cachedToken === token && hasVerifiedRef.current) {
       setIsVerifying(false)
       return
     }
@@ -71,9 +68,7 @@ export default function AdminProtected({ children }: { children: ReactNode }) {
         try {
           // Verify token and check admin status on server
           const response = await fetch('/api/auth/verify-admin', {
-            headers: {
-              'Authorization': `Bearer ${authToken}`
-            }
+            credentials: 'include',
           })
 
           if (!response.ok) {
@@ -90,7 +85,7 @@ export default function AdminProtected({ children }: { children: ReactNode }) {
           setIsVerifying(false)
           hasVerifiedRef.current = true
           if (typeof window !== 'undefined') {
-            sessionStorage.setItem('admin_verified_token', authToken)
+            sessionStorage.setItem('admin_verified_token', token || 'session')
           }
         } catch (error) {
           console.error('Admin verification error:', error)

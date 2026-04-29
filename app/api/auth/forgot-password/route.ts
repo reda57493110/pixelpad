@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createResetToken } from '@/lib/resetTokens'
+import { strictRateLimit } from '@/lib/rate-limit'
 
 // Force dynamic rendering to prevent build-time execution
 export const dynamic = 'force-dynamic'
 
-export async function POST(request: NextRequest) {
+async function handleForgotPassword(request: NextRequest) {
   try {
     const { email } = await request.json()
 
@@ -67,5 +68,9 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+export async function POST(request: NextRequest) {
+  return strictRateLimit(request, handleForgotPassword)
 }
 

@@ -2,7 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose'
 
 export interface IResetToken extends Document {
   email: string
-  token: string
+  tokenHash: string
   expiresAt: Date
   createdAt?: Date
 }
@@ -10,7 +10,7 @@ export interface IResetToken extends Document {
 const ResetTokenSchema = new Schema<IResetToken>(
   {
     email: { type: String, required: true, index: true },
-    token: { type: String, required: true, unique: true, index: true },
+    tokenHash: { type: String, required: true, unique: true, index: true },
     expiresAt: { type: Date, required: true },
   },
   {

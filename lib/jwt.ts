@@ -1,8 +1,10 @@
 import jwt from 'jsonwebtoken'
+import { NextResponse } from 'next/server'
 
 // Get JWT_SECRET at runtime (not at module load time) to allow builds without it
 const getJWTSecret = () => process.env.JWT_SECRET
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
+export const AUTH_COOKIE_NAME = 'pixelpad_token'
 
 export interface JWTPayload {
   id: string
@@ -52,6 +54,36 @@ export function getTokenFromRequest(request: Request): string | null {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     return authHeader.substring(7)
   }
-  return null
+
+  const cookieHeader = request.headers.get('cookie')
+  if (!cookieHeader) return null
+  const cookies = cookieHeader.split(';').map((part) => part.trim())
+  const tokenCookie = cookies.find((cookie) => cookie.startsWith(`${AUTH_COOKIE_NAME}=`))
+  if (!tokenCookie) return null
+  const token = tokenCookie.split('=').slice(1).join('=')
+  return token ? decodeURIComponent(token) : null
+
+}
+
+export function setAuthCookie(response: NextResponse, token: string) {
+  const isProduction = process.env.NODE_ENV === 'production'
+  response.cookies.set(AUTH_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+  })
+}
+
+export function clearAuthCookie(response: NextResponse) {
+  const isProduction = process.env.NODE_ENV === 'production'
+  response.cookies.set(AUTH_COOKIE_NAME, '', {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0,
+  })
 }
 

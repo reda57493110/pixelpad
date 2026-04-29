@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 // In-memory rate limit store
-// In production, consider using Redis for distributed rate limiting
+// Falls back to this store when Redis is not configured.
 interface RateLimitStore {
   [key: string]: {
     count: number
@@ -10,6 +10,9 @@ interface RateLimitStore {
 }
 
 const store: RateLimitStore = {}
+const upstashUrl = process.env.UPSTASH_REDIS_REST_URL
+const upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN
+const hasUpstash = Boolean(upstashUrl && upstashToken)
 
 // Clean up old entries every 5 minutes (only in Node.js environment)
 if (typeof global !== 'undefined' && typeof setInterval !== 'undefined') {
@@ -38,6 +41,33 @@ export function rateLimit(options: RateLimitOptions) {
     skipSuccessfulRequests = false,
   } = options
 
+  const distributedIncrement = async (key: string) => {
+    if (!hasUpstash) return null
+    try {
+      const base = upstashUrl!.replace(/\/$/, '')
+      const authHeaders = { Authorization: `Bearer ${upstashToken!}` }
+      const [incrRes, ttlRes] = await Promise.all([
+        fetch(`${base}/incr/${encodeURIComponent(key)}`, { headers: authHeaders, cache: 'no-store' }),
+        fetch(`${base}/pttl/${encodeURIComponent(key)}`, { headers: authHeaders, cache: 'no-store' }),
+      ])
+      if (!incrRes.ok || !ttlRes.ok) return null
+      const incrJson = await incrRes.json() as { result?: number }
+      const ttlJson = await ttlRes.json() as { result?: number }
+      const count = Number(incrJson.result ?? 0)
+      let ttlMs = Number(ttlJson.result ?? -1)
+      if (ttlMs < 0) {
+        await fetch(`${base}/pexpire/${encodeURIComponent(key)}/${windowMs}`, {
+          headers: authHeaders,
+          cache: 'no-store',
+        })
+        ttlMs = windowMs
+      }
+      return { count, resetTime: Date.now() + ttlMs }
+    } catch {
+      return null
+    }
+  }
+
   return async (
     request: NextRequest,
     handler: (request: NextRequest) => Promise<NextResponse>
@@ -48,8 +78,34 @@ export function rateLimit(options: RateLimitOptions) {
       request.headers.get('x-real-ip') ||
       'unknown'
 
-    const key = `rate-limit:${ip}`
+    const key = `rate-limit:${ip}:${windowMs}:${max}`
     const now = Date.now()
+    const distributed = await distributedIncrement(key)
+
+    if (distributed) {
+      if (distributed.count > max) {
+        const retryAfter = Math.ceil((distributed.resetTime - now) / 1000)
+        return NextResponse.json(
+          { error: message, retryAfter },
+          {
+            status: 429,
+            headers: {
+              'Retry-After': retryAfter.toString(),
+              'X-RateLimit-Limit': max.toString(),
+              'X-RateLimit-Remaining': '0',
+              'X-RateLimit-Reset': new Date(distributed.resetTime).toISOString(),
+            },
+          }
+        )
+      }
+
+      const response = await handler(request)
+      const remaining = Math.max(0, max - distributed.count)
+      response.headers.set('X-RateLimit-Limit', max.toString())
+      response.headers.set('X-RateLimit-Remaining', remaining.toString())
+      response.headers.set('X-RateLimit-Reset', new Date(distributed.resetTime).toISOString())
+      return response
+    }
 
     // Get or create rate limit entry
     let entry = store[key]
@@ -119,6 +175,12 @@ export const strictRateLimit = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: 10, // 10 requests per minute
   message: 'Too many requests. Please try again later.',
+})
+
+export const sensitiveWriteRateLimit = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 20,
+  message: 'Too many write requests. Please try again shortly.',
 })
 
 export const orderTrackingRateLimit = rateLimit({

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import Product from '@/models/Product'
+import { requireAdminOrTeam } from '@/lib/auth-middleware'
 
 export async function GET(request: NextRequest) {
   return POST(request)
@@ -8,6 +9,12 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const { error } = await requireAdminOrTeam(request)
+    if (error) return error
+    if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ error: 'Migration endpoint disabled in production' }, { status: 403 })
+    }
+
     await connectDB()
     
     // Get all products

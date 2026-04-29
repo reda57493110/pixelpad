@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import Message from '@/models/Message'
+import { requireAuth, requireAdminOrTeam } from '@/lib/auth-middleware'
 
 // Force dynamic rendering to prevent build-time execution
 export const dynamic = 'force-dynamic'
@@ -10,11 +11,23 @@ export async function GET(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { user, error } = await requireAuth(request)
+    if (error || !user) return error!
+
     const { id } = await context.params
     await connectDB()
     const message = await Message.findById(id)
     if (!message) {
       return NextResponse.json({ error: 'Message not found' }, { status: 404 })
+    }
+
+    const isStaff = user.type === 'user' && (user.role === 'admin' || user.role === 'team')
+    if (!isStaff) {
+      const normalizedEmail = user.email.toLowerCase()
+      const isOwner = message.email?.toLowerCase?.() === normalizedEmail || message.userId === user.id || message.userId === normalizedEmail
+      if (!isOwner) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
     }
     return NextResponse.json(message)
   } catch (error) {
@@ -28,6 +41,9 @@ export async function PUT(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { error } = await requireAdminOrTeam(request)
+    if (error) return error
+
     const { id } = await context.params
     await connectDB()
     const body = await request.json()
@@ -47,6 +63,9 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { error } = await requireAdminOrTeam(request)
+    if (error) return error
+
     const { id } = await context.params
     await connectDB()
     const message = await Message.findByIdAndDelete(id)

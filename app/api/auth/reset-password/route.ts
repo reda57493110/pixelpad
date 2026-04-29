@@ -4,11 +4,12 @@ import connectDB from '@/lib/mongodb'
 import User from '@/models/User'
 import Customer from '@/models/Customer'
 import bcrypt from 'bcryptjs'
+import { strictRateLimit } from '@/lib/rate-limit'
 
 // Force dynamic rendering to prevent build-time execution
 export const dynamic = 'force-dynamic'
 
-export async function POST(request: NextRequest) {
+async function handleResetPassword(request: NextRequest) {
   try {
     const { token, newPassword } = await request.json()
 
@@ -77,5 +78,9 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+export async function POST(request: NextRequest) {
+  return strictRateLimit(request, handleResetPassword)
 }
 

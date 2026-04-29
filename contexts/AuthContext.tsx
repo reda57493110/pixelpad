@@ -37,59 +37,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Load user and token from localStorage on mount
+  // Load user from server session cookie on mount
   useEffect(() => {
     const loadAuth = async () => {
       try {
-        const savedToken = localStorage.getItem('pixelpad_token')
-        const savedUser = localStorage.getItem('pixelpad_user')
+        const response = await fetch('/api/auth/verify', {
+          credentials: 'include',
+        })
         
-        if (savedToken && savedUser) {
-          // Verify token is still valid by checking with server
-          try {
-            const response = await fetch('/api/auth/verify', {
-              headers: {
-                'Authorization': `Bearer ${savedToken}`
-              }
-            })
-            
-            if (response.ok) {
-              // Get fresh user data from server (includes permissions)
-              const serverUserData = await responseJsonSafe<Record<string, unknown>>(response)
-              const savedUserData = parseJsonSafe<Record<string, unknown>>(savedUser)
-              if (!serverUserData || !savedUserData) {
-                localStorage.removeItem('pixelpad_token')
-                localStorage.removeItem('pixelpad_user')
-              } else {
-                const su = serverUserData as Record<string, unknown> & { _id?: { toString?: () => string } }
-                const saved = savedUserData as Record<string, unknown>
-                // Merge server data with saved data, prioritizing server data
-                const userData: User = {
-                  id: su._id?.toString?.() || String(su.id ?? saved.id ?? Date.now()),
-                  name: (su.name as string) || (saved.name as string) || '',
-                  email: (su.email as string) || (saved.email as string) || '',
-                  avatar: (su.avatar as string | undefined) || (saved.avatar as string | undefined),
-                  orders: (su.orders as number) || (saved.orders as number) || 0,
-                  role: (su.role as User['role']) || (saved.role as User['role']) || 'customer',
-                  type: (su.type as User['type']) || (saved.type as User['type']) || 'customer',
-                  permissions: (su.permissions as string[]) || (saved.permissions as string[]) || [],
-                  createdAt: (su.createdAt as string) || (saved.createdAt as string) || new Date().toISOString()
-                }
-
-                setToken(savedToken)
-                setUser(userData)
-                setIsLoggedIn(true)
-                try { migrateGuestOrders(userData.email) } catch {}
-              }
-            } else {
-              // Token invalid, clear storage
-              localStorage.removeItem('pixelpad_token')
-              localStorage.removeItem('pixelpad_user')
+        if (response.ok) {
+          const serverUserData = await responseJsonSafe<Record<string, unknown>>(response)
+          if (serverUserData) {
+            const su = serverUserData as Record<string, unknown> & { _id?: { toString?: () => string } }
+            const userData: User = {
+              id: su._id?.toString?.() || String(su.id ?? Date.now()),
+              name: (su.name as string) || '',
+              email: (su.email as string) || '',
+              avatar: su.avatar as string | undefined,
+              orders: (su.orders as number) || 0,
+              role: (su.role as User['role']) || 'customer',
+              type: (su.type as User['type']) || 'customer',
+              permissions: (su.permissions as string[]) || [],
+              createdAt: (su.createdAt as string) || new Date().toISOString()
             }
-          } catch (error) {
-            console.error('Token verification error:', error)
-            localStorage.removeItem('pixelpad_token')
-            localStorage.removeItem('pixelpad_user')
+            setToken(null)
+            setUser(userData)
+            setIsLoggedIn(true)
+            try { migrateGuestOrders(userData.email) } catch {}
           }
         }
       } catch (error) {
@@ -101,18 +75,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     loadAuth()
   }, [])
-
-  // Save user and token to localStorage whenever they change
-  useEffect(() => {
-    if (user && token) {
-      localStorage.setItem('pixelpad_token', token)
-      localStorage.setItem('pixelpad_user', JSON.stringify(user))
-    } else {
-      localStorage.removeItem('pixelpad_token')
-      localStorage.removeItem('pixelpad_user')
-    }
-  }, [user, token])
-
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true)
     try {
@@ -120,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        credentials: 'include',
       })
 
       if (!response.ok) {
@@ -170,6 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password }),
+        credentials: 'include',
       })
 
       if (!response.ok) {
@@ -213,15 +177,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const logout = () => {
+    fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {})
     setUser(null)
     setToken(null)
     setIsLoggedIn(false)
-    localStorage.removeItem('pixelpad_token')
-    localStorage.removeItem('pixelpad_user')
   }
 
   const updateProfile = async (data: Partial<User>): Promise<boolean> => {
-    if (!user || !token) return false
+    if (!user) return false
     
     setIsLoading(true)
     try {
@@ -230,9 +193,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(data),
+        credentials: 'include',
       })
       
       if (!response.ok) {
@@ -253,7 +216,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const changePassword = async (oldPassword: string, newPassword: string): Promise<boolean> => {
-    if (!user || !token) return false
+    if (!user) return false
     setIsLoading(true)
     try {
       const endpoint = user.type === 'customer' ? '/api/customers' : '/api/users'
@@ -261,9 +224,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ oldPassword, newPassword }),
+        credentials: 'include',
       })
       
       return response.ok
@@ -276,13 +239,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const refreshAuth = async (): Promise<void> => {
-    if (!token) return
-    
     try {
       const response = await fetch('/api/auth/verify', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+        credentials: 'include',
       })
       
       if (response.ok) {
