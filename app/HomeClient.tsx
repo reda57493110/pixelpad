@@ -136,20 +136,14 @@ function UserReviewSection({ user, token, t, isRTL }: { user: any, token: string
   // Fetch user's review
   useEffect(() => {
     const fetchReview = async () => {
-      // Get token from localStorage if not provided
-      const authToken = token || localStorage.getItem('pixelpad_token')
-      
-      if (!authToken) {
+      if (!user) {
         setIsLoading(false)
         return
       }
 
       try {
-        const authToken = token || localStorage.getItem('pixelpad_token')
         const response = await fetch('/api/reviews', {
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+          credentials: 'include',
         })
 
         if (response.ok) {
@@ -171,8 +165,7 @@ function UserReviewSection({ user, token, t, isRTL }: { user: any, token: string
   }, [token, user])
 
   const handleSave = async () => {
-    const authToken = token || localStorage.getItem('pixelpad_token')
-    if (!authToken || !rating || !comment.trim()) {
+    if (!user || !rating || !comment.trim()) {
       return
     }
 
@@ -182,9 +175,9 @@ function UserReviewSection({ user, token, t, isRTL }: { user: any, token: string
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
         },
-        body: JSON.stringify({ rating, comment: comment.trim() })
+        body: JSON.stringify({ rating, comment: comment.trim() }),
+        credentials: 'include',
       })
 
       if (response.ok) {
@@ -200,15 +193,12 @@ function UserReviewSection({ user, token, t, isRTL }: { user: any, token: string
   }
 
   const handleDelete = async () => {
-    const authToken = token || localStorage.getItem('pixelpad_token')
-    if (!authToken) return
+    if (!user) return
 
     try {
       const response = await fetch('/api/reviews', {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
+        credentials: 'include',
       })
 
       if (response.ok) {

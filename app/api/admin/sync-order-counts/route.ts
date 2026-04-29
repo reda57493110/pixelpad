@@ -3,27 +3,33 @@ import connectDB from '@/lib/mongodb'
 import Order from '@/models/Order'
 import GuestCustomer from '@/models/GuestCustomer'
 import Customer from '@/models/Customer'
-import { authenticateRequest } from '@/lib/auth-middleware'
+import { requireAdmin, requireSameOriginMutation } from '@/lib/auth-middleware'
+import { z } from 'zod'
+import { validateBody } from '@/lib/validation'
 
 export const dynamic = 'force-dynamic'
+
+const syncOrderCountsSchema = z.object({
+  email: z.string().email().max(254).optional(),
+})
 
 // Admin endpoint to sync order counts for all customers
 export async function POST(request: NextRequest) {
   try {
+    const { error: csrfError } = requireSameOriginMutation(request)
+    if (csrfError) return csrfError
+
+    const { error } = await requireAdmin(request)
+    if (error) return error
+
     await connectDB()
     
-    // Check authentication
-    const { user } = await authenticateRequest(request)
-    const isAdmin = (user?.role === 'admin' && user?.type === 'user') ||
-                    user?.email === 'admin@pixelpad.com' ||
-                    (user?.email && user.email.toLowerCase().includes('admin'))
-    
-    if (!isAdmin) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-    
     const body = await request.json()
-    const email = body.email // Optional: sync specific customer
+    const parsed = validateBody(syncOrderCountsSchema, body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 })
+    }
+    const email = parsed.data.email // Optional: sync specific customer
     
     let syncedCount = 0
     let errors: string[] = []

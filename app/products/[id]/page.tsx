@@ -38,18 +38,14 @@ function ProductReviewSection({ productId, user, token, t, isRTL }: { productId:
   // Fetch user's review for this product
   useEffect(() => {
     const fetchReview = async () => {
-      const authToken = token || localStorage.getItem('pixelpad_token')
-      
-      if (!authToken) {
+      if (!user) {
         setIsLoading(false)
         return
       }
 
       try {
         const response = await fetch(`/api/reviews?productId=${productId}`, {
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          }
+          credentials: 'include',
         })
 
         if (response.ok) {
@@ -71,8 +67,7 @@ function ProductReviewSection({ productId, user, token, t, isRTL }: { productId:
   }, [token, user, productId])
 
   const handleSave = async () => {
-    const authToken = token || localStorage.getItem('pixelpad_token')
-    if (!authToken || !rating || !comment.trim()) {
+    if (!user || !rating || !comment.trim()) {
       return
     }
 
@@ -82,9 +77,9 @@ function ProductReviewSection({ productId, user, token, t, isRTL }: { productId:
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
         },
-        body: JSON.stringify({ rating, comment: comment.trim(), productId })
+        body: JSON.stringify({ rating, comment: comment.trim(), productId }),
+        credentials: 'include',
       })
 
       if (response.ok) {
@@ -100,15 +95,12 @@ function ProductReviewSection({ productId, user, token, t, isRTL }: { productId:
   }
 
   const handleDelete = async () => {
-    const authToken = token || localStorage.getItem('pixelpad_token')
-    if (!authToken) return
+    if (!user) return
 
     try {
       const response = await fetch(`/api/reviews?productId=${productId}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
+        credentials: 'include',
       })
 
       if (response.ok) {

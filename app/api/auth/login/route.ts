@@ -6,12 +6,23 @@ import bcrypt from 'bcryptjs'
 import { setAuthCookie, signToken } from '@/lib/jwt'
 import { loginRateLimit } from '@/lib/rate-limit'
 import { defaultCors } from '@/lib/cors'
+import { z } from 'zod'
+import { validateBody } from '@/lib/validation'
+import { requireSameOriginMutation } from '@/lib/auth-middleware'
 
 // Force dynamic rendering to prevent build-time execution
 export const dynamic = 'force-dynamic'
 
+const loginSchema = z.object({
+  email: z.string().email().max(254),
+  password: z.string().min(1).max(256),
+})
+
 async function handleLogin(request: NextRequest) {
   try {
+    const { error: csrfError } = requireSameOriginMutation(request)
+    if (csrfError) return csrfError
+
     await connectDB()
     
     // Parse request body with error handling for aborted requests
@@ -28,14 +39,11 @@ async function handleLogin(request: NextRequest) {
       throw parseError
     }
     
-    const { email, password } = body
-
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email and password are required' },
-        { status: 400 }
-      )
+    const parsed = validateBody(loginSchema, body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 })
     }
+    const { email, password } = parsed.data
 
     // Try to find user (admin/team) first
     const normalizedEmail = email.toLowerCase().trim()
@@ -91,7 +99,6 @@ async function handleLogin(request: NextRequest) {
     const response = NextResponse.json(
       {
         user: userWithoutPassword,
-        token,
         type: userType,
       },
       { status: 200 }

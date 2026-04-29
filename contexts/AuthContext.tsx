@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { migrateGuestOrders } from '@/lib/orders'
-import { parseJsonSafe, responseJsonSafe } from '@/lib/safe-json'
+import { responseJsonSafe } from '@/lib/safe-json'
 
 interface User {
   id: string
@@ -93,11 +93,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const data = await responseJsonSafe<{
         user: Record<string, unknown> & { _id?: { toString?: () => string } }
-        token: string
         type: string
       }>(response)
-      if (!data?.user || !data.token) return false
-      const { user: userData, token: authToken, type } = data
+      if (!data?.user) return false
+      const { user: userData, type } = data
       
       // Convert to User format
       const newUser: User = {
@@ -113,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       setUser(newUser)
-      setToken(authToken)
+      setToken(null)
       setIsLoggedIn(true)
       
       try { migrateGuestOrders(newUser.email) } catch {}
@@ -144,11 +143,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const data = await responseJsonSafe<{
         user: Record<string, unknown> & { _id?: { toString?: () => string } }
-        token: string
         type: string
       }>(response)
-      if (!data?.user || !data.token) return false
-      const { user: userData, token: authToken, type } = data
+      if (!data?.user) return false
+      const { user: userData, type } = data
       
       // Convert to User format
       const newUser: User = {
@@ -163,7 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       setUser(newUser)
-      setToken(authToken)
+      setToken(null)
       setIsLoggedIn(true)
       
       try { migrateGuestOrders(newUser.email) } catch {}

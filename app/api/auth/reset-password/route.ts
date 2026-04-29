@@ -5,27 +5,29 @@ import User from '@/models/User'
 import Customer from '@/models/Customer'
 import bcrypt from 'bcryptjs'
 import { strictRateLimit } from '@/lib/rate-limit'
+import { z } from 'zod'
+import { validateBody } from '@/lib/validation'
+import { requireSameOriginMutation } from '@/lib/auth-middleware'
 
 // Force dynamic rendering to prevent build-time execution
 export const dynamic = 'force-dynamic'
 
+const resetPasswordSchema = z.object({
+  token: z.string().min(20).max(512),
+  newPassword: z.string().min(8).max(256),
+})
+
 async function handleResetPassword(request: NextRequest) {
   try {
-    const { token, newPassword } = await request.json()
+    const { error: csrfError } = requireSameOriginMutation(request)
+    if (csrfError) return csrfError
 
-    if (!token || typeof token !== 'string') {
-      return NextResponse.json(
-        { error: 'Reset token is required' },
-        { status: 400 }
-      )
+    const body = await request.json()
+    const parsed = validateBody(resetPasswordSchema, body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 })
     }
-
-    if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 6) {
-      return NextResponse.json(
-        { error: 'Password must be at least 6 characters long' },
-        { status: 400 }
-      )
-    }
+    const { token, newPassword } = parsed.data
 
     // Get token data from MongoDB
     const tokenData = await getResetTokenData(token)

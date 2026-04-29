@@ -1,20 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createResetToken } from '@/lib/resetTokens'
 import { strictRateLimit } from '@/lib/rate-limit'
+import { z } from 'zod'
+import { validateBody } from '@/lib/validation'
+import { requireSameOriginMutation } from '@/lib/auth-middleware'
 
 // Force dynamic rendering to prevent build-time execution
 export const dynamic = 'force-dynamic'
 
+const forgotPasswordSchema = z.object({
+  email: z.string().email().max(254),
+})
+
 async function handleForgotPassword(request: NextRequest) {
   try {
-    const { email } = await request.json()
+    const { error: csrfError } = requireSameOriginMutation(request)
+    if (csrfError) return csrfError
 
-    if (!email || typeof email !== 'string') {
-      return NextResponse.json(
-        { error: 'Email is required' },
-        { status: 400 }
-      )
+    const body = await request.json()
+    const parsed = validateBody(forgotPasswordSchema, body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 })
     }
+    const { email } = parsed.data
 
     // Check if user exists in database
     // Note: We generate tokens for any email to prevent user enumeration
@@ -35,11 +43,12 @@ async function handleForgotPassword(request: NextRequest) {
     //   html: `Click here to reset your password: ${process.env.NEXT_PUBLIC_URL}/reset-password?token=${token}`
     // })
 
-    // Get base URL from request headers
-    const host = request.headers.get('host') || 'localhost:3000'
-    const protocol = request.headers.get('x-forwarded-proto') || 
-                     (host.includes('localhost') ? 'http' : 'https')
-    const resetLink = `${protocol}://${host}/reset-password?token=${token}`
+    // Build reset link from trusted configured base URL.
+    const trustedBaseUrl =
+      process.env.APP_BASE_URL ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      'http://localhost:3000'
+    const resetLink = `${trustedBaseUrl.replace(/\/$/, '')}/reset-password?token=${token}`
     
     // Only log in development mode
     if (process.env.NODE_ENV === 'development') {

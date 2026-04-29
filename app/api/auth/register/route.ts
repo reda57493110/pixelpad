@@ -5,37 +5,38 @@ import bcrypt from 'bcryptjs'
 import { setAuthCookie, signToken } from '@/lib/jwt'
 import { loginRateLimit } from '@/lib/rate-limit'
 import { defaultCors } from '@/lib/cors'
+import { z } from 'zod'
+import { validateBody } from '@/lib/validation'
+import { requireSameOriginMutation } from '@/lib/auth-middleware'
 
 // Force dynamic rendering to prevent build-time execution
 export const dynamic = 'force-dynamic'
 
+const registerSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  email: z.string().email().max(254),
+  password: z.string().min(8).max(256),
+})
+
 async function handleRegister(request: NextRequest) {
   try {
+    const { error: csrfError } = requireSameOriginMutation(request)
+    if (csrfError) return csrfError
+
     await connectDB()
     const body = await request.json()
-    const { name, email, password } = body
-
-    // Validate input
-    if (!name || !email || !password) {
-      return NextResponse.json(
-        { error: 'Name, email, and password are required' },
-        { status: 400 }
-      )
+    const parsed = validateBody(registerSchema, body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 })
     }
+    const { name, email, password } = parsed.data
 
-    if (password.length < 6) {
-      return NextResponse.json(
-        { error: 'Password must be at least 6 characters' },
-        { status: 400 }
-      )
-    }
-
-    // Check if customer already exists
+    // Check if customer already exists (keep response generic to reduce enumeration)
     const existingCustomer = await Customer.findOne({ email: email.toLowerCase() })
     if (existingCustomer) {
       return NextResponse.json(
-        { error: 'Customer with this email already exists' },
-        { status: 409 }
+        { error: 'Unable to create account with provided details' },
+        { status: 400 }
       )
     }
 
@@ -66,7 +67,6 @@ async function handleRegister(request: NextRequest) {
     const response = NextResponse.json(
       {
         user: customerWithoutPassword,
-        token,
         type: 'customer',
       },
       { status: 201 }

@@ -4,7 +4,34 @@ import Order from '@/models/Order'
 import Product from '@/models/Product'
 import Customer from '@/models/Customer'
 import GuestCustomer from '@/models/GuestCustomer'
-import { authenticateRequest, requireAuth } from '@/lib/auth-middleware'
+import { authenticateRequest, requireAuth, requireSameOriginMutation } from '@/lib/auth-middleware'
+import { z } from 'zod'
+import { validateBody } from '@/lib/validation'
+
+const orderItemSchema = z.object({
+  id: z.string().trim().min(1).max(120),
+  name: z.string().trim().min(1).max(240),
+  price: z.number().nonnegative(),
+  quantity: z.number().int().positive().max(100),
+})
+
+const createOrderSchema = z.object({
+  id: z.string().trim().max(80).optional(),
+  userId: z.string().trim().min(1).max(120),
+  email: z.string().email().max(254),
+  date: z.string().datetime().optional(),
+  items: z.array(orderItemSchema).min(1),
+  total: z.number().nonnegative(),
+  status: z.enum(['processing', 'shipped', 'completed', 'cancelled', 'returned', 'refunded']).optional(),
+  customerName: z.string().trim().max(120).optional(),
+  customerPhone: z.string().trim().max(30).optional(),
+  city: z.string().trim().max(120).optional(),
+  address: z.string().trim().max(500).optional(),
+  returnNotes: z.string().trim().max(1000).optional(),
+  paymentSessionId: z.string().trim().max(120).optional(),
+  paymentMethod: z.enum(['cash', 'card', 'mobile']).optional(),
+  paymentStatus: z.enum(['pending', 'completed', 'failed', 'cancelled']).optional(),
+})
 
 export async function GET(request: NextRequest) {
   try {
@@ -109,8 +136,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const { error: csrfError } = requireSameOriginMutation(request)
+    if (csrfError) return csrfError
+
     await connectDB()
     const body = await request.json()
+    const parsed = validateBody(createOrderSchema, body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 })
+    }
+    const orderInput = parsed.data
     
     // Check if user is admin (bypass stock validation for admins)
     const { user } = await authenticateRequest(request)
@@ -124,9 +159,11 @@ export async function POST(request: NextRequest) {
     // Products can still be ordered and will be fulfilled when stock becomes available
     
     // Reserve stock: Deduct stock quantity on order creation (for all users, including admins)
-    if (body.items && body.status !== 'returned') {
+    const normalizedItems = orderInput.items
+
+    if (normalizedItems && orderInput.status !== 'returned') {
       try {
-        for (const item of body.items) {
+        for (const item of normalizedItems) {
           const product = await Product.findById(item.id)
           if (product) {
             const newStockQuantity = Math.max(0, (product.stockQuantity || 0) - item.quantity)
@@ -154,15 +191,15 @@ export async function POST(request: NextRequest) {
     }
     
     // Create or find customer record for guest customers
-    let customerEmail = body.email || body.userId
+    let customerEmail = orderInput.email || orderInput.userId
     const isGuest = !user || user.type !== 'customer' || customerEmail === 'guest' || customerEmail?.startsWith('guest-')
     
-    if (isGuest && body.customerName && customerEmail) {
+    if (isGuest && orderInput.customerName && customerEmail) {
       try {
         // Normalize email for guest customers
         if (customerEmail === 'guest' || customerEmail?.startsWith('guest-')) {
           // Use the email from the order body if available, otherwise generate one
-          customerEmail = body.email || `guest-${Date.now()}@pixelpad.local`
+          customerEmail = orderInput.email || `guest-${Date.now()}@pixelpad.local`
         }
 
         const emailLower = customerEmail.toLowerCase()
@@ -173,11 +210,11 @@ export async function POST(request: NextRequest) {
         if (!guest) {
           // Create new guest customer with order count of 1 (since we're creating an order now)
           guest = await GuestCustomer.create({
-            name: body.customerName,
+            name: orderInput.customerName,
             email: emailLower,
-            phone: body.customerPhone,
-            city: body.city,
-            address: body.address,
+            phone: orderInput.customerPhone,
+            city: orderInput.city,
+            address: orderInput.address,
             orders: 1, // Start with 1 since we're creating an order
             isGuest: true,
           })
@@ -189,10 +226,10 @@ export async function POST(request: NextRequest) {
           // Update customer info and increment order count
           await GuestCustomer.findByIdAndUpdate(guest._id, {
             $set: {
-              name: body.customerName,
-              phone: body.customerPhone,
-              city: body.city,
-              address: body.address,
+              name: orderInput.customerName,
+              phone: orderInput.customerPhone,
+              city: orderInput.city,
+              address: orderInput.address,
             },
             $inc: { orders: 1 } // Increment order count
           })
@@ -203,8 +240,8 @@ export async function POST(request: NextRequest) {
         }
         
         // Update order body to use the customer email
-        body.email = guest.email
-        body.userId = guest.email
+        orderInput.email = guest.email
+        orderInput.userId = guest.email
       } catch (customerError: any) {
         // If customer creation fails (e.g., duplicate email), try to find existing customer
         console.error('Error creating/finding customer:', customerError)
@@ -218,8 +255,8 @@ export async function POST(request: NextRequest) {
             await GuestCustomer.findByIdAndUpdate(existingGuest._id, {
               $inc: { orders: 1 } // Increment order count
             })
-            body.email = existingGuest.email
-            body.userId = existingGuest.email
+            orderInput.email = existingGuest.email
+            orderInput.userId = existingGuest.email
           }
         }
       }
@@ -244,11 +281,31 @@ export async function POST(request: NextRequest) {
     }
     
     // Ensure order has custom ID if not provided
-    if (!body.id || !body.id.startsWith('PP-')) {
-      body.id = body.id || `PP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+    if (!orderInput.id || !orderInput.id.startsWith('PP-')) {
+      orderInput.id = orderInput.id || `PP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
     }
     
-    const order = await Order.create(body)
+    const orderPayload = {
+      id: orderInput.id,
+      userId: String(orderInput.userId || '').trim(),
+      email: String(orderInput.email || '').toLowerCase().trim(),
+      date: orderInput.date ? new Date(orderInput.date) : undefined,
+      items: normalizedItems,
+      total: Number(orderInput.total || 0),
+      status: orderInput.status || 'processing',
+      customerName: orderInput.customerName ? String(orderInput.customerName).trim() : undefined,
+      customerPhone: orderInput.customerPhone ? String(orderInput.customerPhone).trim() : undefined,
+      city: orderInput.city ? String(orderInput.city).trim() : undefined,
+      returnNotes: orderInput.returnNotes ? String(orderInput.returnNotes).trim() : undefined,
+      paymentSessionId: orderInput.paymentSessionId ? String(orderInput.paymentSessionId).trim() : undefined,
+      paymentMethod: orderInput.paymentMethod,
+      paymentStatus: orderInput.paymentStatus,
+    }
+    if (!orderPayload.userId || !orderPayload.email || !Number.isFinite(orderPayload.total) || orderPayload.total < 0) {
+      return NextResponse.json({ error: 'Invalid order payload' }, { status: 400 })
+    }
+
+    const order = await Order.create(orderPayload)
     
     // If order is created with "returned" status, restore stock
     if (order.status === 'returned' && order.items) {

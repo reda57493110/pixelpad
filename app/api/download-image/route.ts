@@ -1,12 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
-import { requireAdminOrTeam } from '@/lib/auth-middleware'
+import { requireAdminOrTeam, requireSameOriginMutation } from '@/lib/auth-middleware'
+import { lookup } from 'node:dns/promises'
+import net from 'node:net'
 
 // Force dynamic rendering to prevent build-time execution
 export const dynamic = 'force-dynamic'
 
+const DEFAULT_ALLOWED_HOSTS = [
+  'images.unsplash.com',
+  'cdn.shopify.com',
+  'jpm.ma',
+  'i.imgur.com',
+  'via.placeholder.com',
+]
+
+function isPrivateIp(ip: string) {
+  if (net.isIP(ip) === 4) {
+    const parts = ip.split('.').map(Number)
+    return (
+      parts[0] === 10 ||
+      parts[0] === 127 ||
+      (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
+      (parts[0] === 192 && parts[1] === 168) ||
+      (parts[0] === 169 && parts[1] === 254)
+    )
+  }
+  if (net.isIP(ip) === 6) {
+    const normalized = ip.toLowerCase()
+    return normalized === '::1' || normalized.startsWith('fc') || normalized.startsWith('fd') || normalized.startsWith('fe80')
+  }
+  return true
+}
+
 export async function POST(request: NextRequest) {
   try {
+    const { error: csrfError } = requireSameOriginMutation(request)
+    if (csrfError) return csrfError
+
     // Require authentication - only admin/team users can download images
     const { user, error } = await requireAdminOrTeam(request)
     if (error) return error
@@ -25,12 +56,35 @@ export async function POST(request: NextRequest) {
     } catch {
       return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 })
     }
+    if (!['https:', 'http:'].includes(url.protocol)) {
+      return NextResponse.json({ error: 'Only HTTP(S) URLs are allowed' }, { status: 400 })
+    }
+
+    const envAllowedHosts = (process.env.DOWNLOAD_IMAGE_ALLOWED_HOSTS || '')
+      .split(',')
+      .map((h) => h.trim().toLowerCase())
+      .filter(Boolean)
+    const allowedHosts = envAllowedHosts.length > 0 ? envAllowedHosts : DEFAULT_ALLOWED_HOSTS
+    const normalizedHost = url.hostname.toLowerCase()
+    const allowed = allowedHosts.some((allowedHost) =>
+      normalizedHost === allowedHost || normalizedHost.endsWith(`.${allowedHost}`)
+    )
+    if (!allowed) {
+      return NextResponse.json({ error: 'Host is not allowed' }, { status: 403 })
+    }
+
+    // Resolve DNS and block private networks to reduce SSRF risk.
+    const resolved = await lookup(normalizedHost, { all: true })
+    if (resolved.some((record) => isPrivateIp(record.address))) {
+      return NextResponse.json({ error: 'Target host is not allowed' }, { status: 403 })
+    }
 
     // Download the image
     const response = await fetch(imageUrl, {
+      redirect: 'error',
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
+      },
     })
 
     if (!response.ok) {

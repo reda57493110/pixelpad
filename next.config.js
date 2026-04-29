@@ -7,9 +7,12 @@ const csp = [
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https:",
   "connect-src 'self' https:",
+  "object-src 'none'",
+  "frame-src 'none'",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
+  ...(isProd ? ["upgrade-insecure-requests"] : []),
 ].join('; ')
 
 const nextConfig = {

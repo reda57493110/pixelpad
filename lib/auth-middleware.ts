@@ -220,3 +220,41 @@ export async function requireAnyPermission(
 
   return { user, error: null }
 }
+
+/**
+ * Basic CSRF protection for cookie-authenticated mutation routes.
+ * Allows same-origin requests and blocks cross-site state changes.
+ */
+export function requireSameOriginMutation(
+  request: NextRequest
+): { error: NextResponse | null } {
+  const method = request.method.toUpperCase()
+  if (method === 'GET' || method === 'HEAD' || method === 'OPTIONS') {
+    return { error: null }
+  }
+
+  const origin = request.headers.get('origin')
+  const host = request.headers.get('host')
+  if (!origin || !host) {
+    return {
+      error: NextResponse.json({ error: 'Forbidden origin' }, { status: 403 }),
+    }
+  }
+
+  let originUrl: URL
+  try {
+    originUrl = new URL(origin)
+  } catch {
+    return {
+      error: NextResponse.json({ error: 'Forbidden origin' }, { status: 403 }),
+    }
+  }
+
+  if (originUrl.host !== host) {
+    return {
+      error: NextResponse.json({ error: 'Forbidden origin' }, { status: 403 }),
+    }
+  }
+
+  return { error: null }
+}

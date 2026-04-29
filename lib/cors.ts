@@ -8,7 +8,9 @@ export interface CorsOptions {
 }
 
 const defaultOptions: CorsOptions = {
-  origin: process.env.NEXT_PUBLIC_SITE_URL || '*',
+  origin: process.env.CORS_ALLOWED_ORIGINS
+    ? process.env.CORS_ALLOWED_ORIGINS.split(',').map((origin) => origin.trim()).filter(Boolean)
+    : (process.env.NEXT_PUBLIC_SITE_URL ? [process.env.NEXT_PUBLIC_SITE_URL] : ['http://localhost:3000']),
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   credentials: true,
@@ -38,6 +40,7 @@ export function cors(options: CorsOptions = {}) {
       
       if (isAllowed && origin) {
         headers.set('Access-Control-Allow-Origin', origin)
+        headers.set('Vary', 'Origin')
       }
       
       if (opts.credentials) {
@@ -63,8 +66,7 @@ export function cors(options: CorsOptions = {}) {
       
       if (isAllowed && origin) {
         headers.set('Access-Control-Allow-Origin', origin)
-      } else if (opts.origin === '*') {
-        headers.set('Access-Control-Allow-Origin', '*')
+        headers.set('Vary', 'Origin')
       }
       
       if (opts.credentials) {

@@ -133,11 +133,10 @@ export default function CreateProductPage() {
       const uploadFormData = new FormData()
       uploadFormData.append('file', file)
 
-      const token = typeof window !== 'undefined' ? localStorage.getItem('pixelpad_token') : null
       const response = await fetch('/api/upload', {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
         body: uploadFormData,
+        credentials: 'include',
       })
 
       if (!response.ok) {

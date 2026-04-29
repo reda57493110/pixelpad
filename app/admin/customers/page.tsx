@@ -67,6 +67,7 @@ export default function CustomersListPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email }),
+        credentials: 'include',
       })
       
       const result = await response.json()
