@@ -10,6 +10,7 @@
     "lint": "next lint",
     "setup:admin": "node scripts/setup-admin.mjs",
     "verify:env": "node scripts/verify-env.mjs",
+    "delete:orders": "node scripts/delete-orders-only.mjs",
     "perf:lighthouse": "npx --yes lighthouse@12 http://127.0.0.1:3000 --only-categories=performance --preset=desktop --quiet --chrome-flags=\"--headless=new\" --output=html --output-path=./lighthouse-report.html"
   },
   "dependencies": {
