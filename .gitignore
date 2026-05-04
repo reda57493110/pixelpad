@@ -32,6 +32,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Lighthouse (npm run perf:lighthouse)
+lighthouse-report.json
+lighthouse-report.html
+
 # Environment variables (IMPORTANT - Never commit these!)
 .env
 .env.local

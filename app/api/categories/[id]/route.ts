@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import Category from '@/models/Category'
-import { requireAdminOrTeam, requireAdmin } from '@/lib/auth-middleware'
+import { requireAdminOrTeam, requireAdmin, requireSameOriginMutation } from '@/lib/auth-middleware'
 
 // Force dynamic rendering to prevent build-time execution
 export const dynamic = 'force-dynamic'
@@ -43,6 +43,9 @@ export async function PATCH(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { error: csrfError } = requireSameOriginMutation(request)
+    if (csrfError) return csrfError
+
     const { id } = await context.params
     const { user, error } = await requireAdminOrTeam(request)
     if (error) return error
@@ -104,6 +107,9 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { error: csrfError } = requireSameOriginMutation(request)
+    if (csrfError) return csrfError
+
     const { id } = await context.params
     const { user, error } = await requireAdmin(request)
     if (error) return error

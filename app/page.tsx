@@ -1108,7 +1108,7 @@ function HomePageContent() {
     newArrivalsScrollRef.current = 0
     newArrivalsVelRef.current = 0
     applyHomeCarouselTrackTransform(newArrivalsTrackRef.current, 0, isRTL)
-  }, [newArrivalsToShow.length])
+  }, [newArrivalsToShow.length, isRTL])
 
   useLayoutEffect(() => {
     if (newArrivalsToShow.length === 0) return
@@ -1187,7 +1187,7 @@ function HomePageContent() {
     bestSellersScrollRef.current = 0
     bestSellersVelRef.current = 0
     applyHomeCarouselTrackTransform(bestSellersTrackRef.current, 0, isRTL)
-  }, [bestSellersToShow.length])
+  }, [bestSellersToShow.length, isRTL])
 
   useLayoutEffect(() => {
     if (bestSellersToShow.length === 0) return
@@ -1265,7 +1265,7 @@ function HomePageContent() {
     specialOffersScrollRef.current = 0
     specialOffersVelRef.current = 0
     applyHomeCarouselTrackTransform(specialOffersTrackRef.current, 0, isRTL)
-  }, [specialOffersToShow.length])
+  }, [specialOffersToShow.length, isRTL])
 
   useLayoutEffect(() => {
     if (specialOffersToShow.length === 0) return
@@ -1343,7 +1343,7 @@ function HomePageContent() {
     trendingScrollRef.current = 0
     trendingVelRef.current = 0
     applyHomeCarouselTrackTransform(trendingTrackRef.current, 0, isRTL)
-  }, [trendingToShow.length])
+  }, [trendingToShow.length, isRTL])
 
   useLayoutEffect(() => {
     if (trendingToShow.length === 0) return

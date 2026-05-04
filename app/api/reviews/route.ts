@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import Review from '@/models/Review'
-import { authenticateRequest } from '@/lib/auth-middleware'
+import { authenticateRequest, requireSameOriginMutation } from '@/lib/auth-middleware'
 
 // GET user's own review
 export async function GET(request: NextRequest) {
@@ -51,6 +51,9 @@ export async function GET(request: NextRequest) {
 // POST create or update user's own review
 export async function POST(request: NextRequest) {
   try {
+    const { error: csrfError } = requireSameOriginMutation(request)
+    if (csrfError) return csrfError
+
     await connectDB()
     
     const { user, error } = await authenticateRequest(request)
@@ -142,6 +145,9 @@ export async function POST(request: NextRequest) {
 // DELETE user's own review
 export async function DELETE(request: NextRequest) {
   try {
+    const { error: csrfError } = requireSameOriginMutation(request)
+    if (csrfError) return csrfError
+
     await connectDB()
     
     const { user, error } = await authenticateRequest(request)

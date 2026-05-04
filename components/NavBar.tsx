@@ -642,19 +642,6 @@ export default function NavBar() {
                     />
                   </button>
 
-                  <button
-                    onClick={toggleTheme}
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 transition-all duration-200 active:scale-95"
-                    aria-label={mounted ? `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode` : 'Toggle theme'}
-                    title={mounted ? `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode` : 'Toggle theme'}
-                  >
-                    {mounted && theme === 'dark' ? (
-                      <SunIcon className="w-5 h-5 text-yellow-300" />
-                    ) : (
-                      <MoonIcon className="w-5 h-5 text-gray-700 dark:text-gray-200" />
-                    )}
-                  </button>
-
                   <button 
                     onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                     className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 transition-all duration-200 active:scale-95"
@@ -938,6 +925,34 @@ export default function NavBar() {
                         ))}
                       </div>
                     </div>
+                  </div>
+
+                  {/* Theme — only in hamburger on mobile (desktop keeps bar toggle) */}
+                  <div className="space-y-2 pt-2 border-t border-gray-300 dark:border-gray-700/50">
+                    <div className={`flex items-center justify-between px-1 mb-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                      <h4 className="text-[10px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest">{translate('mobileMenu.theme')}</h4>
+                      <div className={`flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 dark:via-gray-600 to-transparent ${isRTL ? 'mr-2' : 'ml-2'}`}></div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => toggleTheme()}
+                      className={`w-full flex items-center gap-3 p-3 rounded-2xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/70 active:bg-gray-200 dark:active:bg-gray-700 transition-all duration-200 touch-manipulation ${isRTL ? 'flex-row-reverse' : ''}`}
+                      aria-label={mounted ? `Switch to ${theme === 'dark' ? 'light' : 'dark'} mode` : 'Toggle theme'}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 border border-primary-300 dark:border-primary-700 flex items-center justify-center flex-shrink-0">
+                        {mounted && theme === 'dark' ? (
+                          <SunIcon className="w-5 h-5 text-yellow-300" />
+                        ) : (
+                          <MoonIcon className="w-5 h-5 text-gray-700 dark:text-gray-200" />
+                        )}
+                      </div>
+                      <div className={`flex-1 min-w-0 ${isRTL ? 'text-right' : 'text-left'}`}>
+                        <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                          {mounted && theme === 'dark' ? translate('mobileMenu.themeLight') : translate('mobileMenu.themeDark')}
+                        </div>
+                        <div className="text-[11px] text-gray-600 dark:text-gray-400">{translate('mobileMenu.themeHint')}</div>
+                      </div>
+                    </button>
                   </div>
 
                 </div>

@@ -7,7 +7,10 @@
     "build": "next build",
     "build:quiet": "node scripts/build-filtered.js",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "setup:admin": "node scripts/setup-admin.mjs",
+    "verify:env": "node scripts/verify-env.mjs",
+    "perf:lighthouse": "npx --yes lighthouse@12 http://127.0.0.1:3000 --only-categories=performance --preset=desktop --quiet --chrome-flags=\"--headless=new\" --output=html --output-path=./lighthouse-report.html"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

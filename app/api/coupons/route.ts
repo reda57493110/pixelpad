@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import Coupon from '@/models/Coupon'
-import { requireAdminOrTeam } from '@/lib/auth-middleware'
+import { requireAdminOrTeam, requireSameOriginMutation } from '@/lib/auth-middleware'
 import { sensitiveWriteRateLimit } from '@/lib/rate-limit'
 
 // Force dynamic rendering to prevent build-time execution
@@ -26,6 +26,9 @@ export async function GET(request: NextRequest) {
 
 async function handleCreateCoupon(request: NextRequest) {
   try {
+    const { error: csrfError } = requireSameOriginMutation(request)
+    if (csrfError) return csrfError
+
     const { error } = await requireAdminOrTeam(request)
     if (error) return error
 

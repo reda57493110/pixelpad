@@ -12,8 +12,6 @@ export async function POST(request: NextRequest) {
     }
 
     await connectDB()
-    
-    // Auto-setup endpoint - no authentication required for initial setup
 
     // Get all products
     const products = await Product.find({})

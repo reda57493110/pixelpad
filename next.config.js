@@ -1,12 +1,25 @@
 /** @type {import('next').NextConfig} */
 const isProd = process.env.NODE_ENV === 'production'
+
+// connect-src: prod is allowlisted (GA + Vercel Blob); dev keeps ws/wss for Next HMR.
+// img-src keeps https: so product image URLs from arbitrary CDNs still load.
+const connectSrcProd = [
+  "'self'",
+  'https://www.googletagmanager.com',
+  'https://www.google-analytics.com',
+  'https://region1.google-analytics.com',
+  'https://analytics.google.com',
+  'https://stats.g.doubleclick.net',
+  'https://*.public.blob.vercel-storage.com',
+].join(' ')
+
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https:",
-  "connect-src 'self' https:",
+  isProd ? `connect-src ${connectSrcProd}` : "connect-src 'self' https: ws: wss: data: blob:",
   "object-src 'none'",
   "frame-src 'none'",
   "frame-ancestors 'none'",
